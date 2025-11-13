@@ -1,7 +1,7 @@
 {
-  "name": "microservice-boilerplate",
+  "name": "page-scraper-microservice",
   "version": "0.1.0",
-  "description": "NestJS + Fastify microservice boilerplate with health checks",
+  "description": "Page scraper microservice",
   "main": "dist/src/main.js",
   "scripts": {
     "build": "nest build",

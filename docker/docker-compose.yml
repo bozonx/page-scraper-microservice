@@ -1,8 +1,8 @@
 services:
-  nestjs-boilerplate:
-    image: ghcr.io/bozonx/nestjs-boilerplate:latest
-    container_name: nestjs-boilerplate
-    hostname: nestjs-boilerplate
+  page-scraper-microservice:
+    image: ghcr.io/bozonx/page-scraper-microservice:latest
+    container_name: page-scraper-microservice
+    hostname: page-scraper-microservice
     restart: unless-stopped
     user: '1000:1000'
     ports:
