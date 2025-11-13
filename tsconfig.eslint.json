@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*", "test/**/*", ".eslintrc.js", "jest.config.ts"],
+  "exclude": ["node_modules", "dist", "coverage"],
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "moduleResolution": "node16"
+  }
+}

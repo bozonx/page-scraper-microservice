@@ -1,0 +1,68 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+# dist/ - needed for Docker image build
+*.tsbuildinfo
+coverage/
+
+# Tests
+test/
+*.spec.ts
+*.test.ts
+jest.config.ts
+jest.d.ts
+tsconfig.spec.json
+
+# Development files
+.env
+.env.local
+.env.development
+.env.*.local
+env.development.example
+env.production.example
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Documentation
+docs/
+dev_docs/
+README.md
+CHANGELOG.md
+*.md
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+docker/
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# TypeScript configs (only keep tsconfig.build.json for production)
+tsconfig.json
+tsconfig.eslint.json
+nest-cli.json
+
+# Misc
+tmp/
+temp/
+*.tmp
+LICENSE
+
