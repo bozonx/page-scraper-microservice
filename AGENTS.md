@@ -17,6 +17,6 @@
   - Guides: `docs/`
   - Development stage docs: `dev_docs/`
   - Update `docs/CHANGELOG.md` for significant changes
-  - README, all the documentation, jsdoc, messages and strings have to be in English
+  - README, all the documentation, jsdoc, messages and strings have to be in English. But dev_docs in Russian
 - Environment variables: `.env.production.example` is the source of truth for expected variables
 - source of truth of microservice config is `config.yaml`, including source examples
