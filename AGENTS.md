@@ -1,7 +1,7 @@
 ## Agent Rules (alwaysApply)
 
 - Microservice with REST API
-- Stack: TypeScript, NestJS, Fastify, Docker
+- Stack: TypeScript, NestJS, Fastify, Docker, Playwright, Cheerio, Crawlee, Pino
 
 ### Structure and Practices
 
@@ -19,4 +19,3 @@
   - Update `docs/CHANGELOG.md` for significant changes
   - README, all the documentation, jsdoc, messages and strings have to be in English. But dev_docs in Russian
 - Environment variables: `.env.production.example` is the source of truth for expected variables
-- source of truth of microservice config is `config.yaml`, including source examples
