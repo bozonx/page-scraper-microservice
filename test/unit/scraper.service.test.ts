@@ -5,6 +5,7 @@ import { FingerprintService } from '@/modules/scraper/services/fingerprint.servi
 import { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto'
 import { ScraperResponseDto } from '@/modules/scraper/dto/scraper-response.dto'
 import { ScraperConfig } from '@/config/scraper.config'
+import nock from 'nock'
 
 // Mock external dependencies
 jest.mock('@extractus/article-extractor', () => ({
@@ -29,6 +30,14 @@ describe('ScraperService', () => {
   let configService: ConfigService
   let fingerprintService: FingerprintService
   let moduleRef: TestingModule
+
+  beforeAll(() => {
+    nock.disableNetConnect()
+  })
+
+  afterAll(() => {
+    nock.enableNetConnect()
+  })
 
   const mockScraperConfig: ScraperConfig = {
     defaultMode: 'cheerio',
@@ -132,7 +141,14 @@ describe('ScraperService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    nock('https://example.com')
+      .get('/article')
+      .reply(200, '<html><head><title>Test Article</title></head><body><h1>Test Content</h1><p>This is a test article</p></body></html>')
     extract.mockResolvedValue(mockExtractedContent)
+  })
+
+  afterEach(() => {
+    nock.cleanAll()
   })
 
   describe('scrapePage', () => {

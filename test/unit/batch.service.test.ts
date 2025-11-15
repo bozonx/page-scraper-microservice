@@ -15,10 +15,13 @@ import { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto'
 import { ScraperResponseDto } from '@/modules/scraper/dto/scraper-response.dto'
 
 // Mock uuid
-jest.mock('uuid', () => ({
-  v4: jest.fn(() => 'test-uuid-123456'),
-  default: { v4: jest.fn(() => 'test-uuid-123456') },
-}))
+jest.mock('uuid', () => {
+  const originalModule = jest.requireActual('uuid')
+  return {
+    ...originalModule,
+    v4: jest.fn(() => 'test-uuid-123456'),
+  }
+})
 
 describe('BatchService', () => {
   let service: BatchService
