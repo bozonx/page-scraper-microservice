@@ -3,8 +3,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_FILTER } from '@nestjs/core';
 import { LoggerModule } from 'nestjs-pino';
 import { HealthModule } from '@modules/health/health.module';
+import { ScraperModule } from '@modules/scraper/scraper.module';
 import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter';
 import appConfig from '@config/app.config';
+import scraperConfig from '@config/scraper.config';
 import type { AppConfig } from '@config/app.config';
 import pkg from '../package.json';
 
@@ -12,7 +14,7 @@ import pkg from '../package.json';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig],
+      load: [appConfig, scraperConfig],
       envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
       cache: true,
     }),
@@ -89,6 +91,7 @@ import pkg from '../package.json';
       },
     }),
     HealthModule,
+    ScraperModule,
   ],
   controllers: [],
   providers: [

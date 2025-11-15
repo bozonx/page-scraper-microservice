@@ -21,17 +21,25 @@
     "test:e2e": "jest --selectProjects e2e"
   },
   "dependencies": {
+    "@extractus/article-extractor": "^8.0.20",
+    "@ghostery/adblocker-playwright": "^2.12.5",
     "@nestjs/common": "^11.1.8",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.8",
     "@nestjs/platform-fastify": "^11.1.8",
+    "@types/turndown": "^5.0.6",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
+    "crawlee": "^3.15.3",
     "fastify": "^5.6.1",
     "nestjs-pino": "^4.4.1",
     "pino": "^10.1.0",
+    "playwright": "^1.56.1",
+    "ramda": "^0.32.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "turndown": "^7.2.2",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.10",
@@ -39,6 +47,7 @@
     "@nestjs/testing": "^11.1.8",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.9.2",
+    "@types/turndown": "^5.0.5",
     "@typescript-eslint/eslint-plugin": "^8.46.2",
     "@typescript-eslint/parser": "^8.46.2",
     "eslint": "^9.39.0",
