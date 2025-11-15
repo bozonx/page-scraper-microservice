@@ -5,13 +5,18 @@ import TurndownService from 'turndown'
 import { ScraperConfig } from '@config/scraper.config'
 import { ScraperRequestDto } from '../dto/scraper-request.dto'
 import { ScraperResponseDto } from '../dto/scraper-response.dto'
+import { FingerprintService } from './fingerprint.service'
 
 @Injectable()
 export class ScraperService {
   private readonly logger = new Logger(ScraperService.name)
   private readonly turndownService: TurndownService
+  private readonly maxRetries = 3
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly fingerprintService: FingerprintService
+  ) {
     this.turndownService = new TurndownService({
       headingStyle: 'atx',
       bulletListMarker: '-',
@@ -70,11 +75,47 @@ export class ScraperService {
   }
 
   private async scrapeWithPlaywright(request: ScraperRequestDto): Promise<any> {
-    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!;
-    
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+
     // Generate fingerprint if enabled
-    const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint);
-    
+    const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint)
+
+    // Retry mechanism with fingerprint rotation
+    for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+      try {
+        const currentFingerprint =
+          attempt > 0
+            ? this.fingerprintService.generateFingerprint(request.fingerprint)
+            : fingerprint
+
+        const result = await this.scrapeWithPlaywrightInternal(request, currentFingerprint)
+        return result
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+
+        // Check if we should rotate fingerprint and retry
+        if (
+          this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint) &&
+          attempt < this.maxRetries - 1
+        ) {
+          this.logger.warn(
+            `Anti-bot detected for ${request.url}, rotating fingerprint and retrying (attempt ${attempt + 1}/${this.maxRetries})`
+          )
+          continue
+        }
+
+        // If it's the last attempt or no anti-bot detected, throw the error
+        throw error
+      }
+    }
+  }
+
+  private async scrapeWithPlaywrightInternal(
+    request: ScraperRequestDto,
+    fingerprint: any
+  ): Promise<any> {
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+
     return new Promise(async (resolve, reject) => {
       const crawler = new PlaywrightCrawler({
         headless: scraperConfig.playwrightHeadless,
@@ -86,8 +127,8 @@ export class ScraperService {
             ...(fingerprint.viewport && {
               defaultViewport: {
                 width: fingerprint.viewport.width,
-                height: fingerprint.viewport.height
-              }
+                height: fingerprint.viewport.height,
+              },
             }),
           },
         },
@@ -98,19 +139,19 @@ export class ScraperService {
           try {
             // Apply fingerprint to page context
             if (fingerprint.userAgent) {
-              await page.evaluateOnNewDocument(() => {
+              await page.addInitScript(() => {
                 Object.defineProperty(navigator, 'userAgent', {
                   value: fingerprint.userAgent,
                   writable: false,
-                });
-              });
+                })
+              })
             }
-            
+
             if (fingerprint.viewport) {
               await page.setViewportSize({
                 width: fingerprint.viewport.width,
                 height: fingerprint.viewport.height,
-              });
+              })
             }
 
             // Block trackers and heavy resources if requested
@@ -151,16 +192,7 @@ export class ScraperService {
 
         failedRequestHandler({ request, error }) {
           const errorMessage = error instanceof Error ? error.message : String(error)
-          
-          // Check if we should rotate fingerprint and retry
-          if (this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint)) {
-            this.logger.warn(`Anti-bot detected for ${request.url}, would rotate fingerprint and retry`);
-            // For now, we'll just reject. In a full implementation,
-            // we would retry with a new fingerprint
-            reject(new Error(`Failed to load ${request.url}: ${errorMessage} (anti-bot detected)`))
-          } else {
-            reject(new Error(`Failed to load ${request.url}: ${errorMessage}`))
-          }
+          reject(new Error(`Failed to load ${request.url}: ${errorMessage}`))
         },
       })
 

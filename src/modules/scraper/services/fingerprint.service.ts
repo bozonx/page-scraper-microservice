@@ -212,8 +212,8 @@ export class FingerprintService {
 
   private generateScreenParams(): any {
     return {
-      width: window.screen?.width || 1920,
-      height: window.screen?.height || 1080,
+      width: 1920,
+      height: 1080,
       colorDepth: 24,
       pixelDepth: 24,
     }
@@ -221,7 +221,7 @@ export class FingerprintService {
 
   private generateHardwareParams(): any {
     return {
-      cores: navigator.hardwareConcurrency || 4,
+      cores: 4,
       memory: this.generateRandomMemory(),
       deviceMemory: this.generateRandomMemory(),
     }

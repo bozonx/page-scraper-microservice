@@ -25,12 +25,13 @@ export class ScraperController {
       this.logger.error(`Failed to scrape ${request.url}:`, error)
 
       const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorCode = this.getErrorCode(errorMessage)
 
       // Return error response in the expected format
       const errorResponse: ScraperErrorResponseDto = {
         error: {
-          code: 422,
-          message: 'Failed to extract content from the page',
+          code: errorCode,
+          message: this.getErrorMessage(errorCode),
           details: errorMessage,
         },
       }
@@ -103,6 +104,45 @@ export class ScraperController {
           },
         })
       )
+    }
+  }
+
+  private getErrorCode(errorMessage: string): number {
+    const lowerError = errorMessage.toLowerCase()
+    
+    // Check for timeout errors
+    if (lowerError.includes('timeout') || lowerError.includes('timed out')) {
+      return 504
+    }
+    
+    // Check for browser/engine errors
+    if (lowerError.includes('browser') || lowerError.includes('playwright') ||
+        lowerError.includes('navigation') || lowerError.includes('launch')) {
+      return 502
+    }
+    
+    // Check for validation errors
+    if (lowerError.includes('validation') || lowerError.includes('invalid') ||
+        lowerError.includes('malformed')) {
+      return 400
+    }
+    
+    // Default to content extraction error
+    return 422
+  }
+
+  private getErrorMessage(code: number): string {
+    switch (code) {
+      case 400:
+        return 'Validation error'
+      case 504:
+        return 'Request timeout'
+      case 502:
+        return 'Browser engine error'
+      case 500:
+        return 'Internal server error'
+      default:
+        return 'Failed to extract content from the page'
     }
   }
 }
