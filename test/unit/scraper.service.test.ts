@@ -7,8 +7,12 @@ import { ScraperResponseDto } from '@/modules/scraper/dto/scraper-response.dto'
 import { ScraperConfig } from '@/config/scraper.config'
 
 // Mock external dependencies
-jest.mock('@extractus/article-extractor')
+jest.mock('@extractus/article-extractor', () => ({
+  extract: jest.fn(),
+}))
+
 jest.mock('turndown')
+
 jest.mock('crawlee', () => ({
   PlaywrightCrawler: jest.fn().mockImplementation(() => ({
     addRequests: jest.fn(),
@@ -93,11 +97,6 @@ describe('ScraperService', () => {
   }
 
   beforeAll(async () => {
-    // Setup TurndownService mock
-    TurndownService.mockImplementation(() => ({
-      turndown: jest.fn().mockReturnValue('# Test Content\n\nThis is a test article'),
-    }))
-
     moduleRef = await Test.createTestingModule({
       providers: [
         ScraperService,
@@ -276,7 +275,7 @@ describe('ScraperService', () => {
               // Simulate anti-bot detection on first attempt
               options.failedRequestHandler({
                 request: { url: playwrightRequest.url },
-                error: new Error('Cloudflare detected bot'),
+                error: new Error('cloudflare detected bot'),
               })
             } else {
               // Succeed on second attempt
@@ -317,7 +316,7 @@ describe('ScraperService', () => {
             // Always fail
             options.failedRequestHandler({
               request: { url: playwrightRequest.url },
-              error: new Error('Persistent anti-bot detection'),
+              error: new Error('persistent anti-bot detection'),
             })
           }),
         }

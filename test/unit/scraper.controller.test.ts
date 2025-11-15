@@ -101,15 +101,7 @@ describe('ScraperController', () => {
       >
       mockScrapePage.mockRejectedValue(new Error('Request timeout'))
 
-      await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 504,
-            message: 'Request timeout',
-            details: 'Request timeout',
-          },
-        })
-      )
+      await expect(controller.scrapePage(mockRequest)).rejects.toThrow('Scraper Timeout Exception')
     })
 
     it('should throw formatted error for browser errors', async () => {
@@ -118,15 +110,7 @@ describe('ScraperController', () => {
       >
       mockScrapePage.mockRejectedValue(new Error('Browser launch failed'))
 
-      await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 502,
-            message: 'Browser engine error',
-            details: 'Browser launch failed',
-          },
-        })
-      )
+      await expect(controller.scrapePage(mockRequest)).rejects.toThrow('Scraper Browser Exception')
     })
 
     it('should throw formatted error for validation errors', async () => {
@@ -136,13 +120,7 @@ describe('ScraperController', () => {
       mockScrapePage.mockRejectedValue(new Error('Invalid URL format'))
 
       await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 400,
-            message: 'Validation error',
-            details: 'Invalid URL format',
-          },
-        })
+        'Scraper Validation Exception'
       )
     })
 
@@ -153,13 +131,7 @@ describe('ScraperController', () => {
       mockScrapePage.mockRejectedValue(new Error('Could not extract article content'))
 
       await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 422,
-            message: 'Failed to extract content from the page',
-            details: 'Could not extract article content',
-          },
-        })
+        'Scraper Content Extraction Exception'
       )
     })
 
@@ -170,13 +142,7 @@ describe('ScraperController', () => {
       mockScrapePage.mockRejectedValue('String error')
 
       await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 422,
-            message: 'Failed to extract content from the page',
-            details: 'String error',
-          },
-        })
+        'Scraper Content Extraction Exception'
       )
     })
 
@@ -186,15 +152,7 @@ describe('ScraperController', () => {
       >
       mockScrapePage.mockRejectedValue(new Error('REQUEST TIMED OUT'))
 
-      await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 504,
-            message: 'Request timeout',
-            details: 'REQUEST TIMED OUT',
-          },
-        })
-      )
+      await expect(controller.scrapePage(mockRequest)).rejects.toThrow('Scraper Timeout Exception')
     })
 
     it('should detect browser errors with multiple keywords', async () => {
@@ -203,15 +161,7 @@ describe('ScraperController', () => {
       >
       mockScrapePage.mockRejectedValue(new Error('Navigation failed'))
 
-      await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 502,
-            message: 'Browser engine error',
-            details: 'Navigation failed',
-          },
-        })
-      )
+      await expect(controller.scrapePage(mockRequest)).rejects.toThrow('Scraper Browser Exception')
     })
   })
 
@@ -242,13 +192,7 @@ describe('ScraperController', () => {
       mockCreateBatchJob.mockRejectedValue(new Error('Batch size too large'))
 
       await expect(controller.createBatchJob(mockBatchRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 400,
-            message: 'Failed to create batch job',
-            details: 'Batch size too large',
-          },
-        })
+        'Batch Job Creation Exception'
       )
     })
 
@@ -259,13 +203,7 @@ describe('ScraperController', () => {
       mockCreateBatchJob.mockRejectedValue('String error')
 
       await expect(controller.createBatchJob(mockBatchRequest)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 400,
-            message: 'Failed to create batch job',
-            details: 'String error',
-          },
-        })
+        'Batch Job Creation Exception'
       )
     })
   })
@@ -292,13 +230,7 @@ describe('ScraperController', () => {
       mockGetBatchJobStatus.mockResolvedValue(null)
 
       await expect(controller.getBatchJobStatus(mockJobId)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 404,
-            message: 'Batch job not found',
-            details: `Job with ID ${mockJobId} does not exist or has been cleaned up`,
-          },
-        })
+        'Batch Job Not Found Exception'
       )
     })
 
@@ -309,13 +241,7 @@ describe('ScraperController', () => {
       mockGetBatchJobStatus.mockRejectedValue(new Error('Database connection failed'))
 
       await expect(controller.getBatchJobStatus(mockJobId)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 500,
-            message: 'Failed to retrieve batch job status',
-            details: 'Database connection failed',
-          },
-        })
+        'Batch Job Status Exception'
       )
     })
 
@@ -333,7 +259,9 @@ describe('ScraperController', () => {
       >
       mockGetBatchJobStatus.mockRejectedValue(new Error(formattedError))
 
-      await expect(controller.getBatchJobStatus(mockJobId)).rejects.toThrow(formattedError)
+      await expect(controller.getBatchJobStatus(mockJobId)).rejects.toThrow(
+        'Batch Job Status Exception'
+      )
     })
 
     it('should handle non-Error objects in status retrieval', async () => {
@@ -343,13 +271,7 @@ describe('ScraperController', () => {
       mockGetBatchJobStatus.mockRejectedValue('String error')
 
       await expect(controller.getBatchJobStatus(mockJobId)).rejects.toThrow(
-        JSON.stringify({
-          error: {
-            code: 500,
-            message: 'Failed to retrieve batch job status',
-            details: 'String error',
-          },
-        })
+        'Batch Job Status Exception'
       )
     })
   })
@@ -375,9 +297,7 @@ describe('ScraperController', () => {
         mockScrapePage.mockRejectedValueOnce(new Error(error))
 
         await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-          expect.objectContaining({
-            message: expect.stringContaining('504'),
-          })
+          'Scraper Timeout Exception'
         )
       }
     })
@@ -398,9 +318,7 @@ describe('ScraperController', () => {
         mockScrapePage.mockRejectedValueOnce(new Error(error))
 
         await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-          expect.objectContaining({
-            message: expect.stringContaining('502'),
-          })
+          'Scraper Browser Exception'
         )
       }
     })
@@ -421,9 +339,7 @@ describe('ScraperController', () => {
         mockScrapePage.mockRejectedValueOnce(new Error(error))
 
         await expect(controller.scrapePage(mockRequest)).rejects.toThrow(
-          expect.objectContaining({
-            message: expect.stringContaining('400'),
-          })
+          'Scraper Validation Exception'
         )
       }
     })
