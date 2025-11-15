@@ -232,14 +232,14 @@ graph TB
 ### Настройки скрапера
 - `DEFAULT_MODE` — режим скрапинга по умолчанию (`cheerio|playwright`)
 - `DEFAULT_TASK_TIMEOUT_SECS` — таймаут задачи по умолчанию в секундах (по умолчанию `30`)
-- `DEFAULT_USER_AGENT` — пользовательский агент по умолчанию (`auto|desktop|mobile`)
+- `DEFAULT_USER_AGENT` — пользовательский агент по умолчанию (`auto|yourString`)
 - `DEFAULT_LOCALE` — локаль по умолчанию (например `en-US`)
 - `DEFAULT_TIMEZONE_ID` — часовой пояс по умолчанию (например `UTC`)
 - `DEFAULT_DATE_LOCALE` — локаль для парсинга дат по умолчанию (например `ru`)
 
 ### Настройки браузера
 - `PLAYWRIGHT_HEADLESS` — режим без графического интерфейса (`true|false`)
-- `PLAYWRIGHT_TIMEOUT_MS` — таймаут браузера в миллисекундах
+- `PLAYWRIGHT_NAVIGATION_TIMEOUT_SECS` — таймаут навигации в секундах
 - `PLAYWRIGHT_BLOCK_TRACKERS` — блокировать трекеры (`true|false`)
 - `PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` — блокировать тяжёлые ресурсы (`true|false`)
 - `FINGERPRINT_GENERATE` — генерировать отпечаток автоматически (`true|false`)
