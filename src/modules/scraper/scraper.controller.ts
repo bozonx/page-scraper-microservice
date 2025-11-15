@@ -4,6 +4,16 @@ import { BatchService } from './services/batch.service'
 import { ScraperRequestDto } from './dto/scraper-request.dto'
 import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto'
 import { BatchRequestDto, BatchResponseDto, BatchJobStatusDto } from './dto/batch.dto'
+import {
+  ScraperException,
+  ScraperTimeoutException,
+  ScraperBrowserException,
+  ScraperValidationException,
+  ScraperContentExtractionException,
+  BatchJobNotFoundException,
+  BatchJobCreationException,
+  BatchJobStatusException,
+} from '@common/exceptions/scraper.exception'
 
 @Controller()
 export class ScraperController {
@@ -25,18 +35,25 @@ export class ScraperController {
       this.logger.error(`Failed to scrape ${request.url}:`, error)
 
       const errorMessage = error instanceof Error ? error.message : String(error)
-      const errorCode = this.getErrorCode(errorMessage)
 
-      // Return error response in the expected format
-      const errorResponse: ScraperErrorResponseDto = {
-        error: {
-          code: errorCode,
-          message: this.getErrorMessage(errorCode),
-          details: errorMessage,
-        },
+      // Check if it's already a ScraperException
+      if (error instanceof ScraperException) {
+        throw error
       }
 
-      throw new Error(JSON.stringify(errorResponse))
+      // Convert to appropriate ScraperException based on error message
+      const errorCode = this.getErrorCode(errorMessage)
+
+      switch (errorCode) {
+        case 504:
+          throw new ScraperTimeoutException(errorMessage)
+        case 502:
+          throw new ScraperBrowserException(errorMessage)
+        case 400:
+          throw new ScraperValidationException(errorMessage)
+        default:
+          throw new ScraperContentExtractionException(errorMessage)
+      }
     }
   }
 
@@ -50,18 +67,13 @@ export class ScraperController {
     } catch (error) {
       this.logger.error('Failed to create batch job:', error)
 
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      // Check if it's already a ScraperException
+      if (error instanceof ScraperException) {
+        throw error
+      }
 
-      // Return error response
-      throw new Error(
-        JSON.stringify({
-          error: {
-            code: 400,
-            message: 'Failed to create batch job',
-            details: errorMessage,
-          },
-        })
-      )
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new BatchJobCreationException(errorMessage)
     }
   }
 
@@ -72,61 +84,50 @@ export class ScraperController {
       const status = await this.batchService.getBatchJobStatus(jobId)
 
       if (!status) {
-        throw new Error(
-          JSON.stringify({
-            error: {
-              code: 404,
-              message: 'Batch job not found',
-              details: `Job with ID ${jobId} does not exist or has been cleaned up`,
-            },
-          })
-        )
+        throw new BatchJobNotFoundException(jobId)
       }
 
       return status
     } catch (error) {
       this.logger.error(`Failed to get batch job status for ${jobId}:`, error)
 
-      const errorMessage = error instanceof Error ? error.message : String(error)
-
-      // Check if it's already a formatted error response
-      if (errorMessage.startsWith('{')) {
-        throw new Error(errorMessage)
+      // Check if it's already a ScraperException
+      if (error instanceof ScraperException) {
+        throw error
       }
 
-      // Return error response
-      throw new Error(
-        JSON.stringify({
-          error: {
-            code: 500,
-            message: 'Failed to retrieve batch job status',
-            details: errorMessage,
-          },
-        })
-      )
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new BatchJobStatusException(errorMessage)
     }
   }
 
   private getErrorCode(errorMessage: string): number {
     const lowerError = errorMessage.toLowerCase()
-    
+
     // Check for timeout errors
     if (lowerError.includes('timeout') || lowerError.includes('timed out')) {
       return 504
     }
-    
+
     // Check for browser/engine errors
-    if (lowerError.includes('browser') || lowerError.includes('playwright') ||
-        lowerError.includes('navigation') || lowerError.includes('launch')) {
+    if (
+      lowerError.includes('browser') ||
+      lowerError.includes('playwright') ||
+      lowerError.includes('navigation') ||
+      lowerError.includes('launch')
+    ) {
       return 502
     }
-    
+
     // Check for validation errors
-    if (lowerError.includes('validation') || lowerError.includes('invalid') ||
-        lowerError.includes('malformed')) {
+    if (
+      lowerError.includes('validation') ||
+      lowerError.includes('invalid') ||
+      lowerError.includes('malformed')
+    ) {
       return 400
     }
-    
+
     // Default to content extraction error
     return 422
   }
