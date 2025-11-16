@@ -9,14 +9,21 @@ import appConfig from '@config/app.config';
 import scraperConfig from '@config/scraper.config';
 import type { AppConfig } from '@config/app.config';
 
+/**
+ * Root module of the application
+ * Configures global modules, logging, exception handling, and imports feature modules
+ */
 @Module({
   imports: [
+    // Global configuration module with environment variables
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, scraperConfig],
       envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
       cache: true,
     }),
+    
+    // Pino logger configuration with structured logging
     LoggerModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
@@ -31,6 +38,7 @@ import type { AppConfig } from '@config/app.config';
               service: 'page-scraper-microservice',
               environment: appConfig.nodeEnv,
             },
+            // Pretty printing for development environment
             transport: isDev
               ? {
                   target: 'pino-pretty',
@@ -43,6 +51,7 @@ import type { AppConfig } from '@config/app.config';
                   },
                 }
               : undefined,
+            // Custom serializers for request/response/error formatting
             serializers: {
               req: req => ({
                 id: req.id,
@@ -61,10 +70,12 @@ import type { AppConfig } from '@config/app.config';
                 stack: err.stack,
               }),
             },
+            // Redact sensitive information from logs
             redact: {
               paths: ['req.headers.authorization', 'req.headers["x-api-key"]'],
               censor: '[REDACTED]',
             },
+            // Dynamic log level based on response status
             customLogLevel: (req, res, err) => {
               if (res.statusCode >= 500 || err) {
                 return 'error';
@@ -77,6 +88,7 @@ import type { AppConfig } from '@config/app.config';
               }
               return 'info';
             },
+            // Skip health endpoint logging in production
             autoLogging: {
               ignore: req => {
                 if (appConfig.nodeEnv === 'production') {
@@ -89,11 +101,14 @@ import type { AppConfig } from '@config/app.config';
         };
       },
     }),
+    
+    // Feature modules
     HealthModule,
     ScraperModule,
   ],
   controllers: [],
   providers: [
+    // Global exception filter for consistent error responses
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,

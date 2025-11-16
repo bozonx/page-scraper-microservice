@@ -4,6 +4,7 @@ import TurndownService from 'turndown'
 
 /**
  * Service that provides TurndownService instance for HTML to Markdown conversion
+ * Configured with consistent formatting options for clean markdown output
  */
 @Injectable()
 export class TurndownConverterService {
@@ -11,12 +12,14 @@ export class TurndownConverterService {
 
   constructor(private readonly logger: PinoLogger) {
     this.logger.setContext(TurndownConverterService.name)
+    
+    // Initialize TurndownService with standardized configuration
     this.turndownService = new TurndownService({
-      headingStyle: 'atx',
-      bulletListMarker: '-',
-      codeBlockStyle: 'fenced',
-      emDelimiter: '*',
-      strongDelimiter: '**',
+      headingStyle: 'atx',           // Use ATX-style headings (# ## ###)
+      bulletListMarker: '-',          // Use hyphens for bullet points
+      codeBlockStyle: 'fenced',       // Use fenced code blocks (``` ```)
+      emDelimiter: '*',              // Use asterisks for emphasis
+      strongDelimiter: '**',         // Use double asterisks for strong emphasis
     })
   }
 

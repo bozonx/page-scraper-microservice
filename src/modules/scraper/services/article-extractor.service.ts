@@ -4,15 +4,20 @@ import { IArticleExtractor } from './article-extractor.interface'
 
 /**
  * Implementation of article extractor service using @extractus/article-extractor library
+ * Provides content extraction from URLs and HTML strings
  */
 @Injectable()
 export class ArticleExtractorService implements IArticleExtractor {
+  private extractorModule?: Promise<any>
+
   constructor(private readonly logger: PinoLogger) {
     this.logger.setContext(ArticleExtractorService.name)
   }
 
-  private extractorModule?: Promise<any>
-
+  /**
+   * Lazily loads the article extractor module to improve startup time
+   * @returns Promise resolving to the article extractor module
+   */
   private getModule() {
     if (!this.extractorModule) {
       this.extractorModule = import('@extractus/article-extractor')

@@ -19,6 +19,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     logger.setContext(AllExceptionsFilter.name);
   }
 
+  /**
+   * Catches and handles all exceptions thrown in the application
+   * @param exception The exception that was thrown
+   * @param host The arguments host containing request/response context
+   */
   public catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<FastifyReply>();
@@ -30,6 +35,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const resp = exception.getResponse();
       const message = this.extractMessage(exception);
 
+      // Log server errors differently than client errors
       if (status >= 500) {
         this.logger.error(
           `${request.method} ${request.url} - ${status} - ${message}`,
@@ -62,6 +68,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       : HttpStatus.INTERNAL_SERVER_ERROR;
     const message = this.extractMessage(exception);
 
+    // Log server errors differently than client errors
     if (status >= 500) {
       this.logger.error(
         `${request.method} ${request.url} - ${status} - ${message}`,
@@ -79,6 +86,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     });
   }
 
+  /**
+   * Extracts a meaningful error message from various exception types
+   * @param exception The exception to extract message from
+   * @returns A string error message
+   */
   private extractMessage(exception: unknown): string {
     if (exception instanceof HttpException) {
       const response = exception.getResponse();
@@ -104,6 +116,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return 'Internal server error';
   }
 
+  /**
+   * Extracts validation error details from validation error responses
+   * @param resp The response object from validation
+   * @returns Array of validation error messages or undefined
+   */
   private extractValidationDetails(resp: unknown): string[] | undefined {
     if (typeof resp === 'string') return [resp];
     if (typeof resp === 'object' && resp !== null) {

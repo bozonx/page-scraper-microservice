@@ -4,6 +4,10 @@ import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '@config/scraper.config'
 import { BatchWebhookPayloadDto, BatchWebhookDto } from '../dto/batch.dto'
 
+/**
+ * Service for sending webhook notifications on batch job completion
+ * Implements retry logic with exponential backoff and jitter
+ */
 @Injectable()
 export class WebhookService {
   constructor(
@@ -13,6 +17,11 @@ export class WebhookService {
     this.logger.setContext(WebhookService.name)
   }
 
+  /**
+   * Sends webhook notification with retry logic
+   * @param webhookConfig Webhook configuration including URL and authentication
+   * @param payload Payload to send in the webhook request
+   */
   async sendWebhook(
     webhookConfig: BatchWebhookDto,
     payload: BatchWebhookPayloadDto
@@ -20,6 +29,7 @@ export class WebhookService {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
     try {
+      // Prepare request headers
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'User-Agent': 'Page-Scraper-Webhook/1.0',
@@ -31,21 +41,25 @@ export class WebhookService {
         headers[webhookConfig.authHeaderName] = webhookConfig.authHeaderValue
       }
 
+      // Get retry configuration
       const maxAttempts = webhookConfig.maxAttempts ?? scraperConfig.webhookMaxAttempts
       const backoffMs = webhookConfig.backoffMs ?? scraperConfig.webhookBackoffMs
       const timeoutMs = scraperConfig.webhookTimeoutMs
 
       let lastError: Error | null = null
 
+      // Retry loop with exponential backoff
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
           this.logger.info(
             `Sending webhook attempt ${attempt}/${maxAttempts} to ${webhookConfig.url}`
           )
 
+          // Set up timeout controller
           const controller = new AbortController()
           const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
+          // Send webhook request
           const response = await fetch(webhookConfig.url, {
             method: 'POST',
             headers,
@@ -55,6 +69,7 @@ export class WebhookService {
 
           clearTimeout(timeoutId)
 
+          // Check if request was successful
           if (response.ok) {
             this.logger.info(
               `Webhook sent successfully to ${webhookConfig.url} on attempt ${attempt}`
@@ -86,6 +101,12 @@ export class WebhookService {
     }
   }
 
+  /**
+   * Calculates exponential backoff delay with jitter
+   * @param attempt Current attempt number (1-based)
+   * @param baseDelayMs Base delay in milliseconds
+   * @returns Calculated delay in milliseconds
+   */
   private calculateBackoffDelay(attempt: number, baseDelayMs: number): number {
     // Exponential backoff with jitter
     const exponentialDelay = baseDelayMs * Math.pow(2, attempt - 1)
@@ -93,6 +114,11 @@ export class WebhookService {
     return exponentialDelay + jitter
   }
 
+  /**
+   * Simple sleep utility for delaying execution
+   * @param ms Milliseconds to sleep
+   * @returns Promise that resolves after the specified delay
+   */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
   }

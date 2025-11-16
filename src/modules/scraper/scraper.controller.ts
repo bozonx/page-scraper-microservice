@@ -16,6 +16,10 @@ import {
   BatchJobStatusException,
 } from '@common/exceptions/scraper.exception'
 
+/**
+ * Scraper controller
+ * Handles HTTP requests for web scraping operations and batch job management
+ */
 @Controller()
 export class ScraperController {
   constructor(
@@ -26,6 +30,11 @@ export class ScraperController {
     this.logger.setContext(ScraperController.name)
   }
 
+  /**
+   * Scrapes a single page and extracts its content
+   * @param request Scraper request parameters
+   * @returns Extracted page content
+   */
   @Post('page')
   @HttpCode(HttpStatus.OK)
   async scrapePage(@Body() request: ScraperRequestDto): Promise<ScraperResponseDto> {
@@ -60,6 +69,11 @@ export class ScraperController {
     }
   }
 
+  /**
+   * Creates a new batch scraping job
+   * @param request Batch job parameters
+   * @returns Batch job creation response with job ID
+   */
   @Post('batch')
   async createBatchJob(@Body() request: BatchRequestDto): Promise<BatchResponseDto> {
     try {
@@ -80,6 +94,11 @@ export class ScraperController {
     }
   }
 
+  /**
+   * Retrieves the status of a batch job
+   * @param id Batch job ID
+   * @returns Current status of the batch job
+   */
   @Get('batch/:id')
   async getBatchJobStatus(@Param('id') jobId: string): Promise<BatchJobStatusDto> {
     try {
@@ -104,6 +123,11 @@ export class ScraperController {
     }
   }
 
+  /**
+   * Determines appropriate HTTP status code based on error message content
+   * @param errorMessage The error message to analyze
+   * @returns HTTP status code
+   */
   private getErrorCode(errorMessage: string): number {
     const lowerError = errorMessage.toLowerCase()
 

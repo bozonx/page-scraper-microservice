@@ -1,6 +1,10 @@
 import { Module } from '@nestjs/common';
 import { HealthController } from './health.controller';
 
+/**
+ * Health check module
+ * Provides health monitoring functionality for the application
+ */
 @Module({
   controllers: [HealthController],
 })

@@ -7,6 +7,11 @@ import { FingerprintService } from './services/fingerprint.service'
 import { TurndownConverterService } from './services/turndown.service'
 import { ArticleExtractorService } from './services/article-extractor.service'
 
+/**
+ * Scraper module
+ * Provides web scraping functionality with support for both static (Cheerio) and dynamic (Playwright) content
+ * Includes batch processing, webhooks, and browser fingerprinting capabilities
+ */
 @Module({
   controllers: [ScraperController],
   providers: [
@@ -16,6 +21,7 @@ import { ArticleExtractorService } from './services/article-extractor.service'
     FingerprintService,
     TurndownConverterService,
     {
+      // Provide article extractor as an interface for better testability
       provide: 'IArticleExtractor',
       useClass: ArticleExtractorService
     }

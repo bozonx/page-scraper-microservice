@@ -7,6 +7,10 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from '@/app.module';
 import type { AppConfig } from '@config/app.config';
 
+/**
+ * Bootstrap function that initializes and starts the NestJS application
+ * Configures Fastify adapter, validation, logging, and graceful shutdown
+ */
 async function bootstrap() {
   // Create app with bufferLogs enabled to capture early logs
   const app = await NestFactory.create<NestFastifyApplication>(
@@ -27,6 +31,7 @@ async function bootstrap() {
 
   const appConfig = configService.get<AppConfig>('app')!;
 
+  // Configure global validation pipe with transformation
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
@@ -35,11 +40,13 @@ async function bootstrap() {
   const globalPrefix = `${appConfig.apiBasePath}/v1`;
   app.setGlobalPrefix(globalPrefix);
 
-  // Enable graceful shutdown
+  // Enable graceful shutdown hooks for proper cleanup
   app.enableShutdownHooks();
 
+  // Start the server
   await app.listen(appConfig.port, appConfig.host);
 
+  // Log startup information
   logger.log(
     `🚀 NestJS service is running on: http://${appConfig.host}:${appConfig.port}/${globalPrefix}`,
     'Bootstrap',
@@ -50,4 +57,5 @@ async function bootstrap() {
   // Rely on enableShutdownHooks for graceful shutdown
 }
 
+// Start the application
 void bootstrap();

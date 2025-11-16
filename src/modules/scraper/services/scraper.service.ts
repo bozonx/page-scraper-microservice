@@ -9,6 +9,10 @@ import { FingerprintService } from './fingerprint.service'
 import { TurndownConverterService } from './turndown.service'
 import { IArticleExtractor } from './article-extractor.interface'
 
+/**
+ * Main scraper service
+ * Handles web scraping operations using either Cheerio (static content) or Playwright (dynamic content)
+ */
 @Injectable()
 export class ScraperService {
   private readonly maxRetries = 3
@@ -23,6 +27,11 @@ export class ScraperService {
     this.logger.setContext(ScraperService.name)
   }
 
+  /**
+   * Scrapes a web page and extracts its content
+   * @param request Scraper request parameters
+   * @returns Extracted page content
+   */
   async scrapePage(request: ScraperRequestDto): Promise<ScraperResponseDto> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const mode = request.mode || scraperConfig.defaultMode
@@ -32,6 +41,7 @@ export class ScraperService {
     try {
       let content: any
 
+      // Use appropriate scraping method based on mode
       if (mode === 'playwright') {
         content = await this.scrapeWithPlaywright(request)
       } else {
@@ -65,10 +75,20 @@ export class ScraperService {
     }
   }
 
+  /**
+   * Scrapes using Cheerio for static content
+   * @param request Scraper request parameters
+   * @returns Extracted content
+   */
   private async scrapeWithCheerio(request: ScraperRequestDto): Promise<any> {
     return await this.articleExtractor.extract(request.url)
   }
 
+  /**
+   * Scrapes using Playwright for dynamic content with retry logic
+   * @param request Scraper request parameters
+   * @returns Extracted content
+   */
   private async scrapeWithPlaywright(request: ScraperRequestDto): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
@@ -78,6 +98,7 @@ export class ScraperService {
     // Retry mechanism with fingerprint rotation
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
       try {
+        // Generate new fingerprint for retry attempts
         const currentFingerprint =
           attempt > 0
             ? this.fingerprintService.generateFingerprint(request.fingerprint)
@@ -105,6 +126,12 @@ export class ScraperService {
     }
   }
 
+  /**
+   * Internal Playwright scraping implementation
+   * @param request Scraper request parameters
+   * @param fingerprint Browser fingerprint to use
+   * @returns Extracted content
+   */
   private async scrapeWithPlaywrightInternal(
     request: ScraperRequestDto,
     fingerprint: any
@@ -115,6 +142,7 @@ export class ScraperService {
     let extracted: any | undefined
     let runError: Error | null = null
 
+    // Configure Playwright crawler
     const crawler = new PlaywrightCrawler({
       launchContext: {
         launchOptions: {
@@ -183,10 +211,8 @@ export class ScraperService {
       },
     })
 
-    // Add request to the queue
+    // Add request to the queue and start crawling
     crawler.addRequests([request.url])
-
-    // Start the crawler
     await crawler.run()
 
     if (runError) throw runError

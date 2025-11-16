@@ -4,33 +4,88 @@ import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '@config/scraper.config'
 import { FingerprintConfigDto } from '../dto/scraper-request.dto'
 
+/**
+ * Browser fingerprint interface
+ * Defines the structure of generated browser fingerprints
+ */
 export interface BrowserFingerprint {
+  /**
+   * Browser user agent string
+   */
   userAgent: string
+  
+  /**
+   * Browser viewport dimensions
+   */
   viewport: { width: number; height: number }
+  
+  /**
+   * Browser name (e.g., 'chrome', 'firefox')
+   */
   browserName: string
+  
+  /**
+   * Operating system platform
+   */
   platform: string
+  
+  /**
+   * Browser language setting
+   */
   language: string
+  
+  /**
+   * Browser timezone setting
+   */
   timezone: string
+  
+  /**
+   * WebGL rendering parameters
+   */
   webgl: {
     vendor: string
     renderer: string
     version: string
   }
+  
+  /**
+   * Canvas fingerprint parameters
+   */
   canvas: {
     fingerprint: string
     hacked: boolean
   }
+  
+  /**
+   * Audio context parameters
+   */
   audio: {
     contextId: number
   }
+  
+  /**
+   * List of browser plugins
+   */
   plugins: string[]
+  
+  /**
+   * List of available fonts
+   */
   fonts: string[]
+  
+  /**
+   * Screen parameters
+   */
   screen: {
     width: number
     height: number
     colorDepth: number
     pixelDepth: number
   }
+  
+  /**
+   * Hardware parameters
+   */
   hardware: {
     cores: number
     memory: number
@@ -38,6 +93,10 @@ export interface BrowserFingerprint {
   }
 }
 
+/**
+ * Service for generating realistic browser fingerprints
+ * Helps avoid detection by anti-bot systems
+ */
 @Injectable()
 export class FingerprintService {
   constructor(
@@ -47,6 +106,11 @@ export class FingerprintService {
     this.logger.setContext(FingerprintService.name)
   }
 
+  /**
+   * Generates a realistic browser fingerprint
+   * @param config Optional fingerprint configuration overrides
+   * @returns Generated browser fingerprint
+   */
   generateFingerprint(config?: FingerprintConfigDto): BrowserFingerprint {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
@@ -54,6 +118,7 @@ export class FingerprintService {
     const fingerprintConfig = config || {}
     const generate = fingerprintConfig.generate ?? scraperConfig.fingerprintGenerate
 
+    // Return empty fingerprint if generation is disabled
     if (!generate) {
       return {} as BrowserFingerprint
     }
@@ -93,6 +158,12 @@ export class FingerprintService {
     return fingerprint
   }
 
+  /**
+   * Determines if fingerprint should be rotated based on error content
+   * @param error The error that occurred during scraping
+   * @param config Fingerprint configuration
+   * @returns Whether to rotate fingerprint and retry
+   */
   shouldRotateFingerprint(error: any, config?: FingerprintConfigDto): boolean {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const rotateOnAntiBot = config?.rotateOnAntiBot ?? scraperConfig.fingerprintRotateOnAntiBot
@@ -118,6 +189,12 @@ export class FingerprintService {
     return antiBotPatterns.some((pattern) => errorMessage.includes(pattern))
   }
 
+  /**
+   * Generates a realistic user agent string
+   * @param config User agent configuration ('auto' or custom string)
+   * @param browser Browser type to generate agent for
+   * @returns Generated user agent string
+   */
   private generateUserAgent(config: string, browser: string): string {
     if (config === 'auto') {
       // Generate realistic user agent based on browser
@@ -136,6 +213,10 @@ export class FingerprintService {
     return config
   }
 
+  /**
+   * Generates realistic viewport dimensions
+   * @returns Viewport object with width and height
+   */
   private generateViewport(): { width: number; height: number } {
     const commonResolutions = [
       { width: 1920, height: 1080 },
@@ -148,11 +229,20 @@ export class FingerprintService {
     return commonResolutions[Math.floor(Math.random() * commonResolutions.length)]
   }
 
+  /**
+   * Generates a realistic platform string
+   * @returns Platform string
+   */
   private generatePlatform(): string {
     const platforms = ['Win32', 'Win64', 'MacIntel', 'Linux x86_64']
     return platforms[Math.floor(Math.random() * platforms.length)]
   }
 
+  /**
+   * Generates a realistic language string
+   * @param locale Locale configuration ('source' or specific locale)
+   * @returns Language string
+   */
   private generateLanguage(locale: string): string {
     if (locale === 'source') {
       const languages = ['en-US', 'en-GB', 'en-CA', 'en-AU', 'de-DE', 'fr-FR', 'es-ES', 'it-IT']
@@ -162,6 +252,11 @@ export class FingerprintService {
     return locale
   }
 
+  /**
+   * Generates a realistic timezone string
+   * @param timezone Timezone configuration ('source' or specific timezone)
+   * @returns Timezone string
+   */
   private generateTimezone(timezone: string): string {
     if (timezone === 'source') {
       const commonTimezones = [
@@ -180,6 +275,10 @@ export class FingerprintService {
     return timezone
   }
 
+  /**
+   * Generates WebGL parameters
+   * @returns WebGL parameters object
+   */
   private generateWebGLParams(): BrowserFingerprint['webgl'] {
     return {
       vendor: this.generateRandomVendor(['Google Inc.', 'Mozilla', 'WebKit']),
@@ -191,6 +290,10 @@ export class FingerprintService {
     }
   }
 
+  /**
+   * Generates canvas fingerprint parameters
+   * @returns Canvas parameters object
+   */
   private generateCanvasParams(): BrowserFingerprint['canvas'] {
     return {
       fingerprint: Math.random().toString(36).substring(2, 15),
@@ -198,12 +301,20 @@ export class FingerprintService {
     }
   }
 
+  /**
+   * Generates audio context parameters
+   * @returns Audio parameters object
+   */
   private generateAudioParams(): BrowserFingerprint['audio'] {
     return {
       contextId: Math.floor(Math.random() * 100),
     }
   }
 
+  /**
+   * Generates a list of browser plugins
+   * @returns Array of plugin names
+   */
   private generatePlugins(): string[] {
     const commonPlugins = ['Chrome PDF Plugin', 'Chrome PDF Viewer', 'Native Client']
 
@@ -221,6 +332,10 @@ export class FingerprintService {
     return selectedPlugins
   }
 
+  /**
+   * Generates a list of available fonts
+   * @returns Array of font names
+   */
   private generateFonts(): string[] {
     const commonFonts = [
       'Arial',
@@ -245,6 +360,10 @@ export class FingerprintService {
     return shuffled.slice(0, numFonts)
   }
 
+  /**
+   * Generates screen parameters
+   * @returns Screen parameters object
+   */
   private generateScreenParams(): BrowserFingerprint['screen'] {
     return {
       width: 1920,
@@ -254,6 +373,10 @@ export class FingerprintService {
     }
   }
 
+  /**
+   * Generates hardware parameters
+   * @returns Hardware parameters object
+   */
   private generateHardwareParams(): BrowserFingerprint['hardware'] {
     return {
       cores: 4,
@@ -262,18 +385,37 @@ export class FingerprintService {
     }
   }
 
+  /**
+   * Selects a random vendor from the provided list
+   * @param vendors Array of vendor names
+   * @returns Selected vendor name
+   */
   private generateRandomVendor(vendors: string[]): string {
     return vendors[Math.floor(Math.random() * vendors.length)]
   }
 
+  /**
+   * Selects a random renderer from the provided list
+   * @param renderers Array of renderer names
+   * @returns Selected renderer name
+   */
   private generateRandomRenderer(renderers: string[]): string {
     return renderers[Math.floor(Math.random() * renderers.length)]
   }
 
+  /**
+   * Selects a random version from the provided list
+   * @param versions Array of version strings
+   * @returns Selected version string
+   */
   private generateRandomVersion(versions: string[]): string {
     return versions[Math.floor(Math.random() * versions.length)]
   }
 
+  /**
+   * Generates a random memory amount in GB
+   * @returns Memory amount in GB
+   */
   private generateRandomMemory(): number {
     const memoryOptions = [2, 4, 8, 16, 32] // GB
     return memoryOptions[Math.floor(Math.random() * memoryOptions.length)]
