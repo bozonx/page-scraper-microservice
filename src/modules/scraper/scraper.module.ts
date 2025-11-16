@@ -4,10 +4,29 @@ import { ScraperService } from './services/scraper.service'
 import { BatchService } from './services/batch.service'
 import { WebhookService } from './services/webhook.service'
 import { FingerprintService } from './services/fingerprint.service'
+import { TurndownConverterService } from './services/turndown.service'
+import { ArticleExtractorService } from './services/article-extractor.service'
 
 @Module({
   controllers: [ScraperController],
-  providers: [ScraperService, BatchService, WebhookService, FingerprintService],
-  exports: [ScraperService, BatchService, WebhookService, FingerprintService],
+  providers: [
+    ScraperService,
+    BatchService,
+    WebhookService,
+    FingerprintService,
+    TurndownConverterService,
+    {
+      provide: 'IArticleExtractor',
+      useClass: ArticleExtractorService
+    }
+  ],
+  exports: [
+    ScraperService,
+    BatchService,
+    WebhookService,
+    FingerprintService,
+    TurndownConverterService,
+    'IArticleExtractor'
+  ],
 })
 export class ScraperModule {}

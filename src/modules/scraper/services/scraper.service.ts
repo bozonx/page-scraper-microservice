@@ -1,31 +1,26 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, Inject } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { PlaywrightCrawler } from 'crawlee'
-import TurndownService from 'turndown'
 import { ScraperConfig } from '@config/scraper.config'
 import { ScraperRequestDto } from '../dto/scraper-request.dto'
 import { ScraperResponseDto } from '../dto/scraper-response.dto'
 import { FingerprintService } from './fingerprint.service'
+import { TurndownConverterService } from './turndown.service'
+import { IArticleExtractor } from './article-extractor.interface'
 
 @Injectable()
 export class ScraperService {
-  private readonly turndownService: TurndownService
   private readonly maxRetries = 3
 
   constructor(
     private readonly configService: ConfigService,
     private readonly fingerprintService: FingerprintService,
-    private readonly logger: PinoLogger
+    private readonly logger: PinoLogger,
+    private readonly turndownConverterService: TurndownConverterService,
+    @Inject('IArticleExtractor') private readonly articleExtractor: IArticleExtractor
   ) {
     this.logger.setContext(ScraperService.name)
-    this.turndownService = new TurndownService({
-      headingStyle: 'atx',
-      bulletListMarker: '-',
-      codeBlockStyle: 'fenced',
-      emDelimiter: '*',
-      strongDelimiter: '**',
-    })
   }
 
   async scrapePage(request: ScraperRequestDto): Promise<ScraperResponseDto> {
@@ -43,10 +38,9 @@ export class ScraperService {
         content = await this.scrapeWithCheerio(request)
       }
 
-      // Convert HTML to Markdown (guard against mocked turndown returning undefined)
+      // Convert HTML to Markdown
       const rawHtml = content?.content ?? ''
-      const converted = rawHtml ? (this.turndownService.turndown as any)?.(rawHtml) : ''
-      const body = typeof converted === 'string' ? converted : ''
+      const body = rawHtml ? this.turndownConverterService.convertToMarkdown(rawHtml) : ''
 
       // Calculate read time (200 wpm). Empty body => 0
       const trimmed = body.trim()
@@ -72,8 +66,7 @@ export class ScraperService {
   }
 
   private async scrapeWithCheerio(request: ScraperRequestDto): Promise<any> {
-    const mod = await import('@extractus/article-extractor')
-    return await mod.extract(request.url)
+    return await this.articleExtractor.extract(request.url)
   }
 
   private async scrapeWithPlaywright(request: ScraperRequestDto): Promise<any> {
@@ -117,6 +110,7 @@ export class ScraperService {
     fingerprint: any
   ): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+    const articleExtractor = this.articleExtractor // Store reference to use inside callback
 
     return new Promise(async (resolve, reject) => {
       const crawler = new PlaywrightCrawler({
@@ -175,8 +169,7 @@ export class ScraperService {
             const html = await page.content()
 
             // Extract content using article extractor
-            const mod = await import('@extractus/article-extractor')
-            const content = await mod.extractFromHtml(html)
+            const content = await articleExtractor.extractFromHtml(html)
 
             resolve(content)
           } catch (error) {

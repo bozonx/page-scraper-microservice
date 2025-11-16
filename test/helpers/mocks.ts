@@ -7,6 +7,8 @@
 
 import type { PinoLogger } from 'nestjs-pino';
 import type { ConfigService } from '@nestjs/config';
+import type { IArticleExtractor } from '../../src/modules/scraper/services/article-extractor.interface';
+import type { TurndownConverterService } from '../../src/modules/scraper/services/turndown.service';
 
 /**
  * Creates a mock PinoLogger instance with all required methods
@@ -53,3 +55,45 @@ export const createMockConfigService = (overrides: Record<string, any> = {}) =>
       return overrides[key];
     }),
   }) as unknown as ConfigService;
+
+/**
+ * Creates a mock TurndownConverterService instance
+ *
+ * @param overrides - Object with method implementations to override defaults
+ * @returns Mock TurndownConverterService with customizable methods
+ */
+export const createMockTurndownConverterService = (overrides: Partial<TurndownConverterService> = {}) =>
+  ({
+    convertToMarkdown: jest.fn((html: string) => html ? `# Mocked Markdown\n${html}` : ''),
+    turndownService: {
+      turndown: jest.fn((html: string) => html ? `# Mocked Markdown\n${html}` : ''),
+      addRule: jest.fn(),
+      removeRule: jest.fn(),
+      use: jest.fn(),
+    },
+    ...overrides,
+  }) as unknown as TurndownConverterService;
+
+/**
+ * Creates a mock IArticleExtractor instance
+ *
+ * @param overrides - Object with method implementations to override defaults
+ * @returns Mock IArticleExtractor with customizable methods
+ */
+export const createMockArticleExtractor = (overrides: Partial<IArticleExtractor> = {}) =>
+  ({
+    extract: jest.fn((url: string) => Promise.resolve({
+      title: 'Mock Article Title',
+      content: '<p>Mock article content</p>',
+      description: 'Mock article description',
+      author: 'Mock Author',
+      url,
+    })),
+    extractFromHtml: jest.fn((html: string) => Promise.resolve({
+      title: 'Mock Article Title',
+      content: html || '<p>Mock article content</p>',
+      description: 'Mock article description',
+      author: 'Mock Author',
+    })),
+    ...overrides,
+  }) as unknown as IArticleExtractor;
