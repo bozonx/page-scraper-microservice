@@ -196,18 +196,15 @@ export class FingerprintService {
       'Trebuchet MS',
     ]
 
-    // Randomly select 3-8 fonts
+    // Randomly select 3-8 unique fonts
     const numFonts = Math.floor(Math.random() * 6) + 3
-    const selectedFonts: string[] = []
-
-    for (let i = 0; i < numFonts; i++) {
-      const font = commonFonts[Math.floor(Math.random() * commonFonts.length)]
-      if (!selectedFonts.includes(font)) {
-        selectedFonts.push(font)
-      }
+    const shuffled = [...commonFonts]
+    // Fisher–Yates shuffle for unbiased sampling
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
-
-    return selectedFonts
+    return shuffled.slice(0, numFonts)
   }
 
   private generateScreenParams(): any {

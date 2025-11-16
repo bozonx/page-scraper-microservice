@@ -104,26 +104,31 @@ export class ScraperController {
   private getErrorCode(errorMessage: string): number {
     const lowerError = errorMessage.toLowerCase()
 
-    // Check for timeout errors
-    if (lowerError.includes('timeout') || lowerError.includes('timed out')) {
-      return 504
-    }
-
     // Check for browser/engine errors
     if (
       lowerError.includes('browser') ||
       lowerError.includes('playwright') ||
       lowerError.includes('navigation') ||
-      lowerError.includes('launch')
+      lowerError.includes('launch') ||
+      lowerError.includes('page crashed') ||
+      lowerError.includes('crashed') ||
+      lowerError.includes('crash') ||
+      lowerError.includes('engine')
     ) {
       return 502
+    }
+
+    // Check for timeout errors
+    if (lowerError.includes('timeout') || lowerError.includes('timed out')) {
+      return 504
     }
 
     // Check for validation errors
     if (
       lowerError.includes('validation') ||
       lowerError.includes('invalid') ||
-      lowerError.includes('malformed')
+      lowerError.includes('malformed') ||
+      lowerError.includes('not valid')
     ) {
       return 400
     }

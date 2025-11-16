@@ -41,12 +41,15 @@ export class ScraperService {
         content = await this.scrapeWithCheerio(request)
       }
 
-      // Convert HTML to Markdown
-      const body = content && content.content ? this.turndownService.turndown(content.content) : ''
+      // Convert HTML to Markdown (guard against mocked turndown returning undefined)
+      const rawHtml = content?.content ?? ''
+      const converted = rawHtml ? (this.turndownService.turndown as any)?.(rawHtml) : ''
+      const body = typeof converted === 'string' ? converted : ''
 
-      // Calculate read time (rough estimate: 200 words per minute)
-      const wordCount = body.split(/\s+/).length
-      const readTimeMin = Math.ceil(wordCount / 200)
+      // Calculate read time (200 wpm). Empty body => 0
+      const trimmed = body.trim()
+      const wordCount = trimmed.length ? trimmed.split(/\s+/).length : 0
+      const readTimeMin = wordCount === 0 ? 0 : Math.ceil(wordCount / 200)
 
       return {
         url: request.url,
@@ -66,19 +69,11 @@ export class ScraperService {
     }
   }
 
-        private async scrapeWithCheerio(request: ScraperRequestDto): Promise<any> {
-
-          const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-
-      
-
-          // Dynamic import for ESM module
-
-          const { extract } = await import('@extractus/article-extractor')
-
-          return await extract(request.url)
-
-        }
+  private async scrapeWithCheerio(request: ScraperRequestDto): Promise<any> {
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+    const { extract } = await import('@extractus/article-extractor')
+    return await extract(request.url)
+  }
 
   private async scrapeWithPlaywright(request: ScraperRequestDto): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
