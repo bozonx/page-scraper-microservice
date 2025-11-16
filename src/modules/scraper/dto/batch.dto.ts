@@ -9,12 +9,13 @@ import {
   IsObject,
   IsArray,
   ValidateNested,
+  IsUrl,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 import { ScraperRequestDto, FingerprintConfigDto } from './scraper-request.dto'
 
 export class BatchItemDto {
-  @IsString()
+  @IsUrl()
   public url!: string
 
   @IsOptional()

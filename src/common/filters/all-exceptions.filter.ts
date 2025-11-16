@@ -39,6 +39,19 @@ export class AllExceptionsFilter implements ExceptionFilter {
         this.logger.warn(`${request.method} ${request.url} - ${status} - ${message}`);
       }
 
+      // Normalize validation errors (BadRequest from ValidationPipe) to unified envelope
+      if (status === HttpStatus.BAD_REQUEST) {
+        const details = this.extractValidationDetails(resp);
+        void response.status(status).send({
+          error: {
+            code: status,
+            message: 'Validation failed',
+            details,
+          },
+        });
+        return;
+      }
+
       void response.status(status).send(resp);
       return;
     }
@@ -89,6 +102,20 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     return 'Internal server error';
+  }
+
+  private extractValidationDetails(resp: unknown): string[] | undefined {
+    if (typeof resp === 'string') return [resp];
+    if (typeof resp === 'object' && resp !== null) {
+      const obj = resp as { message?: unknown; error?: unknown };
+      if (Array.isArray(obj.message)) {
+        return obj.message as string[];
+      }
+      if (typeof obj.message === 'string') {
+        return [obj.message as string];
+      }
+    }
+    return undefined;
   }
 
 }

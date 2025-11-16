@@ -9,6 +9,7 @@ import {
   IsObject,
   IsArray,
   ValidateNested,
+  IsUrl,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 
@@ -41,7 +42,7 @@ export class FingerprintConfigDto {
 }
 
 export class ScraperRequestDto {
-  @IsString()
+  @IsUrl()
   public url!: string
 
   @IsOptional()

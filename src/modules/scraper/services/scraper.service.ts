@@ -57,7 +57,7 @@ export class ScraperService {
         url: request.url,
         title: content?.title,
         description: content?.description,
-        date: content?.publishedTime,
+        date: (content as any)?.published ?? (content as any)?.publishedTime,
         author: content?.author,
         body,
         meta: {
@@ -72,9 +72,8 @@ export class ScraperService {
   }
 
   private async scrapeWithCheerio(request: ScraperRequestDto): Promise<any> {
-    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-    const { extract } = await articleExtractorPromise
-    return await extract(request.url)
+    const mod = await import('@extractus/article-extractor')
+    return await mod.extract(request.url)
   }
 
   private async scrapeWithPlaywright(request: ScraperRequestDto): Promise<any> {
@@ -176,8 +175,8 @@ export class ScraperService {
             const html = await page.content()
 
             // Extract content using article extractor
-            const { extract } = await articleExtractorPromise
-            const content = await extract(html)
+            const mod = await import('@extractus/article-extractor')
+            const content = await mod.extractFromHtml(html)
 
             resolve(content)
           } catch (error) {
