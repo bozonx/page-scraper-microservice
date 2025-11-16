@@ -12,15 +12,66 @@
  */
 
 import nock from 'nock';
+let originalFetch: any;
+
+// Lightweight mocks for heavy/IO-bound modules to ensure unit tests never hit real network/engines
+jest.mock('crawlee', () => {
+  class MockPlaywrightCrawler {
+    private handler: (ctx: any) => Promise<void> | void;
+    constructor(options: any) {
+      this.handler = options?.requestHandler ?? (async () => undefined);
+    }
+    addRequests = jest.fn();
+    run = jest.fn(async () => {
+      const page = {
+        addInitScript: jest.fn(async () => undefined),
+        setViewportSize: jest.fn(async () => undefined),
+        route: jest.fn(async (_: any, cb: any) => cb({ abort: () => undefined })),
+        goto: jest.fn(async () => undefined),
+        content: jest.fn(async () => '<html><body><p>Mock Content</p></body></html>'),
+      };
+      await this.handler({ page });
+    });
+  }
+  return { PlaywrightCrawler: MockPlaywrightCrawler };
+});
+
+jest.mock('@extractus/article-extractor', () => ({
+  extract: jest.fn(async (url: string) => ({
+    title: 'Mock Article Title',
+    content: '<p>Mock article content</p>',
+    description: 'Mock article description',
+    author: 'Mock Author',
+    url,
+  })),
+  extractFromHtml: jest.fn(async (html: string) => ({
+    title: 'Mock Article Title',
+    content: html || '<p>Mock article content</p>',
+    description: 'Mock article description',
+    author: 'Mock Author',
+  })),
+}));
 
 // Block all external network calls; allow localhost for tests that use local adapters
 beforeAll(() => {
   nock.disableNetConnect();
   nock.enableNetConnect('127.0.0.1');
+  originalFetch = (global as any).fetch;
+  (global as any).fetch = jest.fn(async () => ({
+    ok: true,
+    status: 200,
+    text: async () => '',
+    json: async () => ({}),
+  }));
 });
 
 afterEach(() => {
   nock.cleanAll();
+  jest.clearAllMocks();
+});
+
+afterAll(() => {
+  (global as any).fetch = originalFetch;
 });
 
 afterAll(() => {
