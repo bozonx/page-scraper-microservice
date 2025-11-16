@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '@config/scraper.config'
 import { ScraperService } from './scraper.service'
 import { WebhookService } from './webhook.service'
@@ -30,14 +31,16 @@ interface BatchJob {
 
 @Injectable()
 export class BatchService {
-  private readonly logger = new Logger(BatchService.name)
   private readonly jobs = new Map<string, BatchJob>()
 
   constructor(
     private readonly configService: ConfigService,
     private readonly scraperService: ScraperService,
-    private readonly webhookService: WebhookService
-  ) {}
+    private readonly webhookService: WebhookService,
+    private readonly logger: PinoLogger
+  ) {
+    this.logger.setContext(BatchService.name)
+  }
 
   async createBatchJob(request: BatchRequestDto): Promise<BatchResponseDto> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
@@ -73,7 +76,7 @@ export class BatchService {
     }
 
     this.jobs.set(jobId, job)
-    this.logger.log(`Created batch job ${jobId} with ${request.items.length} items`)
+    this.logger.info(`Created batch job ${jobId} with ${request.items.length} items`)
 
     // Transition to running status on next tick to keep initial status as 'queued'
     setTimeout(() => {
@@ -265,17 +268,10 @@ export class BatchService {
 
     job.cleanupTimeout = setTimeout(() => {
       this.jobs.delete(jobId)
-      this.logger.log(`Cleaned up job ${jobId}`)
+      this.logger.info(`Cleaned up job ${jobId}`)
     }, cleanupMs)
   }
 
-  private chunkArray<T>(array: T[], size: number): T[][] {
-    const chunks: T[][] = []
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size))
-    }
-    return chunks
-  }
 
   private calculateDelay(minMs: number, maxMs: number, jitter: boolean): number {
     let delay = Math.random() * (maxMs - minMs) + minMs

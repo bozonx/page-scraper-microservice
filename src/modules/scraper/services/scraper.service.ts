@@ -1,5 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { PinoLogger } from 'nestjs-pino'
 import { PlaywrightCrawler } from 'crawlee'
 import TurndownService from 'turndown'
 import { ScraperConfig } from '@config/scraper.config'
@@ -9,14 +10,15 @@ import { FingerprintService } from './fingerprint.service'
 
 @Injectable()
 export class ScraperService {
-  private readonly logger = new Logger(ScraperService.name)
   private readonly turndownService: TurndownService
   private readonly maxRetries = 3
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly fingerprintService: FingerprintService
+    private readonly fingerprintService: FingerprintService,
+    private readonly logger: PinoLogger
   ) {
+    this.logger.setContext(ScraperService.name)
     this.turndownService = new TurndownService({
       headingStyle: 'atx',
       bulletListMarker: '-',
@@ -30,7 +32,7 @@ export class ScraperService {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const mode = request.mode || scraperConfig.defaultMode
 
-    this.logger.log(`Scraping page: ${request.url} using mode: ${mode}`)
+    this.logger.info(`Scraping page: ${request.url} using mode: ${mode}`)
 
     try {
       let content: any
@@ -71,7 +73,7 @@ export class ScraperService {
 
   private async scrapeWithCheerio(request: ScraperRequestDto): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-    const { extract } = await import('@extractus/article-extractor')
+    const { extract } = await articleExtractorPromise
     return await extract(request.url)
   }
 
@@ -174,7 +176,7 @@ export class ScraperService {
             const html = await page.content()
 
             // Extract content using article extractor
-            const { extract } = await import('@extractus/article-extractor')
+            const { extract } = await articleExtractorPromise
             const content = await extract(html)
 
             resolve(content)

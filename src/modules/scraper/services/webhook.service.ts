@@ -1,13 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '@config/scraper.config'
 import { BatchWebhookPayloadDto, BatchWebhookDto } from '../dto/batch.dto'
 
 @Injectable()
 export class WebhookService {
-  private readonly logger = new Logger(WebhookService.name)
-
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger: PinoLogger
+  ) {
+    this.logger.setContext(WebhookService.name)
+  }
 
   async sendWebhook(
     webhookConfig: BatchWebhookDto,
@@ -35,7 +39,7 @@ export class WebhookService {
 
       for (let attempt = 1; attempt <= maxAttempts; attempt++) {
         try {
-          this.logger.log(
+          this.logger.info(
             `Sending webhook attempt ${attempt}/${maxAttempts} to ${webhookConfig.url}`
           )
 
@@ -52,7 +56,7 @@ export class WebhookService {
           clearTimeout(timeoutId)
 
           if (response.ok) {
-            this.logger.log(
+            this.logger.info(
               `Webhook sent successfully to ${webhookConfig.url} on attempt ${attempt}`
             )
             return
@@ -69,7 +73,7 @@ export class WebhookService {
         // Wait before retry (except for last attempt)
         if (attempt < maxAttempts) {
           const delay = this.calculateBackoffDelay(attempt, backoffMs)
-          this.logger.log(`Waiting ${delay}ms before retry...`)
+          this.logger.info(`Waiting ${delay}ms before retry...`)
           await this.sleep(delay)
         }
       }

@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus, Logger } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestjs/common'
+import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service'
 import { BatchService } from './services/batch.service'
 import { ScraperRequestDto } from './dto/scraper-request.dto'
@@ -17,20 +18,21 @@ import {
 
 @Controller()
 export class ScraperController {
-  private readonly logger = new Logger(ScraperController.name)
-
   constructor(
     private readonly scraperService: ScraperService,
-    private readonly batchService: BatchService
-  ) {}
+    private readonly batchService: BatchService,
+    private readonly logger: PinoLogger
+  ) {
+    this.logger.setContext(ScraperController.name)
+  }
 
   @Post('page')
   @HttpCode(HttpStatus.OK)
   async scrapePage(@Body() request: ScraperRequestDto): Promise<ScraperResponseDto> {
     try {
-      this.logger.log(`Received scrape request for URL: ${request.url}`)
+      this.logger.info(`Received scrape request for URL: ${request.url}`)
       const result = await this.scraperService.scrapePage(request)
-      this.logger.log(`Successfully scraped ${request.url}`)
+      this.logger.info(`Successfully scraped ${request.url}`)
       return result
     } catch (error) {
       this.logger.error(`Failed to scrape ${request.url}:`, error)
@@ -61,9 +63,9 @@ export class ScraperController {
   @Post('batch')
   async createBatchJob(@Body() request: BatchRequestDto): Promise<BatchResponseDto> {
     try {
-      this.logger.log(`Received batch request with ${request.items.length} items`)
+      this.logger.info(`Received batch request with ${request.items.length} items`)
       const result = await this.batchService.createBatchJob(request)
-      this.logger.log(`Created batch job: ${result.jobId}`)
+      this.logger.info(`Created batch job: ${result.jobId}`)
       return result
     } catch (error) {
       this.logger.error('Failed to create batch job:', error)
@@ -81,7 +83,7 @@ export class ScraperController {
   @Get('batch/:id')
   async getBatchJobStatus(@Param('id') jobId: string): Promise<BatchJobStatusDto> {
     try {
-      this.logger.log(`Received status request for batch job: ${jobId}`)
+      this.logger.info(`Received status request for batch job: ${jobId}`)
       const status = await this.batchService.getBatchJobStatus(jobId)
 
       if (!status) {
@@ -138,18 +140,4 @@ export class ScraperController {
     return 422
   }
 
-  private getErrorMessage(code: number): string {
-    switch (code) {
-      case 400:
-        return 'Validation error'
-      case 504:
-        return 'Request timeout'
-      case 502:
-        return 'Browser engine error'
-      case 500:
-        return 'Internal server error'
-      default:
-        return 'Failed to extract content from the page'
-    }
-  }
 }

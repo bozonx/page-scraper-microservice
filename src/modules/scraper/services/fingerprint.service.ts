@@ -1,15 +1,53 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '@config/scraper.config'
 import { FingerprintConfigDto } from '../dto/scraper-request.dto'
 
+export interface BrowserFingerprint {
+  userAgent: string
+  viewport: { width: number; height: number }
+  browserName: string
+  platform: string
+  language: string
+  timezone: string
+  webgl: {
+    vendor: string
+    renderer: string
+    version: string
+  }
+  canvas: {
+    fingerprint: string
+    hacked: boolean
+  }
+  audio: {
+    contextId: number
+  }
+  plugins: string[]
+  fonts: string[]
+  screen: {
+    width: number
+    height: number
+    colorDepth: number
+    pixelDepth: number
+  }
+  hardware: {
+    cores: number
+    memory: number
+    deviceMemory: number
+  }
+}
+
 @Injectable()
 export class FingerprintService {
-  private readonly logger = new Logger(FingerprintService.name)
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly logger: PinoLogger
+  ) {
+    this.logger.setContext(FingerprintService.name)
+  }
 
-  constructor(private readonly configService: ConfigService) {}
-
-  generateFingerprint(config?: FingerprintConfigDto): any {
+  generateFingerprint(config?: FingerprintConfigDto): BrowserFingerprint {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
     // Use provided config or defaults
@@ -17,7 +55,7 @@ export class FingerprintService {
     const generate = fingerprintConfig.generate ?? scraperConfig.fingerprintGenerate
 
     if (!generate) {
-      return {}
+      return {} as BrowserFingerprint
     }
 
     const browsers = fingerprintConfig.generator?.browsers || ['chrome']
@@ -33,7 +71,7 @@ export class FingerprintService {
     const viewport = this.generateViewport()
 
     // Generate other browser characteristics
-    const fingerprint = {
+    const fingerprint: BrowserFingerprint = {
       userAgent,
       viewport,
       browserName: selectedBrowser,
@@ -51,7 +89,7 @@ export class FingerprintService {
       hardware: this.generateHardwareParams(),
     }
 
-    this.logger.log(`Generated fingerprint for browser: ${selectedBrowser}`)
+    this.logger.info(`Generated fingerprint for browser: ${selectedBrowser}`)
     return fingerprint
   }
 
@@ -142,7 +180,7 @@ export class FingerprintService {
     return timezone
   }
 
-  private generateWebGLParams(): any {
+  private generateWebGLParams(): BrowserFingerprint['webgl'] {
     return {
       vendor: this.generateRandomVendor(['Google Inc.', 'Mozilla', 'WebKit']),
       renderer: this.generateRandomRenderer([
@@ -153,14 +191,14 @@ export class FingerprintService {
     }
   }
 
-  private generateCanvasParams(): any {
+  private generateCanvasParams(): BrowserFingerprint['canvas'] {
     return {
       fingerprint: Math.random().toString(36).substring(2, 15),
       hacked: false,
     }
   }
 
-  private generateAudioParams(): any {
+  private generateAudioParams(): BrowserFingerprint['audio'] {
     return {
       contextId: Math.floor(Math.random() * 100),
     }
@@ -207,7 +245,7 @@ export class FingerprintService {
     return shuffled.slice(0, numFonts)
   }
 
-  private generateScreenParams(): any {
+  private generateScreenParams(): BrowserFingerprint['screen'] {
     return {
       width: 1920,
       height: 1080,
@@ -216,7 +254,7 @@ export class FingerprintService {
     }
   }
 
-  private generateHardwareParams(): any {
+  private generateHardwareParams(): BrowserFingerprint['hardware'] {
     return {
       cores: 4,
       memory: this.generateRandomMemory(),

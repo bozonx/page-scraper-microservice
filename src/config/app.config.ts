@@ -23,13 +23,13 @@ export class AppConfig {
 }
 
 export default registerAs('app', (): AppConfig => {
-  const config = plainToClass(AppConfig, {
-    port: parseInt(process.env.LISTEN_PORT ?? '80', 10),
-    host: process.env.LISTEN_HOST ?? '0.0.0.0',
-    apiBasePath: (process.env.API_BASE_PATH ?? 'api').replace(/^\/+|\/+$/g, ''),
-    nodeEnv: process.env.NODE_ENV ?? 'production',
-    logLevel: process.env.LOG_LEVEL ?? 'warn',
-  });
+const config = plainToClass(AppConfig, {
+  port: parseInt(process.env.LISTEN_PORT ?? '8080', 10),
+  host: process.env.LISTEN_HOST ?? '0.0.0.0',
+  apiBasePath: (process.env.API_BASE_PATH ?? 'api').replace(/^\/+|\/+$/g, ''),
+  nodeEnv: process.env.NODE_ENV ?? 'production',
+  logLevel: process.env.LOG_LEVEL ?? 'warn',
+});
 
   const errors = validateSync(config, {
     skipMissingProperties: false,

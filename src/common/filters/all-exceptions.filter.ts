@@ -91,19 +91,4 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return 'Internal server error';
   }
 
-  private buildErrorResponse(exception: unknown): string | object | undefined {
-    if (exception instanceof HttpException) {
-      const response = exception.getResponse();
-      if (typeof response === 'object' && response !== null) {
-        return response;
-      }
-      return exception.name;
-    }
-
-    if (exception instanceof Error) {
-      return exception.name;
-    }
-
-    return 'UnknownError';
-  }
 }

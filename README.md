@@ -30,7 +30,7 @@ The Page Scraper Microservice is designed to extract structured content from web
 ### Single Page Scraping
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/page \
+curl -X POST http://localhost:8080/api/v1/page \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://example.com/article",
@@ -41,7 +41,7 @@ curl -X POST http://localhost:3000/api/v1/page \
 ### Batch Processing
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/batch \
+curl -X POST http://localhost:8080/api/v1/batch \
   -H "Content-Type: application/json" \
   -d '{
     "items": [
