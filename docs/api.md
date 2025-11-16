@@ -1,395 +1,184 @@
-# Page Scraper Microservice API Documentation
+# Page Scraper Microservice API
+
+The service exposes a REST API for scraping individual pages, orchestrating batch jobs, and monitoring service health.
 
 ## Base URL
+
 ```
-/{API_BASE_PATH}/v1
+http://{host}:{port}/{API_BASE_PATH}/v1
 ```
 
-## Overview
+Environment defaults: `host=0.0.0.0`, `port=8080`, `API_BASE_PATH=api`.
 
-The Page Scraper Microservice provides REST API endpoints for extracting structured content from web pages. It supports both single page scraping and batch processing with webhook notifications.
+All endpoints accept and return `application/json`. No authentication is enforced by default.
 
-## 1. Scrape Single Page
+---
 
-**POST** `/page`
+## POST /page
 
-Extract content from a single web page.
+Scrape a single URL and return structured content.
 
-### Request Parameters
+### Request body
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| url | string | Yes | - | URL of the page to scrape |
-| mode | string | No | "cheerio" | Scraping mode: "cheerio" (static) or "playwright" (dynamic) |
-| taskTimeoutSecs | number | No | 30 | Timeout in seconds (1-300) |
-| locale | string | No | "en-US" | Locale for content extraction |
-| dateLocale | string | No | "en" | Locale for date parsing |
-| timezoneId | string | No | "UTC" | Timezone for date parsing |
-| blockTrackers | boolean | No | true | Block tracking scripts and analytics |
-| blockHeavyResources | boolean | No | true | Block images, videos, and other heavy resources |
-| fingerprint | object | No | - | Browser fingerprint configuration |
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `url` | string (URL) | ✅ | — | Target page to scrape. |
+| `mode` | string | ❌ | `cheerio` | Scraper engine: `cheerio` for static HTML, `playwright` for full browser rendering. |
+| `taskTimeoutSecs` | number | ❌ | `DEFAULT_TASK_TIMEOUT_SECS` (30) | Per-request timeout in seconds (1–300). |
+| `locale` | string | ❌ | `DEFAULT_LOCALE` (`en-US`) | Preferred locale for extraction heuristics. |
+| `dateLocale` | string | ❌ | `DEFAULT_DATE_LOCALE` (`en`) | Locale used for date parsing. |
+| `timezoneId` | string | ❌ | `DEFAULT_TIMEZONE_ID` (`UTC`) | Target timezone for date normalization. |
+| `blockTrackers` | boolean | ❌ | `PLAYWRIGHT_BLOCK_TRACKERS` (`true`) | When Playwright is used, block analytics/tracking scripts unless explicitly `false`. |
+| `blockHeavyResources` | boolean | ❌ | `PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` (`true`) | When Playwright is used, block media/fonts unless explicitly `false`. |
+| `fingerprint` | object | ❌ | — | Browser fingerprint overrides (Playwright only). |
 
-#### Fingerprint Configuration
+#### Fingerprint object
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| generate | boolean | No | true | Enable fingerprint generation |
-| userAgent | string | No | "auto" | User agent string ("auto" for random selection) |
-| locale | string | No | "source" | Browser locale ("source" for random selection) |
-| timezoneId | string | No | "source" | Browser timezone ("source" for random selection) |
-| rotateOnAntiBot | boolean | No | true | Rotate fingerprint when anti-bot is detected |
-| generator | object | No | - | Fingerprint generator options |
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `generate` | boolean | `FINGERPRINT_GENERATE` (`true`) | Toggle fingerprint generation. |
+| `userAgent` | string | `auto` | Custom or auto-generated user agent. |
+| `locale` | string | `source` | Browser locale; `source` randomizes from a curated list. |
+| `timezoneId` | string | `source` | Browser timezone; `source` randomizes common zones. |
+| `rotateOnAntiBot` | boolean | `FINGERPRINT_ROTATE_ON_ANTI_BOT` (`true`) | Rotate fingerprint when anti-bot behaviour is detected. |
+| `generator` | object | — | Additional generator hints such as allowed `browsers` array. |
 
-#### Fingerprint Generator Options
+### Example
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| browsers | array | No | ["chrome"] | List of browsers to simulate |
+```bash
+curl -X POST "http://localhost:8080/api/v1/page" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "url": "https://example.com/article",
+        "mode": "playwright",
+        "taskTimeoutSecs": 45,
+        "fingerprint": {
+          "rotateOnAntiBot": true,
+          "generator": { "browsers": ["chrome", "firefox"] }
+        }
+      }'
+```
 
-### Request Example
+### Response 200
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `url` | string | Original URL. |
+| `title` | string \| null | Extracted page title. |
+| `description` | string \| null | Extracted description/lead. |
+| `date` | string \| null | ISO-8601 publication timestamp if detected. |
+| `author` | string \| null | Author name if detected. |
+| `body` | string | Markdown representation of the article body. |
+| `meta.lang` | string \| null | IETF language code inferred from the page. |
+| `meta.readTimeMin` | number | Estimated reading time (minutes, 200 wpm heuristic). |
+
+### Error responses
+
+| HTTP code | Error class | Description |
+| --- | --- | --- |
+| 400 | `ScraperValidationException` | Invalid payload or unsupported options. |
+| 422 | `ScraperContentExtractionException` | Page could not be parsed into article content. |
+| 502 | `ScraperBrowserException` | Playwright/browser failure. |
+| 504 | `ScraperTimeoutException` | Page load exceeded timeout. |
+
+All domain errors follow the generic envelope described in [Error handling](#error-handling).
+
+---
+
+## POST /batch
+
+Create an asynchronous batch scraping job.
+
+### Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `items` | `BatchItemDto[]` | ✅ | Items to scrape. Each requires `url` (string URL) and optional `mode`. Max length is `BATCH_MAX_ITEMS` (default 100). |
+| `commonSettings` | object | ❌ | Default scraper settings applied to every item (same shape as `/page` payload minus `url`). Item-level fields override these defaults. |
+| `schedule` | object | ❌ | Controls pacing and concurrency. |
+| `webhook` | object | ❌ | Webhook configuration triggered after completion. |
+
+#### Schedule object
+
+| Field | Type | Default | Constraints | Description |
+| --- | --- | --- | --- | --- |
+| `minDelayMs` | number | `BATCH_MIN_DELAY_MS` (1500) | 500–30000 | Minimum wait between item requests per worker. |
+| `maxDelayMs` | number | `BATCH_MAX_DELAY_MS` (4000) | 1000–60000 | Maximum wait between item requests. |
+| `jitter` | boolean | `true` | — | Adds ±20% random jitter to delays. |
+| `concurrency` | number | `BATCH_CONCURRENCY` (1) | 1–10 | Parallel worker count. |
+
+#### Webhook object
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `url` | string | — | Destination endpoint (required). |
+| `headers` | record<string,string> | `{}` | Additional headers per request. |
+| `authHeaderName` | string | — | Header key for auth token. |
+| `authHeaderValue` | string | — | Header value for auth token. |
+| `backoffMs` | number | `WEBHOOK_BACKOFF_MS` (1000) | Base delay for exponential backoff (100–30000). |
+| `maxAttempts` | number | `WEBHOOK_MAX_ATTEMPTS` (3) | Retry limit (1–10). |
+
+### Response 202
+
+```json
+{ "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a" }
+```
+
+The job begins processing immediately and can be polled via `/batch/{jobId}`.
+
+### Failure modes
+
+- `400 Bad Request` if validation fails (e.g., too many items, invalid URLs).
+- `500 Internal Server Error` for unexpected failures creating the job (wrapped in `BatchJobCreationException`).
+
+---
+
+## GET /batch/{jobId}
+
+Retrieve current status for a batch job.
+
+### Response 200
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `jobId` | string | Job identifier. |
+| `status` | string | `queued`, `running`, `succeeded`, `failed`, or `partial`. |
+| `createdAt` | string | ISO timestamp when the job was enqueued. |
+| `completedAt` | string \| null | ISO timestamp when processing finished (null while running). |
+| `total` | number | Total items submitted. |
+| `processed` | number | Items processed so far. |
+| `succeeded` | number | Successful items. |
+| `failed` | number | Failed items. |
+
+### Errors
+
+- `404 Not Found` with `BatchJobNotFoundException` when the ID is unknown or data expired (jobs are purged after `BATCH_DATA_LIFETIME_MINS`).
+- Other errors are wrapped in `BatchJobStatusException` (HTTP 500).
+
+---
+
+## Webhook payload
+
+When a webhook is configured, the service POSTs the following JSON after the job stabilizes (success, failure, or partial):
 
 ```json
 {
-  "url": "https://example.com/article",
-  "mode": "playwright",
-  "taskTimeoutSecs": 30,
-  "locale": "en-US",
-  "dateLocale": "en",
-  "timezoneId": "UTC",
-  "blockTrackers": true,
-  "blockHeavyResources": true,
-  "fingerprint": {
-    "generate": true,
-    "userAgent": "auto",
-    "locale": "source",
-    "timezoneId": "source",
-    "rotateOnAntiBot": true,
-    "generator": {
-      "browsers": ["chrome"]
-    }
-  }
-}
-```
-
-### Response Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| url | string | Original URL |
-| title | string | Extracted page title |
-| description | string | Extracted page description |
-| date | string | Publication date (ISO 8601) |
-| author | string | Extracted author name |
-| body | string | Content converted to Markdown |
-| meta | object | Additional metadata |
-
-#### Metadata Object
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| lang | string | Page language code |
-| readTimeMin | number | Estimated reading time in minutes |
-
-### Response Example
-
-```json
-{
-  "url": "https://example.com/article",
-  "title": "Article title",
-  "description": "Optional description",
-  "date": "2024-11-12T10:00:00.000Z",
-  "author": "John Doe",
-  "body": "# Article title\n\nMarkdown content ...",
-  "meta": {
-    "lang": "en",
-    "readTimeMin": 5
-  }
-}
-```
-
-## 2. Create Batch Job
-
-**POST** `/batch`
-
-Process multiple URLs with delays and webhook notifications.
-
-### Request Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| items | array | Yes | Array of URLs to process |
-| commonSettings | object | No | Default settings for all items |
-| schedule | object | No | Batch processing schedule |
-| webhook | object | No | Webhook configuration |
-
-#### Batch Items
-
-Each item in the `items` array can have:
-
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| url | string | Yes | - | URL of the page to scrape |
-| mode | string | No | "cheerio" | Scraping mode: "cheerio" or "playwright" |
-
-#### Common Settings
-
-Same parameters as single page scraping, applied to all items unless overridden.
-
-#### Schedule Configuration
-
-| Parameter | Type | Required | Default | Range | Description |
-|-----------|------|----------|---------|-------|-------------|
-| minDelayMs | number | No | 1500 | 500-30000 | Minimum delay between requests |
-| maxDelayMs | number | No | 4000 | 1000-60000 | Maximum delay between requests |
-| jitter | boolean | No | true | - | Add random jitter to delays |
-| concurrency | number | No | 1 | 1-10 | Number of concurrent requests |
-
-#### Webhook Configuration
-
-| Parameter | Type | Required | Default | Range | Description |
-|-----------|------|----------|---------|-------|-------------|
-| url | string | Yes | - | - | Webhook URL |
-| headers | object | No | - | - | Additional headers |
-| authHeaderName | string | No | - | - | Authentication header name |
-| authHeaderValue | string | No | - | - | Authentication header value |
-| backoffMs | number | No | 1000 | 100-30000 | Backoff delay between retries |
-| maxAttempts | number | No | 3 | 1-10 | Maximum retry attempts |
-
-### Request Example
-
-```json
-{
-  "items": [
-    { "url": "https://site1.com/a1", "mode": "playwright" },
-    { "url": "https://site2.com/a2" }
-  ],
-  "commonSettings": {
-    "mode": "cheerio",
-    "taskTimeoutSecs": 30,
-    "locale": "en-US",
-    "timezoneId": "UTC",
-    "dateLocale": "en",
-    "blockTrackers": true,
-    "blockHeavyResources": true,
-    "fingerprint": {
-      "generate": true,
-      "userAgent": "auto",
-      "locale": "source",
-      "timezoneId": "source",
-      "rotateOnAntiBot": true,
-      "generator": {
-        "browsers": ["chrome"]
-      }
-    }
-  },
-  "schedule": {
-    "minDelayMs": 1500,
-    "maxDelayMs": 4000,
-    "jitter": true,
-    "concurrency": 1
-  },
-  "webhook": {
-    "url": "https://example.com/webhook",
-    "headers": { "X-Source": "page-scraper" },
-    "authHeaderName": "Authorization",
-    "authHeaderValue": "Bearer <token>",
-    "backoffMs": 1000,
-    "maxAttempts": 3
-  }
-}
-```
-
-### Response Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| jobId | string | Unique identifier for the batch job |
-
-### Response Example
-
-```json
-{ "jobId": "b-20241112-abcdef" }
-```
-
-## 3. Get Batch Job Status
-
-**GET** `/batch/:id`
-
-Check the status of a batch job.
-
-### Response Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| jobId | string | Unique identifier for the batch job |
-| status | string | Current job status |
-| createdAt | string | Job creation timestamp (ISO 8601) |
-| completedAt | string | Job completion timestamp (ISO 8601) |
-| total | number | Total number of items |
-| processed | number | Number of processed items |
-| succeeded | number | Number of successfully processed items |
-| failed | number | Number of failed items |
-
-### Job Statuses
-
-| Status | Description |
-|--------|-------------|
-| `queued` | Job is in queue and waiting to be processed |
-| `running` | Job is currently being processed |
-| `succeeded` | Job completed successfully (all items succeeded) |
-| `failed` | Job failed completely (all items failed) |
-| `partial` | Job completed with some failures (mixed success/failure) |
-
-### Response Example
-
-```json
-{
-  "jobId": "b-20241112-abcdef",
-  "status": "running",
-  "createdAt": "2024-11-12T10:00:00.000Z",
-  "completedAt": "2024-11-12T10:15:00.000Z",
-  "total": 10,
-  "processed": 4,
-  "succeeded": 3,
-  "failed": 1
-}
-```
-
-## 4. Health Check
-
-**GET** `/health`
-
-Check the health status of the microservice.
-
-### Response Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| status | string | Health status ("ok" or "error") |
-| timestamp | string | Current timestamp (ISO 8601) |
-| uptime | number | Service uptime in seconds |
-
-### Response Example
-
-```json
-{
-  "status": "ok",
-  "timestamp": "2024-11-12T10:00:00.000Z",
-  "uptime": 3600
-}
-```
-
-## Error Handling
-
-The service returns appropriate HTTP status codes and detailed error messages:
-
-### Error Response Format
-
-```json
-{
-  "error": {
-    "code": 422,
-    "message": "Failed to extract content from the page",
-    "details": "Page structure is not recognizable as an article"
-  }
-}
-```
-
-### Error Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| code | number | HTTP status code |
-| message | string | Error message |
-| details | string | Additional error details (optional) |
-
-### Common Error Codes
-
-| Code | Message | Description |
-|------|---------|-------------|
-| `400` | Bad Request | Validation errors or malformed request |
-| `404` | Not Found | Batch job not found |
-| `422` | Unprocessable Entity | Content extraction failed |
-| `500` | Internal Server Error | Unexpected server error |
-| `502` | Bad Gateway | Browser engine error |
-| `504` | Gateway Timeout | Request timeout |
-
-### Validation Errors
-
-Validation errors include details about which fields failed validation:
-
-```json
-{
-  "error": {
-    "code": 400,
-    "message": "Validation failed",
-    "details": [
-      "url must be a valid URL",
-      "mode must be either 'cheerio' or 'playwright'",
-      "taskTimeoutSecs must not be greater than 300"
-    ]
-  }
-}
-```
-
-## Webhook Payload
-
-When a batch job completes, a webhook is sent with the following payload:
-
-### Webhook Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| jobId | string | Unique identifier for the batch job |
-| status | string | Final job status |
-| createdAt | string | Job creation timestamp (ISO 8601) |
-| completedAt | string | Job completion timestamp (ISO 8601) |
-| total | number | Total number of items |
-| processed | number | Number of processed items |
-| succeeded | number | Number of successfully processed items |
-| failed | number | Number of failed items |
-| results | array | Array of item results |
-
-### Item Result Parameters
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| url | string | Original URL |
-| status | string | Item status ("succeeded" or "failed") |
-| data | object | Extracted data (for successful items) |
-| error | object | Error details (for failed items) |
-
-### Webhook Example
-
-```json
-{
-  "jobId": "b-20241112-abcdef",
+  "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a",
   "status": "partial",
-  "createdAt": "2024-11-12T10:00:00.000Z",
-  "completedAt": "2024-11-12T10:15:00.000Z",
-  "total": 10,
-  "processed": 10,
-  "succeeded": 9,
+  "createdAt": "2024-05-30T10:00:00.000Z",
+  "completedAt": "2024-05-30T10:08:12.000Z",
+  "total": 5,
+  "processed": 5,
+  "succeeded": 4,
   "failed": 1,
   "results": [
     {
-      "url": "https://site1.com/a1",
+      "url": "https://site-a.example/article",
       "status": "succeeded",
-      "data": {
-        "url": "https://site1.com/a1",
-        "title": "Article title",
-        "description": "Optional description",
-        "date": "2024-11-12T10:00:00.000Z",
-        "author": "John Doe",
-        "body": "# Article title\n\nMarkdown content ...",
-        "meta": {
-          "lang": "en",
-          "readTimeMin": 5
-        }
-      }
+      "data": { "url": "...", "title": "...", "body": "...", "meta": { "lang": "en", "readTimeMin": 6 } }
     },
     {
-      "url": "https://site2.com/a2",
+      "url": "https://site-b.example/article",
       "status": "failed",
       "error": {
         "code": 422,
@@ -401,29 +190,62 @@ When a batch job completes, a webhook is sent with the following payload:
 }
 ```
 
-## Rate Limiting and Throttling
+Webhook delivery obeys exponential backoff (`backoffMs * 2^(attempt-1)`) with +10% jitter until `maxAttempts` is reached. Timeouts are governed by `WEBHOOK_TIMEOUT_MS`.
 
-The microservice implements several mechanisms to prevent overwhelming target servers:
+---
 
-1. **Batch Delays**: Configurable minimum and maximum delays between requests
-2. **Concurrency Limits**: Maximum number of concurrent requests
-3. **Jitter**: Random variation in delays to prevent pattern detection
-4. **Resource Blocking**: Optional blocking of heavy resources to reduce server load
+## GET /health
 
-## Data Lifetime
+Simple readiness probe. Always returns HTTP 200 with:
 
-Batch job data is retained in memory for a configurable period (default: 60 minutes) and then automatically cleaned up. Job data includes:
+```json
+{ "status": "ok" }
+```
 
-- Job status and metadata
-- Processing results
-- Error details
+The endpoint is reachable at `/{API_BASE_PATH}/v1/health` by default.
 
-After cleanup, attempts to retrieve job status will return a 404 error.
+---
 
-## Security Considerations
+## Error handling
 
-1. **Input Validation**: All inputs are validated using class-validator decorators
-2. **Timeout Protection**: Configurable timeouts prevent resource exhaustion
-3. **Resource Blocking**: Optional blocking of potentially malicious content
-4. **No Data Persistence**: All data is temporary and cleaned up automatically
-5. **Webhook Authentication**: Support for authentication headers in webhook requests
+All errors share a consistent JSON envelope:
+
+```json
+{
+  "error": {
+    "code": 422,
+    "message": "Failed to extract content from the page",
+    "details": "Page structure is not recognizable as an article"
+  }
+}
+```
+
+- `code` mirrors the HTTP status.
+- `message` summarises the failure.
+- `details` may be a string or array (validation errors produce an array of constraint messages).
+
+Validation failures emitted by Nest’s `ValidationPipe` are normalized to:
+
+```json
+{
+  "error": {
+    "code": 400,
+    "message": "Validation failed",
+    "details": [
+      "url must be a valid URL",
+      "mode must be one of the following values: cheerio, playwright"
+    ]
+  }
+}
+```
+
+---
+
+## Operational behaviour
+
+- Batch state is kept in-memory and purged after `BATCH_DATA_LIFETIME_MINS`. Fetching status past this window returns 404.
+- Playwright scraping respects `blockTrackers` and `blockHeavyResources` flags to reduce detection and resource usage.
+- Browser fingerprints rotate automatically when anti-bot signals are identified (unless disabled).
+- Additional scraper-source metadata can be provided via the `CONFIG_PATH` environment variable pointing to a YAML file; it is loaded under the `sources` configuration namespace.
+
+For implementation details and end-to-end examples see the unit and e2e tests in `test/`.
