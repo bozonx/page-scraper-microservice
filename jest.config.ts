@@ -56,7 +56,7 @@ const config: Config = {
       testEnvironment: 'node',
       moduleFileExtensions,
       rootDir: '.',
-      testMatch: ['<rootDir>/test/e2e/health.e2e-spec.ts'],
+      testMatch: ['<rootDir>/test/e2e/**/*.e2e-spec.ts'],
       setupFilesAfterEnv: ['<rootDir>/test/setup/e2e.setup.ts'],
       collectCoverageFrom: ['src/**/*.(t|j)s'],
       coverageDirectory: 'coverage',

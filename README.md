@@ -162,8 +162,13 @@ pnpm run test:cov      # Coverage report
 ### Test structure
 
 - `test/unit/` covers services (fingerprint, webhook, article extractor, etc.).
-- `test/e2e/` runs HTTP-level scenarios using Fastify adapter.
+- `test/e2e/` runs HTTP-level scenarios using Fastify adapter:
+  - `health.e2e-spec.ts` - Basic health check endpoint
+  - `scraper-mk-ru.e2e-spec.ts` - Real article scraping with mocked HTTP (uses local HTML file)
 - Setup scripts live in `test/setup/` and are auto-loaded by Jest config.
+
+**E2E Testing Approach:**
+The scraper e2e tests use minimal mocking - only HTTP requests are intercepted using `jest.mock()` to return local HTML files. All other processing (Cheerio parsing, Turndown conversion, read time calculation) runs without mocks, ensuring realistic end-to-end validation.
 
 ## Operational notes
 
