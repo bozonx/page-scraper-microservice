@@ -1,5 +1,3 @@
-import { Injectable } from '@nestjs/common'
-
 /**
  * Interface for article extraction service
  * Provides abstraction for article-extractor library

@@ -11,6 +11,8 @@ import {
   BatchJobStatus,
   BatchItemResultDto,
   BatchWebhookPayloadDto,
+  BatchItemDto,
+  BatchCommonSettingsDto,
 } from '../dto/batch.dto'
 import { ScraperRequestDto } from '../dto/scraper-request.dto'
 import { ScraperResponseDto } from '../dto/scraper-response.dto'
@@ -32,7 +34,6 @@ interface BatchJob {
 @Injectable()
 export class BatchService {
   private readonly jobs = new Map<string, BatchJob>()
-  private uuidv4: () => string = () => Math.random().toString(36).substring(2, 15)
 
   constructor(
     private readonly configService: ConfigService,
@@ -41,18 +42,6 @@ export class BatchService {
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(BatchService.name)
-    
-    // Initialize uuidv4 using dynamic import to work with CommonJS/ESM compatibility
-    this.initializeUuid()
-  }
-
-  private async initializeUuid(): Promise<void> {
-    try {
-      const { v4 } = await import('uuid')
-      this.uuidv4 = v4
-    } catch (error) {
-      this.logger.warn('Failed to import uuid, using fallback implementation', error)
-    }
   }
 
   async createBatchJob(request: BatchRequestDto): Promise<BatchResponseDto> {
@@ -63,12 +52,8 @@ export class BatchService {
       throw new Error(`Batch size exceeds maximum of ${scraperConfig.batchMaxItems} items`)
     }
 
-    // Ensure uuidv4 is initialized
-    if (this.uuidv4.name === 'fallback') {
-      await this.initializeUuid()
-    }
-
-    const jobId = this.uuidv4()
+    const { v4: uuidv4 } = await import('uuid')
+    const jobId = uuidv4()
 
     const job: BatchJob = {
       id: jobId,
@@ -173,17 +158,15 @@ export class BatchService {
     this.scheduleCleanup(jobId)
   }
 
-  private async processBatchItem(jobId: string, item: any): Promise<void> {
+  private async processBatchItem(jobId: string, item: BatchItemDto): Promise<void> {
     const job = this.jobs.get(jobId)
     if (!job) return
 
     try {
-      // Merge item-specific settings with common settings
-      const scraperRequest: ScraperRequestDto = {
-        ...job.request.commonSettings,
-        ...item,
-        url: item.url, // Ensure URL is from item
-      }
+      const scraperRequest: ScraperRequestDto = this.buildScraperRequest(
+        job.request.commonSettings,
+        item
+      )
 
       const result = await this.scraperService.scrapePage(scraperRequest)
 
@@ -294,5 +277,16 @@ export class BatchService {
 
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))
+  }
+
+  private buildScraperRequest(
+    common: BatchCommonSettingsDto | undefined,
+    item: BatchItemDto
+  ): ScraperRequestDto {
+    return {
+      ...(common || {}),
+      ...item,
+      url: item.url,
+    } as ScraperRequestDto
   }
 }

@@ -112,86 +112,87 @@ export class ScraperService {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const articleExtractor = this.articleExtractor // Store reference to use inside callback
 
-    return new Promise(async (resolve, reject) => {
-      const crawler = new PlaywrightCrawler({
-        launchContext: {
-          launchOptions: {
-            timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
-            headless: scraperConfig.playwrightHeadless,
-          },
+    let extracted: any | undefined
+    let runError: Error | null = null
+
+    const crawler = new PlaywrightCrawler({
+      launchContext: {
+        launchOptions: {
+          timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
+          headless: scraperConfig.playwrightHeadless,
         },
-        requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
-        navigationTimeoutSecs: scraperConfig.playwrightNavigationTimeoutSecs,
+      },
+      requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+      navigationTimeoutSecs: scraperConfig.playwrightNavigationTimeoutSecs,
 
-        async requestHandler({ page }) {
-          try {
-            // Apply fingerprint to page context
-            if (fingerprint.userAgent) {
-              await page.addInitScript((ua) => {
-                Object.defineProperty(navigator, 'userAgent', {
-                  value: ua,
-                  writable: false,
-                })
-              }, fingerprint.userAgent)
-            }
-
-            if (fingerprint.viewport) {
-              await page.setViewportSize({
-                width: fingerprint.viewport.width,
-                height: fingerprint.viewport.height,
+      async requestHandler({ page }) {
+        try {
+          // Apply fingerprint to page context
+          if (fingerprint.userAgent) {
+            await page.addInitScript((ua) => {
+              Object.defineProperty(navigator, 'userAgent', {
+                value: ua,
+                writable: false,
               })
-            }
-
-            // Block trackers and heavy resources if requested
-            if (request.blockTrackers !== false && scraperConfig.playwrightBlockTrackers) {
-              await page.route(
-                '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
-                (route) => route.abort()
-              )
-            }
-
-            if (
-              request.blockHeavyResources !== false &&
-              scraperConfig.playwrightBlockHeavyResources
-            ) {
-              await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
-                route.abort()
-              )
-            }
-
-            // Navigate to the page
-            await page.goto(request.url, {
-              waitUntil: 'networkidle',
-              timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
-            })
-
-            // Get the HTML content
-            const html = await page.content()
-
-            // Extract content using article extractor
-            const content = await articleExtractor.extractFromHtml(html)
-
-            resolve(content)
-          } catch (error) {
-            reject(error)
+            }, fingerprint.userAgent)
           }
-        },
 
-        failedRequestHandler({ request, error }) {
-          const errorMessage = error instanceof Error ? error.message : String(error)
-          reject(new Error(`Failed to load ${request.url}: ${errorMessage}`))
-        },
-      })
+          if (fingerprint.viewport) {
+            await page.setViewportSize({
+              width: fingerprint.viewport.width,
+              height: fingerprint.viewport.height,
+            })
+          }
 
-      // Add request to the queue
-      crawler.addRequests([request.url])
+          // Block trackers and heavy resources if requested
+          if (request.blockTrackers !== false && scraperConfig.playwrightBlockTrackers) {
+            await page.route(
+              '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
+              (route) => route.abort()
+            )
+          }
 
-      // Start the crawler
-      try {
-        await crawler.run()
-      } catch (error) {
-        reject(error)
-      }
+          if (
+            request.blockHeavyResources !== false &&
+            scraperConfig.playwrightBlockHeavyResources
+          ) {
+            await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
+              route.abort()
+            )
+          }
+
+          // Navigate to the page
+          await page.goto(request.url, {
+            waitUntil: 'networkidle',
+            timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
+          })
+
+          // Get the HTML content
+          const html = await page.content()
+
+          // Extract content using article extractor
+          extracted = await articleExtractor.extractFromHtml(html)
+        } catch (error) {
+          runError = error instanceof Error ? error : new Error(String(error))
+        }
+      },
+
+      failedRequestHandler({ request: req, error }) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        runError = new Error(`Failed to load ${req.url}: ${errorMessage}`)
+      },
     })
+
+    // Add request to the queue
+    crawler.addRequests([request.url])
+
+    // Start the crawler
+    await crawler.run()
+
+    if (runError) throw runError
+    if (typeof extracted === 'undefined') {
+      throw new Error('Content extraction resulted in empty response')
+    }
+    return extracted
   }
 }
