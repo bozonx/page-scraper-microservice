@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, RequestMethod } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from '@/app.module';
@@ -33,7 +33,9 @@ async function bootstrap() {
 
   // Configure global API prefix from configuration
   const globalPrefix = `${appConfig.apiBasePath}/v1`;
-  app.setGlobalPrefix(globalPrefix);
+  app.setGlobalPrefix(globalPrefix, {
+    exclude: [{ path: 'health', method: RequestMethod.GET }],
+  });
 
   // Enable graceful shutdown
   app.enableShutdownHooks();

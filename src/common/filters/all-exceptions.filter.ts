@@ -24,18 +24,31 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<FastifyReply>();
     const request = ctx.getRequest<FastifyRequest>();
 
-    // Preserve statusCode from non-HttpException errors (e.g., Fastify plugins)
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : typeof (exception as { statusCode?: unknown })?.statusCode === 'number'
-          ? ((exception as { statusCode: number }).statusCode as number)
-          : HttpStatus.INTERNAL_SERVER_ERROR;
+    // If it's an HttpException, return its response as-is to keep API contract
+    if (exception instanceof HttpException) {
+      const status = exception.getStatus();
+      const resp = exception.getResponse();
+      const message = this.extractMessage(exception);
 
+      if (status >= 500) {
+        this.logger.error(
+          `${request.method} ${request.url} - ${status} - ${message}`,
+          exception instanceof Error ? exception.stack : undefined,
+        );
+      } else {
+        this.logger.warn(`${request.method} ${request.url} - ${status} - ${message}`);
+      }
+
+      void response.status(status).send(resp);
+      return;
+    }
+
+    // Non-HttpException: build generic error wrapper
+    const status = typeof (exception as { statusCode?: unknown })?.statusCode === 'number'
+      ? ((exception as { statusCode: number }).statusCode as number)
+      : HttpStatus.INTERNAL_SERVER_ERROR;
     const message = this.extractMessage(exception);
-    const errorResponse = this.buildErrorResponse(exception);
 
-    // Log error for internal tracking
     if (status >= 500) {
       this.logger.error(
         `${request.method} ${request.url} - ${status} - ${message}`,
@@ -46,12 +59,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     void response.status(status).send({
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      method: request.method,
-      message,
-      error: errorResponse,
+      error: {
+        code: status,
+        message,
+      },
     });
   }
 

@@ -118,9 +118,35 @@ export class BatchService {
 
     // Status transition is handled asynchronously in createBatchJob
 
-    // Fire off all items immediately; let mocks control actual concurrency behavior in tests
-    const allPromises = job.request.items.map((item: any) => this.processBatchItem(jobId, item))
-    await Promise.allSettled(allPromises)
+    // Apply scheduling: concurrency, delays and jitter
+    const concurrency = schedule.concurrency ?? scraperConfig.batchConcurrency
+    const minDelayMs = schedule.minDelayMs ?? scraperConfig.batchMinDelayMs
+    const maxDelayMs = schedule.maxDelayMs ?? scraperConfig.batchMaxDelayMs
+    const jitter = schedule.jitter ?? true
+
+    const items = [...job.request.items]
+
+    let index = 0
+    const worker = async () => {
+      // Each worker processes multiple items in sequence with delays between items
+      while (true) {
+        const current = index++
+        if (current >= items.length) break
+
+        const item = items[current]
+
+        // Add delay between requests (except the very first processed by this worker)
+        if (current >= concurrency) {
+          const delay = this.calculateDelay(minDelayMs, maxDelayMs, jitter)
+          await this.sleep(delay)
+        }
+
+        await this.processBatchItem(jobId, item)
+      }
+    }
+
+    const workers = Array.from({ length: Math.max(1, concurrency) }, () => worker())
+    await Promise.allSettled(workers)
 
     // Determine final status
     const finalStatus = this.determineFinalStatus(job)

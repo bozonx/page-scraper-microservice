@@ -119,18 +119,10 @@ export class ScraperService {
 
     return new Promise(async (resolve, reject) => {
       const crawler = new PlaywrightCrawler({
-        headless: scraperConfig.playwrightHeadless,
         launchContext: {
           launchOptions: {
             timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
-            // Apply fingerprint to browser launch
-            ...(fingerprint.userAgent && { userAgent: fingerprint.userAgent }),
-            ...(fingerprint.viewport && {
-              defaultViewport: {
-                width: fingerprint.viewport.width,
-                height: fingerprint.viewport.height,
-              },
-            }),
+            headless: scraperConfig.playwrightHeadless,
           },
         },
         requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
@@ -140,12 +132,12 @@ export class ScraperService {
           try {
             // Apply fingerprint to page context
             if (fingerprint.userAgent) {
-              await page.addInitScript(() => {
+              await page.addInitScript((ua) => {
                 Object.defineProperty(navigator, 'userAgent', {
-                  value: fingerprint.userAgent,
+                  value: ua,
                   writable: false,
                 })
-              })
+              }, fingerprint.userAgent)
             }
 
             if (fingerprint.viewport) {

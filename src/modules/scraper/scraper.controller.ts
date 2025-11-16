@@ -25,6 +25,7 @@ export class ScraperController {
   ) {}
 
   @Post('page')
+  @HttpCode(HttpStatus.OK)
   async scrapePage(@Body() request: ScraperRequestDto): Promise<ScraperResponseDto> {
     try {
       this.logger.log(`Received scrape request for URL: ${request.url}`)
