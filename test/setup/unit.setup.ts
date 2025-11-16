@@ -36,21 +36,8 @@ jest.mock('crawlee', () => {
   return { PlaywrightCrawler: MockPlaywrightCrawler };
 });
 
-jest.mock('@extractus/article-extractor', () => ({
-  extract: jest.fn(async (url: string) => ({
-    title: 'Mock Article Title',
-    content: '<p>Mock article content</p>',
-    description: 'Mock article description',
-    author: 'Mock Author',
-    url,
-  })),
-  extractFromHtml: jest.fn(async (html: string) => ({
-    title: 'Mock Article Title',
-    content: html || '<p>Mock article content</p>',
-    description: 'Mock article description',
-    author: 'Mock Author',
-  })),
-}));
+// Note: @extractus/article-extractor is mocked at the test level
+// to handle dynamic imports properly
 
 // Block all external network calls; allow localhost for tests that use local adapters
 beforeAll(() => {
