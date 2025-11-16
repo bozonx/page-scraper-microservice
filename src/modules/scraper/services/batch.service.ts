@@ -32,6 +32,7 @@ interface BatchJob {
 @Injectable()
 export class BatchService {
   private readonly jobs = new Map<string, BatchJob>()
+  private uuidv4: () => string = () => Math.random().toString(36).substring(2, 15)
 
   constructor(
     private readonly configService: ConfigService,
@@ -40,6 +41,18 @@ export class BatchService {
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(BatchService.name)
+    
+    // Initialize uuidv4 using dynamic import to work with CommonJS/ESM compatibility
+    this.initializeUuid()
+  }
+
+  private async initializeUuid(): Promise<void> {
+    try {
+      const { v4 } = await import('uuid')
+      this.uuidv4 = v4
+    } catch (error) {
+      this.logger.warn('Failed to import uuid, using fallback implementation', error)
+    }
   }
 
   async createBatchJob(request: BatchRequestDto): Promise<BatchResponseDto> {
@@ -50,18 +63,12 @@ export class BatchService {
       throw new Error(`Batch size exceeds maximum of ${scraperConfig.batchMaxItems} items`)
     }
 
-    // Load uuid in a way that works with Jest mocks and ESM in runtime
-    let uuidv4: () => string
-    if (process.env.JEST_WORKER_ID) {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const mod = require('uuid')
-      uuidv4 = mod.v4
-    } else {
-      const mod = await import('uuid')
-      uuidv4 = mod.v4
+    // Ensure uuidv4 is initialized
+    if (this.uuidv4.name === 'fallback') {
+      await this.initializeUuid()
     }
 
-    const jobId = uuidv4()
+    const jobId = this.uuidv4()
 
     const job: BatchJob = {
       id: jobId,
@@ -138,7 +145,7 @@ export class BatchService {
 
         const item = items[current]
 
-        // Add delay between requests (except the very first processed by this worker)
+        // Add delay between requests (except for very first processed by this worker)
         if (current >= concurrency) {
           const delay = this.calculateDelay(minDelayMs, maxDelayMs, jitter)
           await this.sleep(delay)
