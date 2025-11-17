@@ -40,8 +40,11 @@ export class CleanupService {
 
     this.runningPromise = (async () => {
       try {
-        const removedPages = this.memoryStore.cleanupOlderThan(ttlMs)
-        const removedJobs = this.batchService.cleanupOlderThan(ttlMs)
+        // Ensure we handle both sync and async implementations
+        const removedPages = await Promise.resolve(
+          this.memoryStore.cleanupOlderThan(ttlMs)
+        )
+        const removedJobs = await Promise.resolve(this.batchService.cleanupOlderThan(ttlMs))
         this.logger.debug(
           `Cleanup completed: removed ${removedPages} page records, ${removedJobs} batch jobs`
         )
