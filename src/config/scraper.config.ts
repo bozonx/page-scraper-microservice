@@ -9,9 +9,9 @@ import { plainToClass } from 'class-transformer'
 export class ScraperConfig {
   // Default scraper settings
   /**
-   * Default scraper mode: 'cheerio' for static content, 'playwright' for dynamic content
+   * Default scraper mode: 'extractor' for static content, 'playwright' for dynamic content
    */
-  @IsIn(['cheerio', 'playwright'])
+  @IsIn(['extractor', 'playwright'])
   public defaultMode!: string
 
   /**
@@ -160,7 +160,7 @@ export class ScraperConfig {
 export default registerAs('scraper', (): ScraperConfig => {
   const config = plainToClass(ScraperConfig, {
     // Default scraper settings
-    defaultMode: process.env.DEFAULT_MODE ?? 'cheerio',
+    defaultMode: process.env.DEFAULT_MODE ?? 'extractor',
     defaultTaskTimeoutSecs: parseInt(process.env.DEFAULT_TASK_TIMEOUT_SECS ?? '30', 10),
     defaultUserAgent: process.env.DEFAULT_USER_AGENT ?? 'auto',
     defaultLocale: process.env.DEFAULT_LOCALE ?? 'en-US',

@@ -1,25 +1,25 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
-import { PinoLogger } from 'nestjs-pino';
-import { ScraperService } from '@/modules/scraper/services/scraper.service.js';
-import { FingerprintService } from '@/modules/scraper/services/fingerprint.service.js';
-import { TurndownConverterService } from '@/modules/scraper/services/turndown.service.js';
-import type { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto.js';
-import type { ScraperConfig } from '@/config/scraper.config.js';
+import { Test, TestingModule } from '@nestjs/testing'
+import { ConfigService } from '@nestjs/config'
+import { PinoLogger } from 'nestjs-pino'
+import { ScraperService } from '@/modules/scraper/services/scraper.service.js'
+import { FingerprintService } from '@/modules/scraper/services/fingerprint.service.js'
+import { TurndownConverterService } from '@/modules/scraper/services/turndown.service.js'
+import type { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto.js'
+import type { ScraperConfig } from '@/config/scraper.config.js'
 import {
   createMockLogger,
   createMockConfigService,
   createMockTurndownConverterService,
   createMockArticleExtractor,
-} from '@test/helpers/mocks.js';
+} from '@test/helpers/mocks.js'
 
 describe('ScraperService (unit)', () => {
-  let moduleRef: TestingModule;
-  let service: ScraperService;
+  let moduleRef: TestingModule
+  let service: ScraperService
 
   // Shared mocks
-  const logger = createMockLogger();
-  const articleExtractor = createMockArticleExtractor();
+  const logger = createMockLogger()
+  const articleExtractor = createMockArticleExtractor()
   const fingerprintService: Partial<FingerprintService> = {
     generateFingerprint: jest.fn(() => ({
       userAgent: 'UA',
@@ -37,11 +37,11 @@ describe('ScraperService (unit)', () => {
       hardware: { cores: 4, memory: 8, deviceMemory: 8 },
     })),
     shouldRotateFingerprint: jest.fn(() => false),
-  };
+  }
 
   const scraperConfig: ScraperConfig = {
     // Default scraper settings
-    defaultMode: 'cheerio',
+    defaultMode: 'extractor',
     defaultTaskTimeoutSecs: 30,
     defaultUserAgent: 'auto',
     defaultLocale: 'en-US',
@@ -69,10 +69,10 @@ describe('ScraperService (unit)', () => {
     webhookTimeoutMs: 10000,
     webhookBackoffMs: 1000,
     webhookMaxAttempts: 3,
-  } as ScraperConfig;
+  } as ScraperConfig
 
   beforeAll(async () => {
-    const configService = createMockConfigService({ scraper: scraperConfig });
+    const configService = createMockConfigService({ scraper: scraperConfig })
 
     moduleRef = await Test.createTestingModule({
       providers: [
@@ -83,32 +83,35 @@ describe('ScraperService (unit)', () => {
         { provide: TurndownConverterService, useValue: createMockTurndownConverterService() },
         { provide: 'IArticleExtractor', useValue: articleExtractor },
       ],
-    }).compile();
+    }).compile()
 
-    service = moduleRef.get(ScraperService);
-  });
+    service = moduleRef.get(ScraperService)
+  })
 
   afterAll(async () => {
-    await moduleRef.close();
-  });
+    await moduleRef.close()
+  })
 
-  it('scrapes page via cheerio mode using article extractor', async () => {
-    const dto: ScraperRequestDto = { url: 'https://example.com', mode: 'cheerio' } as any;
+  it('scrapes page via extractor mode using article extractor', async () => {
+    const dto: ScraperRequestDto = { url: 'https://example.com', mode: 'extractor' } as any
 
-    const res = await service.scrapePage(dto);
+    const res = await service.scrapePage(dto)
 
-    expect(res.url).toBe(dto.url);
-    expect(res.body).toContain('Mocked Markdown');
-    expect(articleExtractor.extract).toHaveBeenCalledWith(dto.url);
-  });
+    expect(res.url).toBe(dto.url)
+    expect(res.body).toContain('Mocked Markdown')
+    expect(articleExtractor.extract).toHaveBeenCalled()
+  })
 
   it('scrapes page via playwright mode using crawlee flow', async () => {
-    const dto: ScraperRequestDto = { url: 'https://example.com/playwright', mode: 'playwright' } as any;
+    const dto: ScraperRequestDto = {
+      url: 'https://example.com/playwright',
+      mode: 'playwright',
+    } as any
 
-    const res = await service.scrapePage(dto);
+    const res = await service.scrapePage(dto)
 
-    expect(res.url).toBe(dto.url);
-    expect(res.body).toContain('Mocked Markdown');
-    expect(articleExtractor.extractFromHtml).toHaveBeenCalled();
-  });
-});
+    expect(res.url).toBe(dto.url)
+    expect(res.body).toContain('Mocked Markdown')
+    expect(articleExtractor.extractFromHtml).toHaveBeenCalled()
+  })
+})

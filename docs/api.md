@@ -33,7 +33,7 @@ Scrapes a single web page and extracts structured article content.
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `url` | string (URL) | ✅ | — | Target page to scrape. |
-| `mode` | string | ❌ | `cheerio` | Scraper engine: `cheerio` for static HTML, `playwright` for full browser rendering. |
+| `mode` | string | ❌ | `extractor` | Scraper engine: `extractor` for static HTML, `playwright` for full browser rendering. |
 | `taskTimeoutSecs` | number | ❌ | `DEFAULT_TASK_TIMEOUT_SECS` (30) | Per-request timeout in seconds (1–300). This value defines the overall timeout for the task and caps the total execution time regardless of inner HTTP or browser navigation timeouts. |
 | `locale` | string | ❌ | `DEFAULT_LOCALE` (`en-US`) | Preferred locale for extraction heuristics. |
 | `dateLocale` | string | ❌ | `DEFAULT_DATE_LOCALE` (`en`) | Locale used for date parsing. |
@@ -300,7 +300,7 @@ Validation failures emitted by Nest’s `ValidationPipe` are normalized to:
     "message": "Validation failed",
     "details": [
       "url must be a valid URL",
-      "mode must be one of the following values: cheerio, playwright"
+      "mode must be one of the following values: extractor, playwright"
     ]
   }
 }

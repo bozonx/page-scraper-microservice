@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
-import type { IArticleExtractor } from './article-extractor.interface'
+import type { IArticleExtractor, IArticleExtractorOptions } from './article-extractor.interface'
 
 /**
  * Implementation of article extractor service using @extractus/article-extractor library
@@ -30,11 +30,11 @@ export class ArticleExtractorService implements IArticleExtractor {
    * @param url URL to extract article from
    * @returns Promise with extracted article data
    */
-  async extract(url: string): Promise<any> {
+  async extract(url: string, options?: IArticleExtractorOptions): Promise<any> {
     try {
       this.logger.debug(`Extracting article from URL: ${url}`)
       const mod = await this.getModule()
-      return await mod.extract(url)
+      return await mod.extract(url, options)
     } catch (error) {
       this.logger.error(`Failed to extract article from URL ${url}:`, error)
       throw error
@@ -46,11 +46,11 @@ export class ArticleExtractorService implements IArticleExtractor {
    * @param html HTML content to extract article from
    * @returns Promise with extracted article data
    */
-  async extractFromHtml(html: string): Promise<any> {
+  async extractFromHtml(html: string, options?: IArticleExtractorOptions): Promise<any> {
     try {
       this.logger.debug('Extracting article from HTML content')
       const mod = await this.getModule()
-      return await mod.extractFromHtml(html)
+      return await mod.extractFromHtml(html, options)
     } catch (error) {
       this.logger.error('Failed to extract article from HTML:', error)
       throw error

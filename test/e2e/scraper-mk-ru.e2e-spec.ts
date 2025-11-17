@@ -70,7 +70,7 @@ describe('Scraper MK.ru Article (e2e)', () => {
         url: '/api/v1/page',
         payload: {
           url: targetUrl,
-          mode: 'cheerio', // Use cheerio mode for static content
+          mode: 'extractor', // Use extractor mode for static content
         },
       })
 
@@ -129,7 +129,7 @@ describe('Scraper MK.ru Article (e2e)', () => {
         url: '/api/v1/page',
         payload: {
           url: targetUrl,
-          // Default mode should be used (cheerio)
+          // Default mode should be used (extractor)
         },
       })
 
@@ -145,7 +145,7 @@ describe('Scraper MK.ru Article (e2e)', () => {
         url: '/api/v1/page',
         payload: {
           url: targetUrl,
-          mode: 'cheerio',
+          mode: 'extractor',
         },
       })
 

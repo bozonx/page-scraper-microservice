@@ -1,10 +1,10 @@
 # Page Scraper Microservice
 
-A production-ready NestJS microservice for extracting structured article data from web pages. Built on Fastify, it offers both lightweight static HTML parsing (Cheerio) and full browser rendering (Playwright) with anti-bot protection, batch processing, and webhook notifications.
+A production-ready NestJS microservice for extracting structured article data from web pages. Built on Fastify, it offers both lightweight static HTML extraction (Extractor) and full browser rendering (Playwright) with anti-bot protection, batch processing, and webhook notifications.
 
 ## Features
 
-- **Dual scraping modes:** Cheerio for fast static HTML parsing or Playwright for JavaScript-rendered content
+- **Dual scraping modes:** Extractor (@extractus/article-extractor) for fast static HTML parsing or Playwright for JavaScript-rendered content
 - **Rich article extraction:** Title, description, author, publication date, language, Markdown body, and estimated reading time
 - **Batch processing:** Asynchronous job orchestration with configurable concurrency, delays, and jitter
 - **Anti-bot protection:** Rotating browser fingerprints and selective resource blocking to minimize detection
@@ -22,7 +22,7 @@ Configuration is provided through environment variables and validated on startup
 | `LISTEN_PORT` | HTTP port | `8080` |
 | `API_BASE_PATH` | Prefix for REST endpoints | `api` |
 | `LOG_LEVEL` | Pino log level (`trace`…`silent`) | `warn` |
-| `DEFAULT_MODE` | Scraper mode (`cheerio` / `playwright`) | `cheerio` |
+| `DEFAULT_MODE` | Scraper mode (`extractor` / `playwright`) | `extractor` |
 | `DEFAULT_TASK_TIMEOUT_SECS` | Per-page timeout (1-300) | `30` |
 | `PLAYWRIGHT_HEADLESS` | Headless browser flag | `true` |
 | `PLAYWRIGHT_BLOCK_TRACKERS` | Block analytics resources | `true` |
@@ -141,6 +141,33 @@ docker run --rm -p 8080:8080 \
 
 The Dockerfile includes Playwright browser dependencies for full rendering support.
 
+## Operational Considerations
+
+- **Batch state management:** Jobs are stored in-memory and automatically purged after `BATCH_DATA_LIFETIME_MINS`. For persistent storage or distributed deployments, integrate an external job queue (e.g., Bull, BullMQ).
+- **Resource requirements:** Playwright mode requires significantly more CPU and memory than Extractor. Plan infrastructure capacity accordingly.
+- **Anti-bot strategies:** Enable fingerprint rotation (`FINGERPRINT_ROTATE_ON_ANTI_BOT=true`) and resource blocking when scraping sites with aggressive bot detection.
+- **Webhook security:** Webhook payloads contain full scraping results. Secure your webhook endpoints and consider implementing signature validation.
+- **Logging privacy:** Sensitive headers (`Authorization`, `x-api-key`) are automatically redacted from logs.
+
+## License
+
+MIT License. See [`LICENSE`](LICENSE) for full details.
+
+---
+
+## Development Reference
+
+| Task | Command |
+| --- | --- |
+| Start dev server | `pnpm run start:dev` |
+| Build for production | `pnpm run build` |
+| Run all tests | `pnpm run test` |
+| Run unit tests | `pnpm run test:unit` |
+| Run e2e tests | `pnpm run test:e2e` |
+| Lint code | `pnpm run lint` |
+| Format code | `pnpm run format` |
+| Generate coverage | `pnpm run test:cov` |
+
 ## Testing
 
 ### Available Test Commands
@@ -175,41 +202,3 @@ test/
 ```
 
 **Testing Philosophy:** E2E tests use minimal mocking—only HTTP requests are intercepted to return local HTML fixtures. All parsing, conversion, and extraction logic runs without mocks to ensure realistic validation.
-
-## Operational Considerations
-
-- **Batch state management:** Jobs are stored in-memory and automatically purged after `BATCH_DATA_LIFETIME_MINS`. For persistent storage or distributed deployments, integrate an external job queue (e.g., Bull, BullMQ).
-- **Resource requirements:** Playwright mode requires significantly more CPU and memory than Cheerio. Plan infrastructure capacity accordingly.
-- **Anti-bot strategies:** Enable fingerprint rotation (`FINGERPRINT_ROTATE_ON_ANTI_BOT=true`) and resource blocking when scraping sites with aggressive bot detection.
-- **Webhook security:** Webhook payloads contain full scraping results. Secure your webhook endpoints and consider implementing signature validation.
-- **Logging privacy:** Sensitive headers (`Authorization`, `x-api-key`) are automatically redacted from logs.
-
-## Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. **Fork the repository** and create a feature branch from `main`
-2. **Follow code standards:** Use ESLint and Prettier (run `pnpm run lint` and `pnpm run format`)
-3. **Write tests:** Add or update unit and e2e tests for new features or bug fixes
-4. **Update documentation:** Keep README, API docs, and CHANGELOG current
-5. **Submit a pull request** with a clear description of changes and test results
-
-## License
-
-MIT License. See [`LICENSE`](LICENSE) for full details.
-
----
-
-## Development Reference
-
-| Task | Command |
-| --- | --- |
-| Start dev server | `pnpm run start:dev` |
-| Build for production | `pnpm run build` |
-| Run all tests | `pnpm run test` |
-| Run unit tests | `pnpm run test:unit` |
-| Run e2e tests | `pnpm run test:e2e` |
-| Lint code | `pnpm run lint` |
-| Format code | `pnpm run format` |
-| Generate coverage | `pnpm run test:cov` |
-

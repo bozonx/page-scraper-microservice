@@ -29,7 +29,7 @@ export class BatchItemDto {
    * Scraper mode for this specific item (overrides common settings)
    */
   @IsOptional()
-  @IsIn(['cheerio', 'playwright'])
+  @IsIn(['extractor', 'playwright'])
   public mode?: string
 }
 
@@ -132,7 +132,7 @@ export class BatchCommonSettingsDto {
    * Default scraper mode for all items
    */
   @IsOptional()
-  @IsIn(['cheerio', 'playwright'])
+  @IsIn(['extractor', 'playwright'])
   public mode?: string
 
   /**
@@ -253,37 +253,37 @@ export interface BatchJobStatusDto {
    * Unique identifier for the batch job
    */
   jobId: string
-  
+
   /**
    * Current status of the batch job
    */
   status: BatchJobStatus
-  
+
   /**
    * ISO timestamp when the job was created
    */
   createdAt: string
-  
+
   /**
    * Total number of items in the batch
    */
   total: number
-  
+
   /**
    * Number of items that have been processed
    */
   processed: number
-  
+
   /**
    * Number of items that were successfully processed
    */
   succeeded: number
-  
+
   /**
    * Number of items that failed to process
    */
   failed: number
-  
+
   /**
    * ISO timestamp when the job completed (if completed)
    */
@@ -298,17 +298,17 @@ export interface BatchItemResultDto {
    * URL that was processed
    */
   url: string
-  
+
   /**
    * Processing status for this item
    */
   status: 'succeeded' | 'failed'
-  
+
   /**
    * Extracted data (if successful)
    */
   data?: any
-  
+
   /**
    * Error details (if failed)
    */
@@ -317,12 +317,12 @@ export interface BatchItemResultDto {
      * HTTP status code
      */
     code: number
-    
+
     /**
      * Error message
      */
     message: string
-    
+
     /**
      * Optional detailed error information
      */
@@ -339,42 +339,42 @@ export interface BatchWebhookPayloadDto {
    * Unique identifier for the batch job
    */
   jobId: string
-  
+
   /**
    * Final status of the batch job
    */
   status: BatchJobStatus
-  
+
   /**
    * ISO timestamp when the job was created
    */
   createdAt: string
-  
+
   /**
    * ISO timestamp when the job completed
    */
   completedAt: string
-  
+
   /**
    * Total number of items in the batch
    */
   total: number
-  
+
   /**
    * Number of items that were processed
    */
   processed: number
-  
+
   /**
    * Number of items that were successfully processed
    */
   succeeded: number
-  
+
   /**
    * Number of items that failed to process
    */
   failed: number
-  
+
   /**
    * Array of individual item results
    */

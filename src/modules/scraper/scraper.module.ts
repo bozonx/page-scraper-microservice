@@ -9,7 +9,7 @@ import { ArticleExtractorService } from './services/article-extractor.service'
 
 /**
  * Scraper module
- * Provides web scraping functionality with support for both static (Cheerio) and dynamic (Playwright) content
+ * Provides web scraping functionality with support for both static (Extractor) and dynamic (Playwright) content
  * Includes batch processing, webhooks, and browser fingerprinting capabilities
  */
 @Module({

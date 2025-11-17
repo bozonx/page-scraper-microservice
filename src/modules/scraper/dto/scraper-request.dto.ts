@@ -78,10 +78,10 @@ export class ScraperRequestDto {
   public url!: string
 
   /**
-   * Scraper mode: 'cheerio' for static content, 'playwright' for dynamic content
+   * Scraper mode: 'extractor' for static content, 'playwright' for dynamic content
    */
   @IsOptional()
-  @IsIn(['cheerio', 'playwright'])
+  @IsIn(['extractor', 'playwright'])
   public mode?: string
 
   /**

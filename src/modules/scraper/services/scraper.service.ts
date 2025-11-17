@@ -11,7 +11,7 @@ import type { IArticleExtractor } from './article-extractor.interface'
 
 /**
  * Main scraper service
- * Handles web scraping operations using either Cheerio (static content) or Playwright (dynamic content)
+ * Handles web scraping operations using either Extractor (static content) or Playwright (dynamic content)
  */
 @Injectable()
 export class ScraperService {
@@ -49,9 +49,10 @@ export class ScraperService {
           this.scrapeWithPlaywright(request)
         )
       } else {
+        // 'extractor' mode (default)
         content = await this.withTimeout(
           effectiveTimeoutSecs * 1000,
-          this.scrapeWithCheerio(request)
+          this.scrapeWithExtractor(request)
         )
       }
 
@@ -83,12 +84,25 @@ export class ScraperService {
   }
 
   /**
-   * Scrapes using Cheerio for static content
+   * Scrapes using Extractor for static content
    * @param request Scraper request parameters
    * @returns Extracted content
    */
-  private async scrapeWithCheerio(request: ScraperRequestDto): Promise<any> {
-    return await this.articleExtractor.extract(request.url)
+  private async scrapeWithExtractor(request: ScraperRequestDto): Promise<any> {
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+
+    // Simulate fingerprint via headers when possible
+    const fp = this.fingerprintService.generateFingerprint(request.fingerprint)
+    const headers: Record<string, string> = {}
+
+    if (request.locale || scraperConfig.defaultLocale) {
+      headers['Accept-Language'] = (request.locale || scraperConfig.defaultLocale) as string
+    }
+    if (fp.userAgent) {
+      headers['User-Agent'] = fp.userAgent
+    }
+
+    return await this.articleExtractor.extract(request.url, { headers })
   }
 
   /**
@@ -181,9 +195,8 @@ export class ScraperService {
 
           // Block trackers and heavy resources if requested
           if (request.blockTrackers !== false && scraperConfig.playwrightBlockTrackers) {
-            await page.route(
-              '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
-              (route) => route.abort()
+            await page.route('**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}', (route) =>
+              route.abort()
             )
           }
 
@@ -204,8 +217,11 @@ export class ScraperService {
           // Get HTML content
           const html = await page.content()
 
-          // Extract content using article extractor
-          extracted = await articleExtractor.extractFromHtml(html)
+          // Extract content using article extractor with same header hints
+          const headers: Record<string, string> = {}
+          if (fingerprint.language) headers['Accept-Language'] = fingerprint.language
+          if (fingerprint.userAgent) headers['User-Agent'] = fingerprint.userAgent
+          extracted = await articleExtractor.extractFromHtml(html, { headers })
         } catch (error) {
           runError = error instanceof Error ? error : new Error(String(error))
         }

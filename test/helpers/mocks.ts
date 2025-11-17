@@ -5,10 +5,10 @@
  * All mocks follow the DRY principle and provide type-safe implementations.
  */
 
-import type { PinoLogger } from 'nestjs-pino';
-import type { ConfigService } from '@nestjs/config';
-import type { IArticleExtractor } from '../../src/modules/scraper/services/article-extractor.interface.js';
-import type { TurndownConverterService } from '../../src/modules/scraper/services/turndown.service.js';
+import type { PinoLogger } from 'nestjs-pino'
+import type { ConfigService } from '@nestjs/config'
+import type { IArticleExtractor } from '../../src/modules/scraper/services/article-extractor.interface.js'
+import type { TurndownConverterService } from '../../src/modules/scraper/services/turndown.service.js'
 
 /**
  * Creates a mock PinoLogger instance with all required methods
@@ -25,7 +25,7 @@ export const createMockLogger = (): PinoLogger =>
     log: jest.fn(),
     fatal: jest.fn(),
     trace: jest.fn(),
-  }) as unknown as PinoLogger;
+  }) as unknown as PinoLogger
 
 /**
  * Placeholder for future HTTP-related mocks if needed
@@ -46,15 +46,15 @@ export const createMockLogger = (): PinoLogger =>
 export const createMockConfigService = (overrides: Record<string, any> = {}) =>
   ({
     get: jest.fn((key: string, defaultValue?: any) => {
-      return overrides[key] ?? defaultValue;
+      return overrides[key] ?? defaultValue
     }),
     getOrThrow: jest.fn((key: string) => {
       if (!(key in overrides)) {
-        throw new Error(`Configuration key "${key}" not found`);
+        throw new Error(`Configuration key "${key}" not found`)
       }
-      return overrides[key];
+      return overrides[key]
     }),
-  }) as unknown as ConfigService;
+  }) as unknown as ConfigService
 
 /**
  * Creates a mock TurndownConverterService instance
@@ -62,17 +62,19 @@ export const createMockConfigService = (overrides: Record<string, any> = {}) =>
  * @param overrides - Object with method implementations to override defaults
  * @returns Mock TurndownConverterService with customizable methods
  */
-export const createMockTurndownConverterService = (overrides: Partial<TurndownConverterService> = {}) =>
+export const createMockTurndownConverterService = (
+  overrides: Partial<TurndownConverterService> = {}
+) =>
   ({
-    convertToMarkdown: jest.fn((html: string) => html ? `# Mocked Markdown\n${html}` : ''),
+    convertToMarkdown: jest.fn((html: string) => (html ? `# Mocked Markdown\n${html}` : '')),
     turndownService: {
-      turndown: jest.fn((html: string) => html ? `# Mocked Markdown\n${html}` : ''),
+      turndown: jest.fn((html: string) => (html ? `# Mocked Markdown\n${html}` : '')),
       addRule: jest.fn(),
       removeRule: jest.fn(),
       use: jest.fn(),
     },
     ...overrides,
-  }) as unknown as TurndownConverterService;
+  }) as unknown as TurndownConverterService
 
 /**
  * Creates a mock IArticleExtractor instance
@@ -82,18 +84,22 @@ export const createMockTurndownConverterService = (overrides: Partial<TurndownCo
  */
 export const createMockArticleExtractor = (overrides: Partial<IArticleExtractor> = {}) =>
   ({
-    extract: jest.fn((url: string) => Promise.resolve({
-      title: 'Mock Article Title',
-      content: '<p>Mock article content</p>',
-      description: 'Mock article description',
-      author: 'Mock Author',
-      url,
-    })),
-    extractFromHtml: jest.fn((html: string) => Promise.resolve({
-      title: 'Mock Article Title',
-      content: html || '<p>Mock article content</p>',
-      description: 'Mock article description',
-      author: 'Mock Author',
-    })),
+    extract: jest.fn((url: string, _options?: any) =>
+      Promise.resolve({
+        title: 'Mock Article Title',
+        content: '<p>Mock article content</p>',
+        description: 'Mock article description',
+        author: 'Mock Author',
+        url,
+      })
+    ),
+    extractFromHtml: jest.fn((html: string, _options?: any) =>
+      Promise.resolve({
+        title: 'Mock Article Title',
+        content: html || '<p>Mock article content</p>',
+        description: 'Mock article description',
+        author: 'Mock Author',
+      })
+    ),
     ...overrides,
-  }) as unknown as IArticleExtractor;
+  }) as unknown as IArticleExtractor

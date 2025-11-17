@@ -12,7 +12,7 @@ describe('WebhookService (unit)', () => {
   let configService: ConfigService;
 
   const scraperConfig: ScraperConfig = {
-    defaultMode: 'cheerio',
+    defaultMode: 'extractor',
     defaultTaskTimeoutSecs: 30,
     defaultUserAgent: 'auto',
     defaultLocale: 'en-US',
