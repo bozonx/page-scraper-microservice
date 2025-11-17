@@ -149,8 +149,8 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
 | `headers` | record<string,string> | `{}` | Additional headers per request. |
 | `authHeaderName` | string | — | Header key for auth token. |
 | `authHeaderValue` | string | — | Header value for auth token. |
-| `backoffMs` | number | `WEBHOOK_BACKOFF_MS` (1000) | Base delay for exponential backoff (100–30000). |
-| `maxAttempts` | number | `WEBHOOK_MAX_ATTEMPTS` (3) | Retry limit (1–10). |
+| `backoffMs` | number | `DEFAULT_WEBHOOK_BACKOFF_MS` (1000) | Base delay for exponential backoff (100–30000). Can override default values. |
+| `maxAttempts` | number | `DEFAULT_WEBHOOK_MAX_ATTEMPTS` (3) | Retry limit (1–10). Can override default values. |
 
 #### Success Response (202 Accepted)
 
@@ -271,9 +271,10 @@ When a webhook is configured, the service POSTs the following JSON after the job
 
 **Delivery Behavior:**
 - **Retry logic:** Exponential backoff with formula `backoffMs * 2^(attempt-1)` plus 10% jitter
-- **Max attempts:** Controlled by `maxAttempts` configuration (default: 3)
+- **Max attempts:** Controlled by `maxAttempts` configuration (default: `DEFAULT_WEBHOOK_MAX_ATTEMPTS` = 3)
 - **Timeout:** Each webhook request times out after `WEBHOOK_TIMEOUT_MS` milliseconds (default: 10000)
 - **Trigger:** Webhook is sent when batch reaches a terminal state (`succeeded`, `failed`, or `partial`)
+- **Default values:** `DEFAULT_WEBHOOK_BACKOFF_MS` and `DEFAULT_WEBHOOK_MAX_ATTEMPTS` are used as fallbacks when per-request values are not provided
 
 ---
 
@@ -296,7 +297,7 @@ All errors share a consistent JSON envelope:
 - `message` summarises the failure.
 - `details` may be a string or array (validation errors produce an array of constraint messages).
 
-Validation failures emitted by Nest’s `ValidationPipe` are normalized to:
+Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 
 ```json
 {

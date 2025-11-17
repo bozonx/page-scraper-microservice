@@ -29,8 +29,8 @@ describe('WebhookService (unit)', () => {
     batchConcurrency: 1,
     batchDataLifetimeMins: 60,
     webhookTimeoutMs: 5000,
-    webhookBackoffMs: 100,
-    webhookMaxAttempts:3,
+    defaultWebhookBackoffMs: 100,
+    defaultWebhookMaxAttempts: 3,
   } as ScraperConfig;
 
   const mockWebhookConfig: BatchWebhookDto = {

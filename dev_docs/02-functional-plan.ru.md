@@ -183,7 +183,7 @@ graph TB
       "status": "failed",
       "error": {
         "code": 422,
-        "message": "Failed to extract content from the page",
+        "message": "Failed to extract content from page",
         "details": "Page structure is not recognizable as an article"
       }
     }
@@ -255,8 +255,8 @@ graph TB
 
 ### Настройки вебхуков
 - `WEBHOOK_TIMEOUT_MS` — таймаут вебхука в миллисекундах (по умолчанию `10000`)
-- `WEBHOOK_BACKOFF_MS` — начальная задержка между попытками повтора вебхука в миллисекундах (по умолчанию `1000`)
-- `WEBHOOK_MAX_ATTEMPTS` — количество попыток повтора вебхука (по умолчанию `3`)
+- `DEFAULT_WEBHOOK_BACKOFF_MS` — начальная задержка между попытками повтора вебхука в миллисекундах (по умолчанию `1000`, может быть переопределено в запросе)
+- `DEFAULT_WEBHOOK_MAX_ATTEMPTS` — количество попыток повтора вебхука (по умолчанию `3`, может быть переопределено в запросе)
 
 
 ## Принцип работы микросервиса
@@ -323,7 +323,7 @@ graph TB
 {
   "error": {
     "code": 422,
-    "message": "Failed to extract content from the page",
+    "message": "Failed to extract content from page",
     "details": "Page structure is not recognizable as an article"
   }
 }

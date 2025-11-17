@@ -37,8 +37,8 @@ Configuration is provided through environment variables and validated on startup
 | `DEFAULT_BATCH_CONCURRENCY` | Parallel workers | `1` |
 | `BATCH_DATA_LIFETIME_MINS` | Retention of batch results | `60` |
 | `WEBHOOK_TIMEOUT_MS` | Webhook request timeout | `10000` |
-| `WEBHOOK_BACKOFF_MS` | Base backoff for retries | `1000` |
-| `WEBHOOK_MAX_ATTEMPTS` | Max webhook attempts | `3` |
+| `DEFAULT_WEBHOOK_BACKOFF_MS` | Default backoff for retries (can be overridden per request) | `1000` |
+| `DEFAULT_WEBHOOK_MAX_ATTEMPTS` | Default max webhook attempts (can be overridden per request) | `3` |
 
 Set environment variables before launching the service to override defaults. 
 

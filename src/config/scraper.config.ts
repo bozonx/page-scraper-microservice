@@ -129,20 +129,22 @@ export class ScraperConfig {
   public webhookTimeoutMs!: number
 
   /**
-   * Backoff delay in milliseconds between webhook retry attempts (100-30000)
+   * Default backoff delay in milliseconds between webhook retry attempts (100-30000)
+   * These are default values that can be overridden per webhook request
    */
   @IsInt()
   @Min(100)
   @Max(30000)
-  public webhookBackoffMs!: number
+  public defaultWebhookBackoffMs!: number
 
   /**
-   * Maximum number of retry attempts for failed webhook deliveries (1-10)
+   * Default maximum number of retry attempts for failed webhook deliveries (1-10)
+   * These are default values that can be overridden per webhook request
    */
   @IsInt()
   @Min(1)
   @Max(10)
-  public webhookMaxAttempts!: number
+  public defaultWebhookMaxAttempts!: number
 }
 
 /**
@@ -184,8 +186,8 @@ export default registerAs('scraper', (): ScraperConfig => {
 
     // Webhook settings
     webhookTimeoutMs: parseInt(process.env.WEBHOOK_TIMEOUT_MS ?? '10000', 10),
-    webhookBackoffMs: parseInt(process.env.WEBHOOK_BACKOFF_MS ?? '1000', 10),
-    webhookMaxAttempts: parseInt(process.env.WEBHOOK_MAX_ATTEMPTS ?? '3', 10),
+    defaultWebhookBackoffMs: parseInt(process.env.DEFAULT_WEBHOOK_BACKOFF_MS ?? '1000', 10),
+    defaultWebhookMaxAttempts: parseInt(process.env.DEFAULT_WEBHOOK_MAX_ATTEMPTS ?? '3', 10),
   })
 
   // Validate configuration and throw error if invalid

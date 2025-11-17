@@ -28,8 +28,8 @@ describe('FingerprintService (unit)', () => {
     batchConcurrency: 1,
     batchDataLifetimeMins: 60,
     webhookTimeoutMs: 10000,
-    webhookBackoffMs: 1000,
-    webhookMaxAttempts: 3,
+    defaultWebhookBackoffMs: 1000,
+    defaultWebhookMaxAttempts: 3,
   } as ScraperConfig
 
   beforeAll(async () => {

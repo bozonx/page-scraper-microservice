@@ -41,9 +41,9 @@ export class WebhookService {
         headers[webhookConfig.authHeaderName] = webhookConfig.authHeaderValue
       }
 
-      // Get retry configuration
-      const maxAttempts = webhookConfig.maxAttempts ?? scraperConfig.webhookMaxAttempts
-      const backoffMs = webhookConfig.backoffMs ?? scraperConfig.webhookBackoffMs
+      // Get retry configuration - use per-request values or fall back to defaults
+      const maxAttempts = webhookConfig.maxAttempts ?? scraperConfig.defaultWebhookMaxAttempts
+      const backoffMs = webhookConfig.backoffMs ?? scraperConfig.defaultWebhookBackoffMs
       const timeoutMs = scraperConfig.webhookTimeoutMs
 
       let lastError: Error | null = null

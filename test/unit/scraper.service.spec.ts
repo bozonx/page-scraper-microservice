@@ -66,8 +66,8 @@ describe('ScraperService (unit)', () => {
 
     // Webhook settings
     webhookTimeoutMs: 10000,
-    webhookBackoffMs: 1000,
-    webhookMaxAttempts: 3,
+    defaultWebhookBackoffMs: 1000,
+    defaultWebhookMaxAttempts: 3,
   } as ScraperConfig
 
   beforeAll(async () => {
