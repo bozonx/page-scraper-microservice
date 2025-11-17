@@ -1,6 +1,6 @@
-# Page Scraper Microservice API
+# Page Scraper Microservice API Reference
 
-The service exposes a REST API for scraping individual pages, orchestrating batch jobs, and monitoring service health.
+Complete REST API documentation for the Page Scraper Microservice. This service provides endpoints for single-page scraping, batch job orchestration, and health monitoring.
 
 ## Base URL
 
@@ -8,17 +8,27 @@ The service exposes a REST API for scraping individual pages, orchestrating batc
 http://{host}:{port}/{API_BASE_PATH}/v1
 ```
 
-Environment defaults: `host=0.0.0.0`, `port=8080`, `API_BASE_PATH=api`.
+**Default configuration:**
+- Host: `0.0.0.0`
+- Port: `8080`
+- API Base Path: `api`
+- Full URL: `http://localhost:8080/api/v1`
 
-All endpoints accept and return `application/json`. No authentication is enforced by default.
+**Content Type:** All endpoints accept and return `application/json`.
+
+**Authentication:** No authentication is enforced by default. Implement authentication at the reverse proxy or API gateway level for production deployments.
 
 ---
 
-## POST /page
+## Endpoints
 
-Scrape a single URL and return structured content.
+### POST /page
 
-### Request body
+Scrapes a single web page and extracts structured article content.
+
+**Endpoint:** `POST /api/v1/page`
+
+#### Request Body
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
@@ -43,7 +53,7 @@ Scrape a single URL and return structured content.
 | `rotateOnAntiBot` | boolean | `FINGERPRINT_ROTATE_ON_ANTI_BOT` (`true`) | Rotate fingerprint when anti-bot behaviour is detected. |
 | `generator` | object | — | Additional generator hints such as allowed `browsers` array. |
 
-### Example
+#### Example Request
 
 ```bash
 curl -X POST "http://localhost:8080/api/v1/page" \
@@ -59,20 +69,37 @@ curl -X POST "http://localhost:8080/api/v1/page" \
       }'
 ```
 
-### Response 200
+#### Success Response (200 OK)
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `url` | string | Original URL. |
+| `url` | string | Original URL that was scraped. |
 | `title` | string \| null | Extracted page title. |
-| `description` | string \| null | Extracted description/lead. |
+| `description` | string \| null | Extracted meta description or article lead. |
 | `date` | string \| null | ISO-8601 publication timestamp if detected. |
 | `author` | string \| null | Author name if detected. |
-| `body` | string | Markdown representation of the article body. |
-| `meta.lang` | string \| null | IETF language code inferred from the page. |
-| `meta.readTimeMin` | number | Estimated reading time (minutes, 200 wpm heuristic). |
+| `body` | string | Main article content converted to Markdown format. |
+| `meta.lang` | string \| null | IETF language code (e.g., `en`, `es`, `fr`) inferred from the page. |
+| `meta.readTimeMin` | number | Estimated reading time in minutes (calculated at 200 words per minute). |
 
-### Error responses
+**Example Response:**
+
+```json
+{
+  "url": "https://example.com/article",
+  "title": "Sample Article Title",
+  "description": "A brief description of the article content",
+  "date": "2024-05-30T10:00:00.000Z",
+  "author": "John Doe",
+  "body": "# Article Heading\n\nArticle content in Markdown format...",
+  "meta": {
+    "lang": "en",
+    "readTimeMin": 5
+  }
+}
+```
+
+#### Error Responses
 
 | HTTP code | Error class | Description |
 | --- | --- | --- |
@@ -81,15 +108,17 @@ curl -X POST "http://localhost:8080/api/v1/page" \
 | 502 | `ScraperBrowserException` | Playwright/browser failure. |
 | 504 | `ScraperTimeoutException` | Page load exceeded timeout. |
 
-All domain errors follow the generic envelope described in [Error handling](#error-handling).
+All errors follow the consistent envelope format described in [Error Handling](#error-handling).
 
 ---
 
-## POST /batch
+### POST /batch
 
-Create an asynchronous batch scraping job.
+Creates an asynchronous batch scraping job for processing multiple URLs.
 
-### Request body
+**Endpoint:** `POST /api/v1/batch`
+
+#### Request Body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
@@ -118,46 +147,91 @@ Create an asynchronous batch scraping job.
 | `backoffMs` | number | `WEBHOOK_BACKOFF_MS` (1000) | Base delay for exponential backoff (100–30000). |
 | `maxAttempts` | number | `WEBHOOK_MAX_ATTEMPTS` (3) | Retry limit (1–10). |
 
-### Response 202
+#### Success Response (202 Accepted)
 
 ```json
-{ "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a" }
+{
+  "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a"
+}
 ```
 
-The job begins processing immediately and can be polled via `/batch/{jobId}`.
+The batch job is created and begins processing immediately. Use the returned `jobId` to poll job status via `GET /batch/:jobId`.
 
-### Failure modes
+#### Error Responses
 
 - `400 Bad Request` if validation fails (e.g., too many items, invalid URLs).
 - `500 Internal Server Error` for unexpected failures creating the job (wrapped in `BatchJobCreationException`).
 
 ---
 
-## GET /batch/{jobId}
+### GET /batch/:jobId
 
-Retrieve current status for a batch job.
+Retrieves the current status and progress of a batch scraping job.
 
-### Response 200
+**Endpoint:** `GET /api/v1/batch/:jobId`
+
+**Path Parameters:**
+- `jobId` (string, required): Unique batch job identifier returned from POST /batch
+
+#### Success Response (200 OK)
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `jobId` | string | Job identifier. |
-| `status` | string | `queued`, `running`, `succeeded`, `failed`, or `partial`. |
-| `createdAt` | string | ISO timestamp when the job was enqueued. |
-| `completedAt` | string \| null | ISO timestamp when processing finished (null while running). |
-| `total` | number | Total items submitted. |
-| `processed` | number | Items processed so far. |
-| `succeeded` | number | Successful items. |
-| `failed` | number | Failed items. |
+| `jobId` | string | Unique batch job identifier. |
+| `status` | string | Current job status: `queued`, `running`, `succeeded`, `failed`, or `partial`. |
+| `createdAt` | string | ISO-8601 timestamp when the job was created. |
+| `completedAt` | string \| null | ISO-8601 timestamp when processing finished (null while running). |
+| `total` | number | Total number of items in the batch. |
+| `processed` | number | Number of items processed so far. |
+| `succeeded` | number | Number of successfully processed items. |
+| `failed` | number | Number of failed items. |
 
-### Errors
+**Example Response:**
+
+```json
+{
+  "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a",
+  "status": "running",
+  "createdAt": "2024-05-30T10:00:00.000Z",
+  "completedAt": null,
+  "total": 10,
+  "processed": 5,
+  "succeeded": 4,
+  "failed": 1
+}
+```
+
+#### Error Responses
 
 - `404 Not Found` with `BatchJobNotFoundException` when the ID is unknown or data expired (jobs are purged after `BATCH_DATA_LIFETIME_MINS`).
 - Other errors are wrapped in `BatchJobStatusException` (HTTP 500).
 
 ---
 
-## Webhook payload
+### GET /health
+
+Health check endpoint for monitoring service availability.
+
+**Endpoint:** `GET /api/v1/health`
+
+#### Success Response (200 OK)
+
+```json
+{
+  "status": "ok"
+}
+```
+
+This endpoint always returns 200 OK when the service is operational. Use it for:
+- Load balancer health checks
+- Container orchestration readiness probes
+- Monitoring and alerting systems
+
+---
+
+## Webhook Notifications
+
+### Webhook Payload
 
 When a webhook is configured, the service POSTs the following JSON after the job stabilizes (success, failure, or partial):
 
@@ -190,23 +264,16 @@ When a webhook is configured, the service POSTs the following JSON after the job
 }
 ```
 
-Webhook delivery obeys exponential backoff (`backoffMs * 2^(attempt-1)`) with +10% jitter until `maxAttempts` is reached. Timeouts are governed by `WEBHOOK_TIMEOUT_MS`.
+**Delivery Behavior:**
+- **Retry logic:** Exponential backoff with formula `backoffMs * 2^(attempt-1)` plus 10% jitter
+- **Max attempts:** Controlled by `maxAttempts` configuration (default: 3)
+- **Timeout:** Each webhook request times out after `WEBHOOK_TIMEOUT_MS` milliseconds (default: 10000)
+- **Trigger:** Webhook is sent when batch reaches a terminal state (`succeeded`, `failed`, or `partial`)
 
 ---
 
-## GET /health
 
-Simple readiness probe. Always returns HTTP 200 with:
-
-```json
-{ "status": "ok" }
-```
-
-The endpoint is reachable at `/{API_BASE_PATH}/v1/health` by default.
-
----
-
-## Error handling
+## Error Handling
 
 All errors share a consistent JSON envelope:
 
@@ -241,13 +308,33 @@ Validation failures emitted by Nest’s `ValidationPipe` are normalized to:
 
 ---
 
-## Operational behaviour
+## Operational Behavior
 
-- Batch state is kept in-memory and purged after `BATCH_DATA_LIFETIME_MINS`. Fetching status past this window returns 404.
-- There is no overall timeout for an entire batch job. Each item in the batch is governed solely by its own `taskTimeoutSecs` (from the item or `commonSettings`, or the default).
-- `taskTimeoutSecs` defines the total time budget for a single task. Internal timeouts (e.g., HTTP client or Playwright navigation) are bounded by, and must not exceed, this value.
-- Playwright scraping respects `blockTrackers` and `blockHeavyResources` flags to reduce detection and resource usage.
-- Browser fingerprints rotate automatically when anti-bot signals are identified (unless disabled).
-- Additional scraper-source metadata can be provided via the `CONFIG_PATH` environment variable pointing to a YAML file; it is loaded under the `sources` configuration namespace.
+### Batch Job Lifecycle
 
-For implementation details and end-to-end examples see the unit and e2e tests in `test/`.
+- **Storage:** Batch state is stored in-memory and automatically purged after `BATCH_DATA_LIFETIME_MINS` (default: 60 minutes)
+- **Status polling:** Fetching status for an expired job returns `404 Not Found`
+- **No batch timeout:** Individual items have their own `taskTimeoutSecs`, but there's no overall timeout for the entire batch job
+- **Concurrency:** Controlled by the `schedule.concurrency` parameter (default: 1)
+
+### Timeout Behavior
+
+- **Task timeout:** `taskTimeoutSecs` defines the total time budget for a single scraping task
+- **Scope:** This timeout caps the entire operation including HTTP requests, browser navigation, and content extraction
+- **Defaults:** 30 seconds per task (configurable via `DEFAULT_TASK_TIMEOUT_SECS`)
+
+### Anti-Bot Features
+
+- **Resource blocking:** Playwright mode respects `blockTrackers` and `blockHeavyResources` flags to minimize detection
+- **Fingerprint rotation:** Browser fingerprints rotate automatically when anti-bot signals are detected (configurable via `FINGERPRINT_ROTATE_ON_ANTI_BOT`)
+- **Delays and jitter:** Batch processing uses randomized delays to mimic human behavior
+
+### Configuration
+
+- **YAML sources:** Additional scraper source metadata can be provided via `CONFIG_PATH` environment variable
+- **Format:** YAML file with sources defined under the `sources` namespace
+- **Loading:** Configuration is loaded at startup and validated by NestJS Config module
+
+### Testing
+
+For implementation details, integration examples, and test fixtures, see the unit and e2e tests in the `test/` directory.

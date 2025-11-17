@@ -1,42 +1,46 @@
 # Page Scraper Microservice
 
-Page Scraper Microservice is a NestJS/Fastify service that extracts structured article data from arbitrary web pages. It supports both lightweight HTML processing via Cheerio and full browser rendering via Playwright, adds resilient anti-bot protection, and exposes REST endpoints for single-page and batch jobs.
+A production-ready NestJS microservice for extracting structured article data from web pages. Built on Fastify, it offers both lightweight static HTML parsing (Cheerio) and full browser rendering (Playwright) with anti-bot protection, batch processing, and webhook notifications.
 
 ## Features
 
-- **Modes:** Cheerio for fast static DOM parsing or Playwright for JavaScript-heavy sites.
-- **Article extraction:** Title, description, author, publication date, language, Markdown body, and read-time estimation.
-- **Batch orchestration:** Concurrent queues with configurable delays, jitter, and data retention.
-- **Anti-bot fingerprints:** Rotating fingerprints and selective resource blocking to evade detection.
-- **Webhook notifications:** Configurable callbacks with retry, exponential backoff, and authentication headers.
-- **Structured logging:** Pino logger with per-request metadata, redaction, and environment-aware formatting.
-- **Global validation & error handling:** Class-validator DTOs plus a consistent JSON error envelope.
+- **Dual scraping modes:** Cheerio for fast static HTML parsing or Playwright for JavaScript-rendered content
+- **Rich article extraction:** Title, description, author, publication date, language, Markdown body, and estimated reading time
+- **Batch processing:** Asynchronous job orchestration with configurable concurrency, delays, and jitter
+- **Anti-bot protection:** Rotating browser fingerprints and selective resource blocking to minimize detection
+- **Webhook notifications:** Reliable delivery with exponential backoff, retries, and authentication support
+- **Production logging:** Pino logger with request context, sensitive data redaction, and environment-aware formatting
+- **Type-safe validation:** Class-validator DTOs with consistent error responses across all endpoints
 
-## Architecture
+## Project Structure
 
 ```
 src/
-├── app.module.ts              # Root module wiring configuration, logging, and exception filter
+├── app.module.ts              # Root module with configuration, logging, and global filters
+├── main.ts                    # Application bootstrap with Fastify adapter
 ├── common/
-│   ├── exceptions/            # Typed HTTP exceptions for scraper domain
-│   └── filters/               # Global Fastify-friendly exception filter
+│   ├── exceptions/            # Domain-specific HTTP exceptions
+│   ├── filters/               # Global exception filter for consistent error responses
+│   └── interceptors/          # Request/response interceptors
 ├── config/
-│   ├── app.config.ts          # Core app settings (port, host, API base path, log level)
-│   └── scraper.config.ts      # Scraper defaults, Playwright, batch, webhook settings
-└── modules/
-    ├── health/                # `/health` controller for uptime checks
-    └── scraper/
-        ├── dto/               # Validation DTOs for page and batch requests
-        ├── scraper.controller.ts
-        └── services/
-            ├── scraper.service.ts        # Mode selection, Markdown conversion, metadata
-            ├── batch.service.ts          # In-memory batch lifecycle and scheduling
-            ├── fingerprint.service.ts    # Fingerprint generation/rotation heuristics
-            ├── turndown.service.ts       # HTML → Markdown conversion
-            └── webhook.service.ts        # Webhook delivery with retries
+│   ├── app.config.ts          # Application settings (host, port, API path, logging)
+│   └── scraper.config.ts      # Scraper configuration (modes, timeouts, batch, webhooks)
+├── modules/
+│   ├── health/                # Health check endpoint
+│   │   └── health.controller.ts
+│   └── scraper/               # Core scraping functionality
+│       ├── dto/               # Request/response DTOs with validation
+│       ├── scraper.controller.ts  # REST endpoints for scraping and batch jobs
+│       └── services/
+│           ├── scraper.service.ts     # Orchestrates scraping modes and extraction
+│           ├── batch.service.ts       # Manages batch job lifecycle and scheduling
+│           ├── fingerprint.service.ts # Browser fingerprint generation and rotation
+│           ├── turndown.service.ts    # HTML to Markdown conversion
+│           └── webhook.service.ts     # Webhook delivery with retry logic
+└── utils/                     # Shared utility functions
 ```
 
-The service stores batch state in memory; use an external coordinator if you need horizontal scaling.
+**Note:** Batch state is stored in-memory and purged after the configured lifetime. For horizontal scaling or persistent storage, integrate an external job queue.
 
 ## Configuration
 
@@ -64,7 +68,9 @@ Configuration is provided through environment variables and validated on startup
 | `WEBHOOK_BACKOFF_MS` | Base backoff for retries | `1000` |
 | `WEBHOOK_MAX_ATTEMPTS` | Max webhook attempts | `3` |
 
-To override defaults, set variables before launching the service. Additional scraper source configuration can be provided via `CONFIG_PATH` pointing to a YAML file that lists target sources under the `sources` namespace.
+Set environment variables before launching the service to override defaults. 
+
+**Optional YAML Configuration:** Set `CONFIG_PATH` to point to a YAML file for additional scraper source metadata. The file should define sources under the `sources` namespace (see retrieved memory for details).
 
 ## Usage
 
@@ -110,92 +116,131 @@ curl "http://localhost:8080/api/v1/batch/<jobId>"
 
 The response lists job status (`queued`, `running`, `succeeded`, `failed`, `partial`) and progress counters.
 
-### 4. Health probe
+### 4. Health check
 
 ```bash
-curl "http://localhost:8080/api/v1/../health"
+curl "http://localhost:8080/api/v1/health"
 ```
 
-Returns `{ "status": "ok" }` when the service is ready.
+Returns `{ "status": "ok" }` when the service is operational.
 
 Refer to [`docs/api.md`](docs/api.md) for full REST contract, response schemas, and error envelopes.
 
-## Deployment
+## Quick Start
 
-### Local development
+### Local Development
 
-```bash
-pnpm install
-pnpm run start:dev
-```
+1. **Install dependencies:**
+   ```bash
+   pnpm install
+   ```
 
-The service listens at `http://localhost:8080/api/v1` by default. Logs are pretty-printed when `NODE_ENV=development`.
+2. **Start development server:**
+   ```bash
+   pnpm run start:dev
+   ```
 
-### Production build
+The service runs at `http://localhost:8080/api/v1` by default. Logs are pretty-printed in development mode.
 
-```bash
-pnpm run build
-NODE_ENV=production pnpm run start:prod
-```
+### Production Deployment
+
+1. **Build the application:**
+   ```bash
+   pnpm run build
+   ```
+
+2. **Start production server:**
+   ```bash
+   NODE_ENV=production pnpm run start:prod
+   ```
 
 ### Docker
 
+**Using Docker Compose:**
 ```bash
 docker-compose up -d
-# or
-docker build -t page-scraper-microservice ./docker
-docker run --rm -p 8080:8080 page-scraper-microservice
 ```
 
-Ensure `PLAYWRIGHT_*` dependencies are available in the container (Dockerfile already installs Playwright browsers).
-
-## Testing & Quality
-
+**Using Docker directly:**
 ```bash
-pnpm run lint          # ESLint
-pnpm run format        # Prettier check/fix
-pnpm run test:unit     # Jest unit suite
-pnpm run test:e2e      # Pactum e2e suite
-pnpm run test:cov      # Coverage report
+docker build -t page-scraper-microservice -f docker/Dockerfile .
+docker run --rm -p 8080:8080 \
+  -e NODE_ENV=production \
+  -e LOG_LEVEL=info \
+  page-scraper-microservice
 ```
 
-### Test structure
+The Dockerfile includes Playwright browser dependencies for full rendering support.
 
-- `test/unit/` covers services (fingerprint, webhook, article extractor, etc.).
-- `test/e2e/` runs HTTP-level scenarios using Fastify adapter:
-  - `health.e2e-spec.ts` - Basic health check endpoint
-  - `scraper-mk-ru.e2e-spec.ts` - Real article scraping with mocked HTTP (uses local HTML file)
-- Setup scripts live in `test/setup/` and are auto-loaded by Jest config.
+## Testing
 
-**E2E Testing Approach:**
-The scraper e2e tests use minimal mocking - only HTTP requests are intercepted using `jest.mock()` to return local HTML files. All other processing (Cheerio parsing, Turndown conversion, read time calculation) runs without mocks, ensuring realistic end-to-end validation.
+### Available Test Commands
 
-## Operational notes
+| Command | Description |
+| --- | --- |
+| `pnpm run test` | Run all tests (unit + e2e) |
+| `pnpm run test:unit` | Run unit tests only |
+| `pnpm run test:e2e` | Run end-to-end tests |
+| `pnpm run test:cov` | Generate coverage report |
+| `pnpm run test:watch` | Run tests in watch mode |
+| `pnpm run lint` | Run ESLint |
+| `pnpm run format` | Format code with Prettier |
 
-- Batch state is in memory and purged after `batchDataLifetimeMins`; persist job results externally if long-term access is required.
-- Playwright mode incurs higher resource usage; size infrastructure accordingly.
-- When targeting hostile sites, enable fingerprint rotation and resource blocking to reduce bans.
-- Webhook payloads include full item results; secure endpoints and validate signatures on the consumer side.
-- Logs redact `Authorization` and `x-api-key` headers by default.
+### Test Organization
+
+```
+test/
+├── unit/                          # Unit tests for services and utilities
+│   ├── article-extractor.service.spec.ts
+│   ├── fingerprint.service.spec.ts
+│   ├── health.controller.spec.ts
+│   └── ...
+├── e2e/                           # End-to-end API tests
+│   ├── health.e2e-spec.ts        # Health endpoint tests
+│   ├── scraper-mk-ru.e2e-spec.ts # Real scraping scenarios
+│   └── examples/                  # Test fixtures (HTML files)
+├── setup/                         # Jest configuration
+│   ├── unit.setup.ts
+│   └── e2e.setup.ts
+└── helpers/                       # Test utilities and mocks
+```
+
+**Testing Philosophy:** E2E tests use minimal mocking—only HTTP requests are intercepted to return local HTML fixtures. All parsing, conversion, and extraction logic runs without mocks to ensure realistic validation.
+
+## Operational Considerations
+
+- **Batch state management:** Jobs are stored in-memory and automatically purged after `BATCH_DATA_LIFETIME_MINS`. For persistent storage or distributed deployments, integrate an external job queue (e.g., Bull, BullMQ).
+- **Resource requirements:** Playwright mode requires significantly more CPU and memory than Cheerio. Plan infrastructure capacity accordingly.
+- **Anti-bot strategies:** Enable fingerprint rotation (`FINGERPRINT_ROTATE_ON_ANTI_BOT=true`) and resource blocking when scraping sites with aggressive bot detection.
+- **Webhook security:** Webhook payloads contain full scraping results. Secure your webhook endpoints and consider implementing signature validation.
+- **Logging privacy:** Sensitive headers (`Authorization`, `x-api-key`) are automatically redacted from logs.
 
 ## Contributing
 
-1. Fork and create a topic branch from `main`.
-2. Follow existing coding standards (ESLint + Prettier).
-3. Add/extend unit and e2e tests for new behavior.
-4. Update documentation (README, `docs/api.md`, `docs/CHANGELOG.md` if significant).
-5. Submit a PR describing the change set and testing evidence.
+Contributions are welcome! Please follow these guidelines:
+
+1. **Fork the repository** and create a feature branch from `main`
+2. **Follow code standards:** Use ESLint and Prettier (run `pnpm run lint` and `pnpm run format`)
+3. **Write tests:** Add or update unit and e2e tests for new features or bug fixes
+4. **Update documentation:** Keep README, API docs, and CHANGELOG current
+5. **Submit a pull request** with a clear description of changes and test results
 
 ## License
 
-MIT License. See [`LICENSE`](LICENSE) for details.
+MIT License. See [`LICENSE`](LICENSE) for full details.
 
 ---
 
-### Dev quick reference
+## Development Reference
 
-- **Start dev server:** `pnpm run start:dev`
-- **Run lint:** `pnpm run lint`
-- **Run tests:** `pnpm run test`
-- **Format code:** `pnpm run format`
+| Task | Command |
+| --- | --- |
+| Start dev server | `pnpm run start:dev` |
+| Build for production | `pnpm run build` |
+| Run all tests | `pnpm run test` |
+| Run unit tests | `pnpm run test:unit` |
+| Run e2e tests | `pnpm run test:e2e` |
+| Lint code | `pnpm run lint` |
+| Format code | `pnpm run format` |
+| Generate coverage | `pnpm run test:cov` |
 
