@@ -36,7 +36,8 @@ Configuration is provided through environment variables and validated on startup
 | `DEFAULT_BATCH_MIN_DELAY_MS` | Minimum delay between requests | `1500` |
 | `DEFAULT_BATCH_MAX_DELAY_MS` | Maximum delay between requests | `4000` |
 | `DEFAULT_BATCH_CONCURRENCY` | Parallel workers | `1` |
-| `DATA_LIFETIME_MINS` | Retention of batch results | `60` |
+| `DATA_LIFETIME_MINS` | Retention of in-memory data (single page results and batch jobs) | `60` |
+| `CLEANUP_INTERVAL_MINS` | Minimum interval between cleanup runs | `5` |
 | `WEBHOOK_TIMEOUT_MS` | Webhook request timeout | `10000` |
 | `DEFAULT_WEBHOOK_BACKOFF_MS` | Default backoff for retries (can be overridden per request) | `1000` |
 | `DEFAULT_WEBHOOK_MAX_ATTEMPTS` | Default max webhook attempts (can be overridden per request) | `3` |
@@ -146,7 +147,8 @@ The Dockerfile includes Playwright browser dependencies for full rendering suppo
 
 ## Operational Considerations
 
-- **Batch state management:** Jobs are stored in-memory and automatically purged after `DATA_LIFETIME_MINS`. For persistent storage or distributed deployments, integrate an external job queue (e.g., Bull, BullMQ).
+- **In-memory data retention:** Single-page results and batch jobs are stored in memory only and kept for at least `DATA_LIFETIME_MINS`. A cleanup runs in parallel with every `POST /page` and `POST /batch`, but not more often than `CLEANUP_INTERVAL_MINS`, and never concurrently. Only data older than `DATA_LIFETIME_MINS` is removed; younger data is skipped.
+- **After-TTL deletion:** Once TTL elapses and cleanup runs, data is fully removed from memory with no persistence on disk by the cleanup mechanism.
 - **Resource requirements:** Playwright mode requires significantly more CPU and memory than Extractor. Plan infrastructure capacity accordingly.
   - **Anti-bot strategies:** Enable defaults (`DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT=true`, `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS=true`, `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES=true`) and customize per request via `fingerprint.rotateOnAntiBot`, `blockTrackers`, `blockHeavyResources`.
 - **Webhook security:** Webhook payloads contain full scraping results. Secure your webhook endpoints and consider implementing signature validation.

@@ -394,10 +394,17 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 
 ## Operational Behavior
 
-### Batch Job Lifecycle
+### Data Lifecycle & Cleanup
 
-- **Storage:** Batch state is stored in-memory and automatically purged after `DATA_LIFETIME_MINS` (default: 60 minutes)
-- **Status polling:** Fetching status for an expired job returns `404 Not Found`
+- **In-memory retention:** All data (single-page results and batch job state/results) is kept strictly in memory for at least `DATA_LIFETIME_MINS` minutes (default: 60)
+- **Cleanup trigger:** Cleanup runs in parallel with each `POST /page` and `POST /batch` call; the HTTP request completes only after both the main operation and cleanup finish
+- **Throttling:** Cleanup does not run more often than `CLEANUP_INTERVAL_MINS` (default: 5) and will not start if a previous cleanup is already running
+- **TTL policy:** Only data older than `DATA_LIFETIME_MINS` is deleted; younger data is skipped
+- **No persistence:** No data is written to disk by the cleanup mechanism. After TTL passes and cleanup executes, the data is fully removed from memory
+- **Batch status:** Polling a purged batch job returns `404 Not Found`
+
+### Batch Job Execution
+
 - **No batch timeout:** Individual items have their own `taskTimeoutSecs`, but there's no overall timeout for the entire batch job
 - **Concurrency:** Controlled by `schedule.concurrency` parameter (default: 1)
 

@@ -2,6 +2,8 @@ import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestj
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service'
 import { BatchService } from './services/batch.service'
+import { CleanupService } from './services/cleanup.service'
+import { MemoryStoreService } from './services/memory-store.service'
 import { ScraperRequestDto } from './dto/scraper-request.dto'
 import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto'
 import { BatchRequestDto, BatchResponseDto, BatchJobStatusDto } from './dto/batch.dto'
@@ -25,6 +27,8 @@ export class ScraperController {
   constructor(
     private readonly scraperService: ScraperService,
     private readonly batchService: BatchService,
+    private readonly cleanupService: CleanupService,
+    private readonly memoryStoreService: MemoryStoreService,
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(ScraperController.name)
@@ -40,7 +44,12 @@ export class ScraperController {
   async scrapePage(@Body() request: ScraperRequestDto): Promise<ScraperResponseDto> {
     try {
       this.logger.info(`Received scrape request for URL: ${request.url}`)
-      const result = await this.scraperService.scrapePage(request)
+      const cleanupPromise = this.cleanupService.triggerCleanup()
+      const resultPromise = this.scraperService.scrapePage(request).then((res: ScraperResponseDto) => {
+        this.memoryStoreService.addPage(request, res)
+        return res
+      })
+      const [, result] = await Promise.all([cleanupPromise, resultPromise])
       this.logger.info(`Successfully scraped ${request.url}`)
       return result
     } catch (error) {
@@ -78,7 +87,9 @@ export class ScraperController {
   async createBatchJob(@Body() request: BatchRequestDto): Promise<BatchResponseDto> {
     try {
       this.logger.info(`Received batch request with ${request.items.length} items`)
-      const result = await this.batchService.createBatchJob(request)
+      const cleanupPromise = this.cleanupService.triggerCleanup()
+      const createPromise = this.batchService.createBatchJob(request)
+      const [, result] = await Promise.all([cleanupPromise, createPromise])
       this.logger.info(`Created batch job: ${result.jobId}`)
       return result
     } catch (error) {

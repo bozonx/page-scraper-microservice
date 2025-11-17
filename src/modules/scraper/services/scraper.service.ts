@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
-import { PlaywrightCrawler } from 'crawlee'
+import { PlaywrightCrawler, Configuration } from 'crawlee'
 import { ScraperConfig } from '@config/scraper.config'
 import { ScraperRequestDto } from '../dto/scraper-request.dto'
 import { ScraperResponseDto } from '../dto/scraper-response.dto'
@@ -244,11 +244,10 @@ export class ScraperService {
         const errorMessage = error instanceof Error ? error.message : String(error)
         runError = new Error(`Failed to load ${req.url}: ${errorMessage}`)
       },
-    })
+    }, new Configuration({ persistStorage: false }))
 
-    // Add request to queue and start crawling
-    crawler.addRequests([request.url])
-    await crawler.run()
+    // Run with a single URL without persisting storage
+    await crawler.run([request.url])
 
     if (runError) throw runError
     if (typeof extracted === 'undefined') {

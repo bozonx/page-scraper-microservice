@@ -117,6 +117,14 @@ export class ScraperConfig {
   @Max(1440)
   public dataLifetimeMins!: number
 
+  /**
+   * Minimum interval in minutes between cleanup runs (1-1440)
+   */
+  @IsInt()
+  @Min(1)
+  @Max(1440)
+  public cleanupIntervalMins!: number
+
   // Webhook settings
   /**
    * Timeout in milliseconds for webhook HTTP requests (1000-60000)
@@ -182,6 +190,7 @@ export default registerAs('scraper', (): ScraperConfig => {
     batchMaxDelayMs: parseInt(process.env.DEFAULT_BATCH_MAX_DELAY_MS ?? '4000', 10),
     batchConcurrency: parseInt(process.env.DEFAULT_BATCH_CONCURRENCY ?? '1', 10),
     dataLifetimeMins: parseInt(process.env.DATA_LIFETIME_MINS ?? '60', 10),
+    cleanupIntervalMins: parseInt(process.env.CLEANUP_INTERVAL_MINS ?? '5', 10),
 
     // Webhook settings
     webhookTimeoutMs: parseInt(process.env.WEBHOOK_TIMEOUT_MS ?? '10000', 10),

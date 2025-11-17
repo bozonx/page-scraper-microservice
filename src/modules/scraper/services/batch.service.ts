@@ -72,10 +72,6 @@ interface BatchJob {
    */
   request: BatchRequestDto
   
-  /**
-   * Timeout handle for automatic cleanup
-   */
-  cleanupTimeout?: NodeJS.Timeout
 }
 
 /**
@@ -219,8 +215,7 @@ export class BatchService {
       })
     }
 
-    // Schedule cleanup
-    this.scheduleCleanup(jobId)
+    // Cleanup is handled centrally by CleanupService
   }
 
   /**
@@ -341,20 +336,18 @@ export class BatchService {
   }
 
   /**
-   * Schedules cleanup of a batch job after configured lifetime
-   * @param jobId Job ID to clean up
+   * Removes jobs older than provided TTL
    */
-  private scheduleCleanup(jobId: string): void {
-    const job = this.jobs.get(jobId)
-    if (!job) return
-
-    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-    const cleanupMs = scraperConfig.dataLifetimeMins * 60 * 1000
-
-    job.cleanupTimeout = setTimeout(() => {
-      this.jobs.delete(jobId)
-      this.logger.info(`Cleaned up job ${jobId}`)
-    }, cleanupMs)
+  public cleanupOlderThan(ttlMs: number): number {
+    const now = Date.now()
+    let removed = 0
+    for (const [id, job] of this.jobs.entries()) {
+      if (now - job.createdAt.getTime() >= ttlMs) {
+        this.jobs.delete(id)
+        removed++
+      }
+    }
+    return removed
   }
 
   /**

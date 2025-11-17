@@ -6,6 +6,8 @@ import { WebhookService } from './services/webhook.service'
 import { FingerprintService } from './services/fingerprint.service'
 import { TurndownConverterService } from './services/turndown.service'
 import { ArticleExtractorService } from './services/article-extractor.service'
+import { CleanupService } from './services/cleanup.service'
+import { MemoryStoreService } from './services/memory-store.service'
 
 /**
  * Scraper module
@@ -20,6 +22,8 @@ import { ArticleExtractorService } from './services/article-extractor.service'
     WebhookService,
     FingerprintService,
     TurndownConverterService,
+    CleanupService,
+    MemoryStoreService,
     {
       // Provide article extractor as an interface for better testability
       provide: 'IArticleExtractor',
@@ -32,6 +36,8 @@ import { ArticleExtractorService } from './services/article-extractor.service'
     WebhookService,
     FingerprintService,
     TurndownConverterService,
+    CleanupService,
+    MemoryStoreService,
     'IArticleExtractor'
   ],
 })
