@@ -40,12 +40,19 @@ export class ScraperService {
 
     try {
       let content: any
+      const effectiveTimeoutSecs = request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs
 
       // Use appropriate scraping method based on mode
       if (mode === 'playwright') {
-        content = await this.scrapeWithPlaywright(request)
+        content = await this.withTimeout(
+          effectiveTimeoutSecs * 1000,
+          this.scrapeWithPlaywright(request)
+        )
       } else {
-        content = await this.scrapeWithCheerio(request)
+        content = await this.withTimeout(
+          effectiveTimeoutSecs * 1000,
+          this.scrapeWithCheerio(request)
+        )
       }
 
       // Convert HTML to Markdown
@@ -151,7 +158,7 @@ export class ScraperService {
         },
       },
       requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
-      navigationTimeoutSecs: scraperConfig.playwrightNavigationTimeoutSecs,
+      navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
 
       async requestHandler({ page }) {
         try {
@@ -192,7 +199,6 @@ export class ScraperService {
           // Navigate to page
           await page.goto(request.url, {
             waitUntil: 'networkidle',
-            timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
           })
 
           // Get HTML content
@@ -220,5 +226,20 @@ export class ScraperService {
       throw new Error('Content extraction resulted in empty response')
     }
     return extracted
+  }
+
+  private async withTimeout<T>(ms: number, promise: Promise<T>): Promise<T> {
+    return await new Promise<T>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Task timed out')), ms)
+      promise
+        .then((res) => {
+          clearTimeout(timer)
+          resolve(res)
+        })
+        .catch((err) => {
+          clearTimeout(timer)
+          reject(err)
+        })
+    })
   }
 }

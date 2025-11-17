@@ -24,7 +24,7 @@ Scrape a single URL and return structured content.
 | --- | --- | --- | --- | --- |
 | `url` | string (URL) | ✅ | — | Target page to scrape. |
 | `mode` | string | ❌ | `cheerio` | Scraper engine: `cheerio` for static HTML, `playwright` for full browser rendering. |
-| `taskTimeoutSecs` | number | ❌ | `DEFAULT_TASK_TIMEOUT_SECS` (30) | Per-request timeout in seconds (1–300). |
+| `taskTimeoutSecs` | number | ❌ | `DEFAULT_TASK_TIMEOUT_SECS` (30) | Per-request timeout in seconds (1–300). This value defines the overall timeout for the task and caps the total execution time regardless of inner HTTP or browser navigation timeouts. |
 | `locale` | string | ❌ | `DEFAULT_LOCALE` (`en-US`) | Preferred locale for extraction heuristics. |
 | `dateLocale` | string | ❌ | `DEFAULT_DATE_LOCALE` (`en`) | Locale used for date parsing. |
 | `timezoneId` | string | ❌ | `DEFAULT_TIMEZONE_ID` (`UTC`) | Target timezone for date normalization. |
@@ -244,6 +244,8 @@ Validation failures emitted by Nest’s `ValidationPipe` are normalized to:
 ## Operational behaviour
 
 - Batch state is kept in-memory and purged after `BATCH_DATA_LIFETIME_MINS`. Fetching status past this window returns 404.
+- There is no overall timeout for an entire batch job. Each item in the batch is governed solely by its own `taskTimeoutSecs` (from the item or `commonSettings`, or the default).
+- `taskTimeoutSecs` defines the total time budget for a single task. Internal timeouts (e.g., HTTP client or Playwright navigation) are bounded by, and must not exceed, this value.
 - Playwright scraping respects `blockTrackers` and `blockHeavyResources` flags to reduce detection and resource usage.
 - Browser fingerprints rotate automatically when anti-bot signals are identified (unless disabled).
 - Additional scraper-source metadata can be provided via the `CONFIG_PATH` environment variable pointing to a YAML file; it is loaded under the `sources` configuration namespace.
