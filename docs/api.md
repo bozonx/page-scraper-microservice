@@ -30,28 +30,43 @@ Scrapes a single web page and extracts structured article content.
 
 #### Request Body
 
-| Field | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `url` | string (URL) | ✅ | — | Target page to scrape. |
-| `mode` | string | ❌ | `extractor` | Scraper engine: `extractor` for static HTML, `playwright` for full browser rendering. |
-| `taskTimeoutSecs` | number | ❌ | `DEFAULT_TASK_TIMEOUT_SECS` (30) | Per-request timeout in seconds (1–300). This value defines the overall timeout for the task and caps the total execution time regardless of inner HTTP or browser navigation timeouts. |
-| `locale` | string | ❌ | `DEFAULT_LOCALE` (`en-US`) | Preferred locale for extraction heuristics. |
-| `dateLocale` | string | ❌ | `DEFAULT_DATE_LOCALE` (falls back to `DEFAULT_LOCALE`) | Locale used for date parsing. If omitted in the request, falls back to `locale`. |
-| `timezoneId` | string | ❌ | `DEFAULT_TIMEZONE_ID` (`UTC`) | Target timezone for date normalization. In Playwright mode, applied at the browser context level. In extractor mode (and when extracting from HTML), sent as `X-Timezone-Id` header to guide parsing heuristics. |
-| `blockTrackers` | boolean | ❌ | `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS` (`true`) | Default behavior for blocking analytics/tracking scripts in Playwright. Per-request value overrides this default. |
-| `blockHeavyResources` | boolean | ❌ | `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` (`true`) | Default behavior for blocking media/fonts in Playwright. Per-request value overrides this default. |
-| `fingerprint` | object | ❌ | — | Browser fingerprint overrides. Fully applied in Playwright (UA, viewport, etc. with rotation on anti-bot). In `extractor` mode only applicable via headers (`User-Agent`, `Accept-Language`). |
-
-#### Fingerprint object
-
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `generate` | boolean | `DEFAULT_FINGERPRINT_GENERATE` (`true`) | Default toggle for fingerprint generation. Per-request value overrides. |
-| `userAgent` | string | `auto` | Custom or auto-generated user agent. |
-| `locale` | string | `source` | Browser locale; `source` randomizes from a curated list. |
-| `timezoneId` | string | `source` | Browser timezone; `source` randomizes common zones. |
-| `rotateOnAntiBot` | boolean | `DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT` (`true`) | Default: rotate fingerprint when anti-bot behaviour is detected. Per-request value overrides. |
-| `generator` | object | — | Additional generator hints such as allowed `browsers` array. |
+```jsonc
+{
+  // Target page to scrape (required)
+  "url": "https://example.com/article",
+  // Scraper engine: "extractor" for static HTML, "playwright" for full browser rendering. Default: extractor.
+  "mode": "extractor",
+  // Per-request timeout in seconds (1–300). Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30).
+  "taskTimeoutSecs": 30,
+  // Preferred locale for extraction heuristics. Default: DEFAULT_LOCALE ("en-US").
+  "locale": "en-US",
+  // Locale used for date parsing. Falls back to locale when omitted. Default constant: DEFAULT_DATE_LOCALE.
+  "dateLocale": "en-US",
+  // Target timezone for date normalization. Applied via Playwright context or X-Timezone-Id header in extractor mode. Default: DEFAULT_TIMEZONE_ID ("UTC").
+  "timezoneId": "UTC",
+  // Default Playwright behavior blocks analytics/tracking scripts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS (true).
+  "blockTrackers": true,
+  // Default Playwright behavior blocks heavy media and fonts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES (true).
+  "blockHeavyResources": true,
+  // Browser fingerprint overrides. Fully applied in Playwright; in extractor mode only affects headers (User-Agent, Accept-Language).
+  "fingerprint": {
+    // Default toggle for automatic fingerprint generation. Per-request value overrides. Default: DEFAULT_FINGERPRINT_GENERATE (true).
+    "generate": true,
+    // Custom or auto-generated user agent string. Use "auto" to let the service decide.
+    "userAgent": "auto",
+    // Browser locale; "source" randomizes from a curated list.
+    "locale": "source",
+    // Browser timezone; "source" randomizes common zones.
+    "timezoneId": "source",
+    // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
+    "rotateOnAntiBot": true,
+    // Additional generator hints such as allowed browsers list.
+    "generator": {
+      "browsers": ["chrome", "firefox"]
+    }
+  }
+}
+```
 
 Note:
 
@@ -125,32 +140,53 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
 
 #### Request Body
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `items` | `BatchItemDto[]` | ✅ | Items to scrape. Each requires `url` (string URL) and optional `mode`. |
-| `commonSettings` | object | ❌ | Default scraper settings applied to every item (same shape as `/page` payload minus `url`). Item-level fields override these defaults. |
-| `schedule` | object | ❌ | Controls pacing and concurrency. |
-| `webhook` | object | ❌ | Webhook configuration triggered after completion. |
-
-#### Schedule object
-
-| Field | Type | Default | Constraints | Description |
-| --- | --- | --- | --- | --- |
-| `minDelayMs` | number | `DEFAULT_BATCH_MIN_DELAY_MS` (1500) | 500–30000 | Minimum wait between item requests per worker. |
-| `maxDelayMs` | number | `DEFAULT_BATCH_MAX_DELAY_MS` (4000) | 1000–60000 | Maximum wait between item requests. |
-| `jitter` | boolean | `true` | — | Adds ±20% random jitter to delays. |
-| `concurrency` | number | `DEFAULT_BATCH_CONCURRENCY` (1) | 1–10 | Parallel worker count. |
-
-#### Webhook object
-
-| Field | Type | Default | Description |
-| --- | --- | --- | --- |
-| `url` | string | — | Destination endpoint (required). |
-| `headers` | record<string,string> | `{}` | Additional headers per request. |
-| `authHeaderName` | string | — | Header key for auth token. |
-| `authHeaderValue` | string | — | Header value for auth token. |
-| `backoffMs` | number | `DEFAULT_WEBHOOK_BACKOFF_MS` (1000) | Base delay for exponential backoff (100–30000). Can override default values. |
-| `maxAttempts` | number | `DEFAULT_WEBHOOK_MAX_ATTEMPTS` (3) | Retry limit (1–10). Can override default values. |
+```jsonc
+{
+  // Items to scrape. Each entry requires url (string URL) and optional mode.
+  "items": [
+    {
+      "url": "https://example.com/article-1",
+      "mode": "playwright"
+    },
+    {
+      "url": "https://example.com/article-2"
+    }
+  ],
+  // Default scraper settings applied to every item. Same shape as /page payload minus url. Item-level fields override.
+  "commonSettings": {
+    "mode": "extractor",
+    "taskTimeoutSecs": 60
+  },
+  // Controls pacing and concurrency for the batch.
+  "schedule": {
+    // Minimum wait between item requests per worker (ms). Default: DEFAULT_BATCH_MIN_DELAY_MS (1500). Range: 500–30000.
+    "minDelayMs": 1500,
+    // Maximum wait between item requests (ms). Default: DEFAULT_BATCH_MAX_DELAY_MS (4000). Range: 1000–60000.
+    "maxDelayMs": 4000,
+    // Adds ±20% random jitter to delays. Default: true.
+    "jitter": true,
+    // Parallel worker count. Default: DEFAULT_BATCH_CONCURRENCY (1). Range: 1–10.
+    "concurrency": 2
+  },
+  // Webhook configuration triggered after completion.
+  "webhook": {
+    // Destination endpoint (required when webhook is provided).
+    "url": "https://example.com/webhook",
+    // Additional headers per request.
+    "headers": {
+      "X-Custom-Header": "value"
+    },
+    // Header key for auth token.
+    "authHeaderName": "Authorization",
+    // Header value for auth token.
+    "authHeaderValue": "Bearer token",
+    // Base delay for exponential backoff (ms). Default: DEFAULT_WEBHOOK_BACKOFF_MS (1000). Range: 100–30000.
+    "backoffMs": 1000,
+    // Retry limit. Default: DEFAULT_WEBHOOK_MAX_ATTEMPTS (3). Range: 1–10.
+    "maxAttempts": 3
+  }
+}
+```
 
 #### Success Response (202 Accepted)
 
