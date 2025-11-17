@@ -127,7 +127,7 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `items` | `BatchItemDto[]` | ✅ | Items to scrape. Each requires `url` (string URL) and optional `mode`. Max length is `BATCH_MAX_ITEMS` (default 100). |
+| `items` | `BatchItemDto[]` | ✅ | Items to scrape. Each requires `url` (string URL) and optional `mode`. |
 | `commonSettings` | object | ❌ | Default scraper settings applied to every item (same shape as `/page` payload minus `url`). Item-level fields override these defaults. |
 | `schedule` | object | ❌ | Controls pacing and concurrency. |
 | `webhook` | object | ❌ | Webhook configuration triggered after completion. |
@@ -164,7 +164,7 @@ The batch job is created and begins processing immediately. Use the returned `jo
 
 #### Error Responses
 
-- `400 Bad Request` if validation fails (e.g., too many items, invalid URLs).
+- `400 Bad Request` if validation fails (e.g., invalid URLs).
 - `500 Internal Server Error` for unexpected failures creating the job (wrapped in `BatchJobCreationException`).
 
 ---

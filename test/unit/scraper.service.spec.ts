@@ -62,7 +62,6 @@ describe('ScraperService (unit)', () => {
     batchMinDelayMs: 1500,
     batchMaxDelayMs: 4000,
     batchConcurrency: 1,
-    batchMaxItems: 100,
     batchDataLifetimeMins: 60,
 
     // Webhook settings

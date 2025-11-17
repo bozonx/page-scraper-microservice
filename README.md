@@ -35,7 +35,6 @@ Configuration is provided through environment variables and validated on startup
 | `DEFAULT_BATCH_MIN_DELAY_MS` | Minimum delay between requests | `1500` |
 | `DEFAULT_BATCH_MAX_DELAY_MS` | Maximum delay between requests | `4000` |
 | `DEFAULT_BATCH_CONCURRENCY` | Parallel workers | `1` |
-| `BATCH_MAX_ITEMS` | Items per batch | `100` |
 | `BATCH_DATA_LIFETIME_MINS` | Retention of batch results | `60` |
 | `WEBHOOK_TIMEOUT_MS` | Webhook request timeout | `10000` |
 | `WEBHOOK_BACKOFF_MS` | Base backoff for retries | `1000` |

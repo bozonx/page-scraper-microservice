@@ -103,10 +103,6 @@ export class BatchService {
   async createBatchJob(request: BatchRequestDto): Promise<BatchResponseDto> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
-    // Validate batch size
-    if (request.items.length > scraperConfig.batchMaxItems) {
-      throw new Error(`Batch size exceeds maximum of ${scraperConfig.batchMaxItems} items`)
-    }
 
     // Generate unique job ID
     const { v4: uuidv4 } = await import('uuid')

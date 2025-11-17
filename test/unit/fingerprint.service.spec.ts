@@ -26,7 +26,6 @@ describe('FingerprintService (unit)', () => {
     batchMinDelayMs: 1500,
     batchMaxDelayMs: 4000,
     batchConcurrency: 1,
-    batchMaxItems: 100,
     batchDataLifetimeMins: 60,
     webhookTimeoutMs: 10000,
     webhookBackoffMs: 1000,
