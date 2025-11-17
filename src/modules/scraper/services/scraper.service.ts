@@ -209,17 +209,20 @@ export class ScraperService {
 
           // Timezone is set via contextOptions.timezoneId at context creation time
 
-          // Block trackers and heavy resources if requested
-          if (request.blockTrackers !== false && scraperConfig.playwrightBlockTrackers) {
+          // Determine effective blocking flags: request overrides default config when provided
+          const effectiveBlockTrackers =
+            request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+          const effectiveBlockHeavy =
+            request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
+
+          // Block trackers and heavy resources based on effective flags
+          if (effectiveBlockTrackers) {
             await page.route('**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}', (route) =>
               route.abort()
             )
           }
 
-          if (
-            request.blockHeavyResources !== false &&
-            scraperConfig.playwrightBlockHeavyResources
-          ) {
+          if (effectiveBlockHeavy) {
             await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
               route.abort()
             )

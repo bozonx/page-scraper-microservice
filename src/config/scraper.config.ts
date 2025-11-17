@@ -112,14 +112,6 @@ export class ScraperConfig {
   public batchConcurrency!: number
 
   /**
-   * Maximum number of URLs allowed in a single batch job (1-1000)
-   */
-  @IsInt()
-  @Min(1)
-  @Max(1000)
-  public batchMaxItems!: number
-
-  /**
    * Time in minutes to retain batch job data in memory before cleanup (1-1440)
    */
   @IsInt()
@@ -177,18 +169,17 @@ export default registerAs('scraper', (): ScraperConfig => {
       process.env.PLAYWRIGHT_NAVIGATION_TIMEOUT_SECS ?? '30',
       10
     ),
-    playwrightBlockTrackers: process.env.PLAYWRIGHT_BLOCK_TRACKERS !== 'false',
-    playwrightBlockHeavyResources: process.env.PLAYWRIGHT_BLOCK_HEAVY_RESOURCES !== 'false',
+    playwrightBlockTrackers: process.env.DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS !== 'false',
+    playwrightBlockHeavyResources: process.env.DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES !== 'false',
 
     // Fingerprint settings - default to true unless explicitly set to 'false'
-    fingerprintGenerate: process.env.FINGERPRINT_GENERATE !== 'false',
-    fingerprintRotateOnAntiBot: process.env.FINGERPRINT_ROTATE_ON_ANTI_BOT !== 'false',
+    fingerprintGenerate: process.env.DEFAULT_FINGERPRINT_GENERATE !== 'false',
+    fingerprintRotateOnAntiBot: process.env.DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT !== 'false',
 
     // Batch processing settings
-    batchMinDelayMs: parseInt(process.env.BATCH_MIN_DELAY_MS ?? '1500', 10),
-    batchMaxDelayMs: parseInt(process.env.BATCH_MAX_DELAY_MS ?? '4000', 10),
-    batchConcurrency: parseInt(process.env.BATCH_CONCURRENCY ?? '1', 10),
-    batchMaxItems: parseInt(process.env.BATCH_MAX_ITEMS ?? '100', 10),
+    batchMinDelayMs: parseInt(process.env.DEFAULT_BATCH_MIN_DELAY_MS ?? '1500', 10),
+    batchMaxDelayMs: parseInt(process.env.DEFAULT_BATCH_MAX_DELAY_MS ?? '4000', 10),
+    batchConcurrency: parseInt(process.env.DEFAULT_BATCH_CONCURRENCY ?? '1', 10),
     batchDataLifetimeMins: parseInt(process.env.BATCH_DATA_LIFETIME_MINS ?? '60', 10),
 
     // Webhook settings

@@ -28,13 +28,13 @@ Configuration is provided through environment variables and validated on startup
 | `DEFAULT_TIMEZONE_ID` | Timezone for date normalization | `UTC` |
 | `DEFAULT_DATE_LOCALE` | Locale used for date parsing | falls back to `DEFAULT_LOCALE` if unset |
 | `PLAYWRIGHT_HEADLESS` | Headless browser flag | `true` |
-| `PLAYWRIGHT_BLOCK_TRACKERS` | Block analytics resources | `true` |
-| `PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` | Block heavy media | `true` |
-| `FINGERPRINT_GENERATE` | Enable fingerprinting | `true` |
-| `FINGERPRINT_ROTATE_ON_ANTI_BOT` | Rotate on detection signals | `true` |
-| `BATCH_MIN_DELAY_MS` | Minimum delay between requests | `1500` |
-| `BATCH_MAX_DELAY_MS` | Maximum delay between requests | `4000` |
-| `BATCH_CONCURRENCY` | Parallel workers | `1` |
+| `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS` | Default: block analytics resources (request can override) | `true` |
+| `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` | Default: block heavy media (request can override) | `true` |
+| `DEFAULT_FINGERPRINT_GENERATE` | Default: enable fingerprinting (request can override) | `true` |
+| `DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT` | Default: rotate on detection signals (request can override) | `true` |
+| `DEFAULT_BATCH_MIN_DELAY_MS` | Minimum delay between requests | `1500` |
+| `DEFAULT_BATCH_MAX_DELAY_MS` | Maximum delay between requests | `4000` |
+| `DEFAULT_BATCH_CONCURRENCY` | Parallel workers | `1` |
 | `BATCH_MAX_ITEMS` | Items per batch | `100` |
 | `BATCH_DATA_LIFETIME_MINS` | Retention of batch results | `60` |
 | `WEBHOOK_TIMEOUT_MS` | Webhook request timeout | `10000` |
@@ -148,7 +148,7 @@ The Dockerfile includes Playwright browser dependencies for full rendering suppo
 
 - **Batch state management:** Jobs are stored in-memory and automatically purged after `BATCH_DATA_LIFETIME_MINS`. For persistent storage or distributed deployments, integrate an external job queue (e.g., Bull, BullMQ).
 - **Resource requirements:** Playwright mode requires significantly more CPU and memory than Extractor. Plan infrastructure capacity accordingly.
-- **Anti-bot strategies:** Enable fingerprint rotation (`FINGERPRINT_ROTATE_ON_ANTI_BOT=true`) and resource blocking when scraping sites with aggressive bot detection.
+  - **Anti-bot strategies:** Enable defaults (`DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT=true`, `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS=true`, `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES=true`) and customize per request via `fingerprint.rotateOnAntiBot`, `blockTrackers`, `blockHeavyResources`.
 - **Webhook security:** Webhook payloads contain full scraping results. Secure your webhook endpoints and consider implementing signature validation.
 - **Logging privacy:** Sensitive headers (`Authorization`, `x-api-key`) are automatically redacted from logs.
 
