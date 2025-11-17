@@ -36,11 +36,11 @@ Scrapes a single web page and extracts structured article content.
 | `mode` | string | ❌ | `extractor` | Scraper engine: `extractor` for static HTML, `playwright` for full browser rendering. |
 | `taskTimeoutSecs` | number | ❌ | `DEFAULT_TASK_TIMEOUT_SECS` (30) | Per-request timeout in seconds (1–300). This value defines the overall timeout for the task and caps the total execution time regardless of inner HTTP or browser navigation timeouts. |
 | `locale` | string | ❌ | `DEFAULT_LOCALE` (`en-US`) | Preferred locale for extraction heuristics. |
-| `dateLocale` | string | ❌ | `DEFAULT_DATE_LOCALE` (`en`) | Locale used for date parsing. |
-| `timezoneId` | string | ❌ | `DEFAULT_TIMEZONE_ID` (`UTC`) | Target timezone for date normalization. |
+| `dateLocale` | string | ❌ | `DEFAULT_DATE_LOCALE` (falls back to `DEFAULT_LOCALE`) | Locale used for date parsing. If omitted in the request, falls back to `locale`.
+| `timezoneId` | string | ❌ | `DEFAULT_TIMEZONE_ID` (`UTC`) | Target timezone for date normalization. In Playwright mode, applied at the browser context level. In extractor mode (and when extracting from HTML), sent as `X-Timezone-Id` header to guide parsing heuristics. |
 | `blockTrackers` | boolean | ❌ | `PLAYWRIGHT_BLOCK_TRACKERS` (`true`) | When Playwright is used, block analytics/tracking scripts unless explicitly `false`. |
 | `blockHeavyResources` | boolean | ❌ | `PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` (`true`) | When Playwright is used, block media/fonts unless explicitly `false`. |
-| `fingerprint` | object | ❌ | — | Browser fingerprint overrides (Playwright only). |
+| `fingerprint` | object | ❌ | — | Browser fingerprint overrides. Fully applied in Playwright (UA, viewport, etc. with rotation on anti-bot). In `extractor` mode only applicable via headers (`User-Agent`, `Accept-Language`). |
 
 #### Fingerprint object
 
@@ -52,6 +52,11 @@ Scrapes a single web page and extracts structured article content.
 | `timezoneId` | string | `source` | Browser timezone; `source` randomizes common zones. |
 | `rotateOnAntiBot` | boolean | `FINGERPRINT_ROTATE_ON_ANTI_BOT` (`true`) | Rotate fingerprint when anti-bot behaviour is detected. |
 | `generator` | object | — | Additional generator hints such as allowed `browsers` array. |
+
+Note:
+
+- In Playwright mode, the fingerprint is applied to the page context (e.g., user agent and viewport). Timezone and locale are set via Playwright browser context options.
+- In extractor mode, fingerprint affects outbound request headers only (`User-Agent`, `Accept-Language`). Timezone is passed as `X-Timezone-Id` for downstream date parsing heuristics.
 
 #### Example Request
 

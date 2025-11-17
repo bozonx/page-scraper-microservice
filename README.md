@@ -24,6 +24,9 @@ Configuration is provided through environment variables and validated on startup
 | `LOG_LEVEL` | Pino log level (`trace`…`silent`) | `warn` |
 | `DEFAULT_MODE` | Scraper mode (`extractor` / `playwright`) | `extractor` |
 | `DEFAULT_TASK_TIMEOUT_SECS` | Per-page timeout (1-300) | `30` |
+| `DEFAULT_LOCALE` | Preferred locale for extraction heuristics | `en-US` |
+| `DEFAULT_TIMEZONE_ID` | Timezone for date normalization | `UTC` |
+| `DEFAULT_DATE_LOCALE` | Locale used for date parsing | falls back to `DEFAULT_LOCALE` if unset |
 | `PLAYWRIGHT_HEADLESS` | Headless browser flag | `true` |
 | `PLAYWRIGHT_BLOCK_TRACKERS` | Block analytics resources | `true` |
 | `PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` | Block heavy media | `true` |

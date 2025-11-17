@@ -1,7 +1,7 @@
 ## Agent Rules (alwaysApply)
 
 - Microservice with REST API
-- Stack: TypeScript, NestJS, Fastify, Docker, Playwright, Cheerio, Crawlee, Pino
+- Stack: TypeScript, NestJS, Fastify, Docker, Playwright, Crawlee, Pino
 
 ### Structure and Practices
 

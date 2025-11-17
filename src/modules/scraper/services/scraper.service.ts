@@ -101,6 +101,10 @@ export class ScraperService {
     if (fp.userAgent) {
       headers['User-Agent'] = fp.userAgent
     }
+    // Provide timezone hint for downstream parsing/heuristics
+    if (request.timezoneId || scraperConfig.defaultTimezoneId) {
+      headers['X-Timezone-Id'] = (request.timezoneId || scraperConfig.defaultTimezoneId) as string
+    }
 
     return await this.articleExtractor.extract(request.url, { headers })
   }
@@ -164,13 +168,23 @@ export class ScraperService {
     let runError: Error | null = null
 
     // Configure Playwright crawler
-    const crawler = new PlaywrightCrawler({
-      launchContext: {
-        launchOptions: {
-          timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
-          headless: scraperConfig.playwrightHeadless,
-        },
+    const tzForContext = request.timezoneId || scraperConfig.defaultTimezoneId
+    const localeForContext = request.locale || scraperConfig.defaultLocale
+
+    const launchContext: any = {
+      launchOptions: {
+        timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
+        headless: scraperConfig.playwrightHeadless,
       },
+      // Apply per-context options so all pages use the desired timezone/locale
+      contextOptions: {
+        ...(tzForContext ? { timezoneId: tzForContext } : {}),
+        ...(localeForContext ? { locale: localeForContext as string } : {}),
+      },
+    }
+
+    const crawler = new PlaywrightCrawler({
+      launchContext,
       requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
       navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
 
@@ -192,6 +206,8 @@ export class ScraperService {
               height: fingerprint.viewport.height,
             })
           }
+
+          // Timezone is set via contextOptions.timezoneId at context creation time
 
           // Block trackers and heavy resources if requested
           if (request.blockTrackers !== false && scraperConfig.playwrightBlockTrackers) {
@@ -221,6 +237,7 @@ export class ScraperService {
           const headers: Record<string, string> = {}
           if (fingerprint.language) headers['Accept-Language'] = fingerprint.language
           if (fingerprint.userAgent) headers['User-Agent'] = fingerprint.userAgent
+          if (tzForContext) headers['X-Timezone-Id'] = tzForContext as string
           extracted = await articleExtractor.extractFromHtml(html, { headers })
         } catch (error) {
           runError = error instanceof Error ? error : new Error(String(error))
