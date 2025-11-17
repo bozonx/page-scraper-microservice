@@ -1,6 +1,6 @@
-import { BatchService } from '@/modules/scraper/services/batch.service.js'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
+import { BatchService } from '@/modules/scraper/services/batch.service.js'
 import { ScraperService } from '@/modules/scraper/services/scraper.service.js'
 import { WebhookService } from '@/modules/scraper/services/webhook.service.js'
 import { createMockConfigService, createMockLogger } from '@test/helpers/mocks.js'

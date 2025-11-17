@@ -1,5 +1,5 @@
-import { MemoryStoreService } from '@/modules/scraper/services/memory-store.service.js'
 import { createMockLogger } from '@test/helpers/mocks.js'
+import { MemoryStoreService } from '@/modules/scraper/services/memory-store.service.js'
 import type { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto.js'
 import type { ScraperResponseDto } from '@/modules/scraper/dto/scraper-response.dto.js'
 

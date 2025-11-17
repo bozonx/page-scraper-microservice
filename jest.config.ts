@@ -1,4 +1,4 @@
-import type { Config } from 'jest';
+import type { Config } from 'jest'
 
 // Common module name mapper for path aliases
 const moduleNameMapper = {
@@ -15,10 +15,10 @@ const moduleNameMapper = {
   '^@config/(.*)$': '<rootDir>/src/config/$1',
   '^@test/(.*)\\.js$': '<rootDir>/test/$1',
   '^@test/(.*)$': '<rootDir>/test/$1',
-};
+}
 
 // Common module file extensions
-const moduleFileExtensions = ['ts', 'js', 'json'];
+const moduleFileExtensions = ['ts', 'js', 'json']
 
 // Transforms for unit (CJS) and e2e (ESM)
 const transformUnit = {
@@ -34,7 +34,7 @@ const transformUnit = {
       useESM: false,
     },
   ],
-};
+}
 
 const transformE2E = {
   '^.+\\.ts$': [
@@ -44,7 +44,7 @@ const transformE2E = {
       useESM: true,
     },
   ],
-};
+}
 
 const config: Config = {
   // Parallel test execution - use 50% of CPU cores locally, limit to 2 in CI
@@ -95,6 +95,6 @@ const config: Config = {
       testTimeout: 30000,
     },
   ],
-};
+}
 
-export default config;
+export default config
