@@ -113,4 +113,19 @@ describe('ScraperService (unit)', () => {
     expect(res.body).toContain('Mocked Markdown')
     expect(articleExtractor.extractFromHtml).toHaveBeenCalled()
   })
+
+  it('returns raw HTML when rawBody=true and sets meta.rawBody', async () => {
+    const dto: ScraperRequestDto = {
+      url: 'https://example.com/raw',
+      mode: 'extractor',
+      rawBody: true,
+    } as any
+
+    const res = await service.scrapePage(dto)
+
+    // Should not be converted to Markdown
+    expect(res.body).toContain('<p>')
+    expect(res.body).not.toContain('Mocked Markdown')
+    expect(res.meta?.rawBody).toBe(true)
+  })
 })

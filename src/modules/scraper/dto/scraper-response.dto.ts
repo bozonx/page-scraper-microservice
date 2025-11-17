@@ -12,6 +12,11 @@ export interface ScraperMetaDto {
    * Estimated reading time in minutes (calculated at 200 words per minute)
    */
   readTimeMin?: number
+
+  /**
+   * Whether the body is returned as raw extractor output (no Markdown conversion)
+   */
+  rawBody?: boolean
 }
 
 /**

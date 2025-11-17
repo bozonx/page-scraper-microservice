@@ -5,7 +5,7 @@ A production-ready NestJS microservice for extracting structured article data fr
 ## Features
 
 - **Dual scraping modes:** Extractor (@extractus/article-extractor) for fast static HTML parsing or Playwright for JavaScript-rendered content
-- **Rich article extraction:** Title, description, author, publication date, language, Markdown body, and estimated reading time
+- **Rich article extraction:** Title, description, author, publication date, language, body (Markdown by default or raw HTML via `rawBody`), and estimated reading time
 - **Batch processing:** Asynchronous job orchestration with configurable concurrency, delays, and jitter
 - **Anti-bot protection:** Rotating browser fingerprints and selective resource blocking to minimize detection
 - **Webhook notifications:** Reliable delivery with exponential backoff, retries, and authentication support
@@ -61,6 +61,8 @@ curl -X POST "http://localhost:8080/api/v1/page" \
       }'
 ```
 
+To receive raw extractor output without Markdown conversion, add `"rawBody": true` to the request body.
+
 ### 2. Submit batch job
 
 ```bash
@@ -71,7 +73,7 @@ curl -X POST "http://localhost:8080/api/v1/batch" \
           { "url": "https://site1.com/a" },
           { "url": "https://site2.com/b", "mode": "playwright" }
         ],
-        "commonSettings": { "taskTimeoutSecs": 45 },
+        "commonSettings": { "taskTimeoutSecs": 45, "rawBody": false },
         "schedule": { "concurrency": 2, "minDelayMs": 1000, "maxDelayMs": 3000 },
         "webhook": {
           "url": "https://consumer.local/webhook",

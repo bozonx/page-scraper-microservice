@@ -31,6 +31,13 @@ export class BatchItemDto {
   @IsOptional()
   @IsIn(['extractor', 'playwright'])
   public mode?: string
+
+  /**
+   * If true returns body as provided by extractor (no Markdown conversion)
+   */
+  @IsOptional()
+  @IsBoolean()
+  public rawBody?: boolean
 }
 
 /**
@@ -142,6 +149,13 @@ export class BatchCommonSettingsDto {
   @IsInt()
   @Min(1)
   public taskTimeoutSecs?: number
+
+  /**
+   * If true returns body as provided by extractor (no Markdown conversion)
+   */
+  @IsOptional()
+  @IsBoolean()
+  public rawBody?: boolean
 
   /**
    * Default locale for content extraction

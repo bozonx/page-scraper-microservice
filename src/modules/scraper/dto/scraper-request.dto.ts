@@ -92,6 +92,13 @@ export class ScraperRequestDto {
   public taskTimeoutSecs?: number
 
   /**
+   * If true returns body as provided by extractor (no Markdown conversion)
+   */
+  @IsOptional()
+  @IsBoolean()
+  public rawBody?: boolean
+
+  /**
    * Locale for content extraction (affects language detection and formatting)
    */
   @IsOptional()

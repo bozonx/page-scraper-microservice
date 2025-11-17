@@ -49,9 +49,14 @@ export class ScraperService {
         content = await this.scrapeWithExtractor(request)
       }
 
-      // Convert HTML to Markdown
+      // Prepare body based on rawBody flag: either raw extractor output or Markdown
       const rawHtml = content?.content ?? ''
-      const body = rawHtml ? this.turndownConverterService.convertToMarkdown(rawHtml) : ''
+      const shouldReturnRaw = request.rawBody === true
+      const body = shouldReturnRaw
+        ? rawHtml
+        : rawHtml
+        ? this.turndownConverterService.convertToMarkdown(rawHtml)
+        : ''
 
       // Calculate read time (200 wpm). Empty body => 0
       const trimmed = body.trim()
@@ -68,6 +73,7 @@ export class ScraperService {
         meta: {
           lang: content?.lang,
           readTimeMin,
+          rawBody: shouldReturnRaw,
         },
       }
     } catch (error) {

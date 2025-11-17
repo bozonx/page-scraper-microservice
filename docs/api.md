@@ -36,6 +36,8 @@ Scrapes a single web page and extracts structured article content.
   "url": "https://example.com/article",
   // Scraper engine: "extractor" for static HTML, "playwright" for full browser rendering. Default: extractor.
   "mode": "extractor",
+  // If true returns body as provided by extractor (no Markdown conversion). Default: false.
+  "rawBody": false,
   // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30). No enforced maximum.
   "taskTimeoutSecs": 30,
   // Preferred locale for extraction heuristics. Default: DEFAULT_LOCALE ("en-US").
@@ -111,7 +113,9 @@ curl -X POST "http://localhost:8080/api/v1/page" \
     // IETF language code inferred from page (e.g., en, es, fr).
     "lang": "string | null",
     // Estimated reading time in minutes (200 words per minute baseline).
-    "readTimeMin": "number"
+    "readTimeMin": "number",
+    // Whether the body is returned as raw extractor output (no Markdown conversion)
+    "rawBody": "boolean"
   }
 }
 ```
@@ -137,7 +141,9 @@ curl -X POST "http://localhost:8080/api/v1/page" \
     // IETF language code inferred from page.
     "lang": "en",
     // Estimated reading time in minutes.
-    "readTimeMin": 5
+    "readTimeMin": 5,
+    // Body is Markdown by default (rawBody=false)
+    "rawBody": false
   }
 }
 ```
@@ -178,7 +184,9 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
   // Default scraper settings applied to every item. Same shape as /page payload minus url. Item-level fields override.
   "commonSettings": {
     "mode": "extractor",
-    "taskTimeoutSecs": 60
+    "taskTimeoutSecs": 60,
+    // If true returns body as provided by extractor (no Markdown conversion). Default: false.
+    "rawBody": false
   },
   // Controls pacing and concurrency for batch.
   "schedule": {
@@ -332,7 +340,7 @@ When a webhook is configured, the service POSTs the following JSON after the job
     {
       "url": "https://site-a.example/article",
       "status": "succeeded",
-      "data": { "url": "...", "title": "...", "body": "...", "meta": { "lang": "en", "readTimeMin": 6 } }
+      "data": { "url": "...", "title": "...", "body": "...", "meta": { "lang": "en", "readTimeMin": 6, "rawBody": false } }
     },
     {
       "url": "https://site-b.example/article",
