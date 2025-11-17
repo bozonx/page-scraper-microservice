@@ -63,7 +63,22 @@ curl -X POST "http://localhost:8080/api/v1/page" \
 
 To receive raw extractor output without Markdown conversion, add `"rawBody": true` to the request body.
 
-### 2. Submit batch job
+### 2. Retrieve raw HTML
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/html" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "url": "https://example.com/page",
+        "taskTimeoutSecs": 45,
+        "blockTrackers": true,
+        "fingerprint": { "rotateOnAntiBot": true }
+      }'
+```
+
+Returns the complete rendered HTML without extraction or processing. Always uses Playwright for browser automation.
+
+### 3. Submit batch job
 
 ```bash
 curl -X POST "http://localhost:8080/api/v1/batch" \
@@ -83,7 +98,7 @@ curl -X POST "http://localhost:8080/api/v1/batch" \
       }'
 ```
 
-### 3. Poll batch status
+### 4. Poll batch status
 
 ```bash
 curl "http://localhost:8080/api/v1/batch/<jobId>"
@@ -91,7 +106,7 @@ curl "http://localhost:8080/api/v1/batch/<jobId>"
 
 The response lists job status (`queued`, `running`, `succeeded`, `failed`, `partial`) and progress counters.
 
-### 4. Health check
+### 5. Health check
 
 ```bash
 curl "http://localhost:8080/api/v1/health"

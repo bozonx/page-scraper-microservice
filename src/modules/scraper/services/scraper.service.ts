@@ -5,6 +5,8 @@ import { PlaywrightCrawler, Configuration } from 'crawlee'
 import { ScraperConfig } from '@config/scraper.config.js'
 import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
 import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
+import { HtmlRequestDto } from '../dto/html-request.dto.js'
+import { HtmlResponseDto } from '../dto/html-response.dto.js'
 import { FingerprintService } from './fingerprint.service.js'
 import { TurndownConverterService } from './turndown.service.js'
 import type { IArticleExtractor } from './article-extractor.interface.js'
@@ -264,5 +266,164 @@ export class ScraperService {
       throw new Error('Content extraction resulted in empty response')
     }
     return extracted
+  }
+
+  /**
+   * Retrieves raw HTML content from a web page using Playwright
+   * @param request HTML request parameters
+   * @returns Raw HTML content
+   */
+  async getHtml(request: HtmlRequestDto): Promise<HtmlResponseDto> {
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+
+    this.logger.info(`Retrieving HTML from: ${request.url}`)
+
+    try {
+      // Generate fingerprint if enabled
+      const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint)
+
+      // Retry mechanism with fingerprint rotation
+      for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+        try {
+          // Generate new fingerprint for retry attempts
+          const currentFingerprint =
+            attempt > 0
+              ? this.fingerprintService.generateFingerprint(request.fingerprint)
+              : fingerprint
+
+          const html = await this.getHtmlWithPlaywright(request, currentFingerprint)
+          return {
+            url: request.url,
+            html,
+          }
+        } catch (error) {
+          // Check if we should rotate fingerprint and retry
+          if (
+            this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint) &&
+            attempt < this.maxRetries - 1
+          ) {
+            this.logger.warn(
+              `Anti-bot detected for ${request.url}, rotating fingerprint and retrying (attempt ${attempt + 1}/${this.maxRetries})`
+            )
+            continue
+          }
+
+          // If it's last attempt or no anti-bot detected, throw error
+          throw error
+        }
+      }
+
+      // This should never be reached due to throw in loop, but TypeScript needs it
+      throw new Error('Failed to retrieve HTML after all retry attempts')
+    } catch (error) {
+      this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
+      throw error
+    }
+  }
+
+  /**
+   * Internal Playwright HTML retrieval implementation
+   * @param request HTML request parameters
+   * @param fingerprint Browser fingerprint to use
+   * @returns Raw HTML content
+   */
+  private async getHtmlWithPlaywright(
+    request: HtmlRequestDto,
+    fingerprint: any
+  ): Promise<string> {
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+
+    let htmlContent: string | undefined
+    let runError: Error | null = null
+
+    // Configure Playwright crawler
+    const tzForContext = request.timezoneId || scraperConfig.defaultTimezoneId
+    const localeForContext = request.locale || scraperConfig.defaultLocale
+
+    const launchContext: any = {
+      launchOptions: {
+        timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
+        headless: scraperConfig.playwrightHeadless,
+      },
+      // Apply per-context options so all pages use the desired timezone/locale
+      contextOptions: {
+        ...(tzForContext ? { timezoneId: tzForContext } : {}),
+        ...(localeForContext ? { locale: localeForContext as string } : {}),
+      },
+    }
+
+    const crawler = new PlaywrightCrawler(
+      {
+        launchContext,
+        requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+        navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+
+        async requestHandler({ page }) {
+          try {
+            // Apply fingerprint to page context
+            if (fingerprint.userAgent) {
+              await page.addInitScript((ua) => {
+                Object.defineProperty(navigator, 'userAgent', {
+                  value: ua,
+                  writable: false,
+                })
+              }, fingerprint.userAgent)
+            }
+
+            if (fingerprint.viewport) {
+              await page.setViewportSize({
+                width: fingerprint.viewport.width,
+                height: fingerprint.viewport.height,
+              })
+            }
+
+            // Determine effective blocking flags: request overrides default config when provided
+            const effectiveBlockTrackers =
+              request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+            const effectiveBlockHeavy =
+              request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
+
+            // Block trackers and heavy resources based on effective flags
+            if (effectiveBlockTrackers) {
+              await page.route(
+                '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
+                (route) => route.abort()
+              )
+            }
+
+            if (effectiveBlockHeavy) {
+              await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
+                route.abort()
+              )
+            }
+
+            // Navigate to page
+            await page.goto(request.url, {
+              waitUntil: 'networkidle',
+            })
+
+            // Get raw HTML content
+            htmlContent = await page.content()
+          } catch (error) {
+            runError = error instanceof Error ? error : new Error(String(error))
+          }
+        },
+
+        failedRequestHandler({ request: req, error }) {
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          runError = new Error(`Failed to load ${req.url}: ${errorMessage}`)
+        },
+      },
+      new Configuration({ persistStorage: false })
+    )
+
+    // Run with a single URL without persisting storage
+    await crawler.run([request.url])
+
+    if (runError) throw runError
+    if (typeof htmlContent === 'undefined') {
+      throw new Error('HTML retrieval resulted in empty response')
+    }
+    return htmlContent
   }
 }

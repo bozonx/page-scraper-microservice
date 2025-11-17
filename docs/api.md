@@ -161,6 +161,105 @@ All errors follow the consistent envelope format described in [Error Handling](#
 
 ---
 
+### POST /html
+
+Retrieves raw HTML content from a web page using Playwright browser automation. Unlike `/page`, this endpoint does not extract or process content—it returns the complete rendered HTML as-is.
+
+**Endpoint:** `POST /api/v1/html`
+
+#### Request Body
+
+```jsonc
+{
+  // Target page to retrieve HTML from (required)
+  "url": "https://example.com/page",
+  // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30). No enforced maximum.
+  "taskTimeoutSecs": 30,
+  // Preferred locale for browser context. Default: DEFAULT_LOCALE ("en-US").
+  "locale": "en-US",
+  // Target timezone for browser context. Default: DEFAULT_TIMEZONE_ID ("UTC").
+  // Examples: "Europe/Moscow" (UTC+3), "Europe/London" (UTC+0/UTC+1), "America/New_York" (UTC-5/UTC-4), "Europe/Berlin" (UTC+1/UTC+2), "America/Argentina/Buenos_Aires" (UTC-3).
+  "timezoneId": "UTC",
+  // Default Playwright behavior blocks analytics/tracking scripts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS (true).
+  "blockTrackers": true,
+  // Default Playwright behavior blocks heavy media and fonts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES (true).
+  "blockHeavyResources": true,
+  // Browser fingerprint overrides. Fully applied in Playwright mode.
+  "fingerprint": {
+    // Default toggle for automatic fingerprint generation. Per-request value overrides. Default: DEFAULT_FINGERPRINT_GENERATE (true).
+    "generate": true,
+    // Custom or auto-generated user agent string. Use "auto" to let the service decide.
+    "userAgent": "auto",
+    // Browser locale; "source" randomizes from a curated list.
+    "locale": "source",
+    // Browser timezone; "source" randomizes common zones.
+    "timezoneId": "source",
+    // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
+    "rotateOnAntiBot": true,
+    // Additional generator hints such as allowed browsers list.
+    "generator": {
+      "browsers": ["chrome", "firefox"]
+    }
+  }
+}
+```
+
+Note:
+- This endpoint **always uses Playwright** for browser automation
+- Fingerprint is applied to page context (e.g., user agent and viewport)
+- Timezone and locale are set via Playwright browser context options
+- Returns the complete rendered HTML after JavaScript execution
+
+#### Example Request
+
+```bash
+curl -X POST "http://localhost:8080/api/v1/html" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "url": "https://example.com/page",
+        "taskTimeoutSecs": 45,
+        "fingerprint": {
+          "rotateOnAntiBot": true,
+          "generator": { "browsers": ["chrome", "firefox"] }
+        }
+      }'
+```
+
+#### Success Response (200 OK)
+
+```jsonc
+{
+  // Original URL that was retrieved.
+  "url": "string",
+  // Complete rendered HTML content of the page.
+  "html": "string"
+}
+```
+
+**Example Response:**
+
+```jsonc
+{
+  // Original URL that was retrieved.
+  "url": "https://example.com/page",
+  // Complete rendered HTML content.
+  "html": "<!DOCTYPE html><html><head><title>Example</title></head><body>...</body></html>"
+}
+```
+
+#### Error Responses
+
+| HTTP code | Error class | Description |
+| --- | --- | --- |
+| 400 | `ScraperValidationException` | Invalid payload or unsupported options. |
+| 422 | `ScraperContentExtractionException` | Page could not be loaded or rendered. |
+| 502 | `ScraperBrowserException` | Playwright/browser failure. |
+| 504 | `ScraperTimeoutException` | Page load exceeded timeout. |
+
+All errors follow the consistent envelope format described in [Error Handling](#error-handling).
+
+---
+
 ### POST /batch
 
 Creates an asynchronous batch scraping job for processing multiple URLs.

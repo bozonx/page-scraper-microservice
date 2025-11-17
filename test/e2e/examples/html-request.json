@@ -1,0 +1,15 @@
+{
+  "url": "https://example.com",
+  "taskTimeoutSecs": 45,
+  "locale": "en-US",
+  "timezoneId": "UTC",
+  "blockTrackers": true,
+  "blockHeavyResources": true,
+  "fingerprint": {
+    "generate": true,
+    "rotateOnAntiBot": true,
+    "generator": {
+      "browsers": ["chrome", "firefox"]
+    }
+  }
+}

@@ -6,6 +6,8 @@ import { CleanupService } from './services/cleanup.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
 import { ScraperRequestDto } from './dto/scraper-request.dto.js'
 import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto.js'
+import { HtmlRequestDto } from './dto/html-request.dto.js'
+import { HtmlResponseDto } from './dto/html-response.dto.js'
 import { BatchRequestDto, BatchResponseDto, BatchJobStatusDto } from './dto/batch.dto.js'
 import {
   ScraperException,
@@ -56,6 +58,47 @@ export class ScraperController {
       return result
     } catch (error) {
       this.logger.error(`Failed to scrape ${request.url}:`, error)
+
+      const errorMessage = error instanceof Error ? error.message : String(error)
+
+      // Check if it's already a ScraperException
+      if (error instanceof ScraperException) {
+        throw error
+      }
+
+      // Convert to appropriate ScraperException based on error message
+      const errorCode = this.getErrorCode(errorMessage)
+
+      switch (errorCode) {
+        case 504:
+          throw new ScraperTimeoutException(errorMessage)
+        case 502:
+          throw new ScraperBrowserException(errorMessage)
+        case 400:
+          throw new ScraperValidationException(errorMessage)
+        default:
+          throw new ScraperContentExtractionException(errorMessage)
+      }
+    }
+  }
+
+  /**
+   * Retrieves raw HTML content from a page using Playwright
+   * @param request HTML request parameters
+   * @returns Raw HTML content
+   */
+  @Post('html')
+  @HttpCode(HttpStatus.OK)
+  async getHtml(@Body() request: HtmlRequestDto): Promise<HtmlResponseDto> {
+    try {
+      this.logger.info(`Received HTML request for URL: ${request.url}`)
+      const cleanupPromise = this.cleanupService.triggerCleanup()
+      const resultPromise = this.scraperService.getHtml(request)
+      const [, result] = await Promise.all([cleanupPromise, resultPromise])
+      this.logger.info(`Successfully retrieved HTML from ${request.url}`)
+      return result
+    } catch (error) {
+      this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
 
       const errorMessage = error instanceof Error ? error.message : String(error)
 
