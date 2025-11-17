@@ -4,12 +4,12 @@ import {
   IsBoolean,
   IsInt,
   IsIn,
+  IsUrl,
+  IsObject,
+  ValidateNested,
   Min,
   Max,
-  IsObject,
   IsArray,
-  ValidateNested,
-  IsUrl,
 } from 'class-validator'
 import { Type } from 'class-transformer'
 import { ScraperRequestDto, FingerprintConfigDto } from './scraper-request.dto'
@@ -136,12 +136,11 @@ export class BatchCommonSettingsDto {
   public mode?: string
 
   /**
-   * Default timeout for individual scraping tasks in seconds (1-300)
+   * Default timeout for individual scraping tasks in seconds (>=1)
    */
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(300)
   public taskTimeoutSecs?: number
 
   /**

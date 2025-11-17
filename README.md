@@ -23,8 +23,9 @@ Configuration is provided through environment variables and validated on startup
 | `API_BASE_PATH` | Prefix for REST endpoints | `api` |
 | `LOG_LEVEL` | Pino log level (`trace`…`silent`) | `warn` |
 | `DEFAULT_MODE` | Scraper mode (`extractor` / `playwright`) | `extractor` |
-| `DEFAULT_TASK_TIMEOUT_SECS` | Per-page timeout (1-300) | `30` |
+| `DEFAULT_TASK_TIMEOUT_SECS` | Per-page timeout in seconds (>=1, no upper limit) | `30` |
 | `DEFAULT_LOCALE` | Preferred locale for extraction heuristics | `en-US` |
+ Examples: "Europe/Moscow" (UTC+3), "Europe/London" (UTC+0/UTC+1), "America/New_York" (UTC-5/UTC-4), "Europe/Berlin" (UTC+1/UTC+2), "America/Argentina/Buenos_Aires" (UTC-3).
 | `DEFAULT_TIMEZONE_ID` | Timezone for date normalization | `UTC` |
 | `DEFAULT_DATE_LOCALE` | Locale used for date parsing | falls back to `DEFAULT_LOCALE` if unset |
 | `PLAYWRIGHT_HEADLESS` | Headless browser flag | `true` |

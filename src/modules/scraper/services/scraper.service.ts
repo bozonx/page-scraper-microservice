@@ -40,20 +40,13 @@ export class ScraperService {
 
     try {
       let content: any
-      const effectiveTimeoutSecs = request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs
 
       // Use appropriate scraping method based on mode
       if (mode === 'playwright') {
-        content = await this.withTimeout(
-          effectiveTimeoutSecs * 1000,
-          this.scrapeWithPlaywright(request)
-        )
+        content = await this.scrapeWithPlaywright(request)
       } else {
         // 'extractor' mode (default)
-        content = await this.withTimeout(
-          effectiveTimeoutSecs * 1000,
-          this.scrapeWithExtractor(request)
-        )
+        content = await this.scrapeWithExtractor(request)
       }
 
       // Convert HTML to Markdown
@@ -264,18 +257,4 @@ export class ScraperService {
     return extracted
   }
 
-  private async withTimeout<T>(ms: number, promise: Promise<T>): Promise<T> {
-    return await new Promise<T>((resolve, reject) => {
-      const timer = setTimeout(() => reject(new Error('Task timed out')), ms)
-      promise
-        .then((res) => {
-          clearTimeout(timer)
-          resolve(res)
-        })
-        .catch((err) => {
-          clearTimeout(timer)
-          reject(err)
-        })
-    })
-  }
 }

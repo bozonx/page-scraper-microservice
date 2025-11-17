@@ -234,9 +234,10 @@ graph TB
 
 ### Настройки скрапера
 - `DEFAULT_MODE` — режим скрапинга по умолчанию (`extractor|playwright`)
-- `DEFAULT_TASK_TIMEOUT_SECS` — таймаут задачи по умолчанию в секундах (по умолчанию `30`)
+- `DEFAULT_TASK_TIMEOUT_SECS` — таймаут задачи по умолчанию в секундах (по умолчанию `60`)
 - `DEFAULT_USER_AGENT` — пользовательский агент по умолчанию (`auto|yourString`)
 - `DEFAULT_LOCALE` — локаль по умолчанию (например `en-US`)
+ Примеры: Europe/Moscow (UTC+3), Europe/London (UTC+0/UTC+1), America/New_York (UTC-5/UTC-4), Europe/Berlin (UTC+1/UTC+2), America/Argentina/Buenos_Aires (UTC-3)
 - `DEFAULT_TIMEZONE_ID` — часовой пояс по умолчанию (например `UTC`)
 - `DEFAULT_DATE_LOCALE` — локаль для парсинга дат по умолчанию (например `ru`)
 

@@ -15,11 +15,10 @@ export class ScraperConfig {
   public defaultMode!: string
 
   /**
-   * Default timeout for individual scraping tasks in seconds (1-300)
+   * Default timeout for individual scraping tasks in seconds (>=1)
    */
   @IsInt()
   @Min(1)
-  @Max(300)
   public defaultTaskTimeoutSecs!: number
 
   /**
@@ -54,11 +53,10 @@ export class ScraperConfig {
   public playwrightHeadless!: boolean
 
   /**
-   * Navigation timeout in seconds for Playwright browser operations (1-300)
+   * Navigation timeout in seconds for Playwright browser operations (>=1)
    */
   @IsInt()
   @Min(1)
-  @Max(300)
   public playwrightNavigationTimeoutSecs!: number
 
   /**
@@ -159,7 +157,7 @@ export default registerAs('scraper', (): ScraperConfig => {
   const config = plainToClass(ScraperConfig, {
     // Default scraper settings
     defaultMode: process.env.DEFAULT_MODE ?? 'extractor',
-    defaultTaskTimeoutSecs: parseInt(process.env.DEFAULT_TASK_TIMEOUT_SECS ?? '30', 10),
+    defaultTaskTimeoutSecs: parseInt(process.env.DEFAULT_TASK_TIMEOUT_SECS ?? '60', 10),
     defaultUserAgent: process.env.DEFAULT_USER_AGENT ?? 'auto',
     defaultLocale: derivedDefaultLocale,
     defaultTimezoneId: process.env.DEFAULT_TIMEZONE_ID ?? 'UTC',

@@ -5,7 +5,6 @@ import {
   IsInt,
   IsIn,
   Min,
-  Max,
   IsObject,
   IsArray,
   ValidateNested,
@@ -85,12 +84,11 @@ export class ScraperRequestDto {
   public mode?: string
 
   /**
-   * Timeout for individual scraping task in seconds (1-300)
+   * Timeout for individual scraping task in seconds (>=1)
    */
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(300)
   public taskTimeoutSecs?: number
 
   /**

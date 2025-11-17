@@ -36,13 +36,14 @@ Scrapes a single web page and extracts structured article content.
   "url": "https://example.com/article",
   // Scraper engine: "extractor" for static HTML, "playwright" for full browser rendering. Default: extractor.
   "mode": "extractor",
-  // Per-request timeout in seconds (1–300). Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30).
+  // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30). No enforced maximum.
   "taskTimeoutSecs": 30,
   // Preferred locale for extraction heuristics. Default: DEFAULT_LOCALE ("en-US").
   "locale": "en-US",
   // Locale used for date parsing. Falls back to locale when omitted. Default constant: DEFAULT_DATE_LOCALE.
   "dateLocale": "en-US",
   // Target timezone for date normalization. Applied via Playwright context or X-Timezone-Id header in extractor mode. Default: DEFAULT_TIMEZONE_ID ("UTC").
+ Examples: "Europe/Moscow" (UTC+3), "Europe/London" (UTC+0/UTC+1), "America/New_York" (UTC-5/UTC-4), "Europe/Berlin" (UTC+1/UTC+2), "America/Argentina/Buenos_Aires" (UTC-3).
   "timezoneId": "UTC",
   // Default Playwright behavior blocks analytics/tracking scripts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS (true).
   "blockTrackers": true,
@@ -91,29 +92,51 @@ curl -X POST "http://localhost:8080/api/v1/page" \
 
 #### Success Response (200 OK)
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `url` | string | Original URL that was scraped. |
-| `title` | string \| null | Extracted page title. |
-| `description` | string \| null | Extracted meta description or article lead. |
-| `date` | string \| null | ISO-8601 publication timestamp if detected. |
-| `author` | string \| null | Author name if detected. |
-| `body` | string | Main article content converted to Markdown format. |
-| `meta.lang` | string \| null | IETF language code (e.g., `en`, `es`, `fr`) inferred from the page. |
-| `meta.readTimeMin` | number | Estimated reading time in minutes (calculated at 200 words per minute). |
+```jsonc
+{
+  // Original URL that was scraped.
+  "url": "string",
+  // Extracted page title when available.
+  "title": "string | null",
+  // Extracted meta description or article lead.
+  "description": "string | null",
+  // ISO-8601 publication timestamp if detected.
+  "date": "string | null",
+  // Author name when detected.
+  "author": "string | null",
+  // Main article content converted to Markdown format.
+  "body": "string",
+  // Additional metadata collected during extraction.
+  "meta": {
+    // IETF language code inferred from the page (e.g., en, es, fr).
+    "lang": "string | null",
+    // Estimated reading time in minutes (200 words per minute baseline).
+    "readTimeMin": "number"
+  }
+}
+```
 
 **Example Response:**
 
-```json
+```jsonc
 {
+  // Original URL that was scraped.
   "url": "https://example.com/article",
+  // Extracted page title.
   "title": "Sample Article Title",
+  // Extracted meta description or article lead.
   "description": "A brief description of the article content",
+  // ISO-8601 publication timestamp when detected.
   "date": "2024-05-30T10:00:00.000Z",
+  // Author name when available.
   "author": "John Doe",
+  // Main article content converted to Markdown format.
   "body": "# Article Heading\n\nArticle content in Markdown format...",
+  // Additional metadata inferred during extraction.
   "meta": {
+    // IETF language code inferred from the page.
     "lang": "en",
+    // Estimated reading time in minutes.
     "readTimeMin": 5
   }
 }
@@ -190,8 +213,9 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
 
 #### Success Response (202 Accepted)
 
-```json
+```jsonc
 {
+  // Unique job identifier for the created batch.
   "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a"
 }
 ```
@@ -216,28 +240,46 @@ Retrieves the current status and progress of a batch scraping job.
 
 #### Success Response (200 OK)
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `jobId` | string | Unique batch job identifier. |
-| `status` | string | Current job status: `queued`, `running`, `succeeded`, `failed`, or `partial`. |
-| `createdAt` | string | ISO-8601 timestamp when the job was created. |
-| `completedAt` | string \| null | ISO-8601 timestamp when processing finished (null while running). |
-| `total` | number | Total number of items in the batch. |
-| `processed` | number | Number of items processed so far. |
-| `succeeded` | number | Number of successfully processed items. |
-| `failed` | number | Number of failed items. |
+```jsonc
+{
+  // Unique batch job identifier.
+  "jobId": "string",
+  // Current job status: queued, running, succeeded, failed, or partial.
+  "status": "string",
+  // ISO-8601 timestamp when the job was created.
+  "createdAt": "string",
+  // Completion timestamp or null while running.
+  "completedAt": "string | null",
+  // Total number of items in the batch.
+  "total": "number",
+  // Number of items processed so far.
+  "processed": "number",
+  // Successful item count.
+  "succeeded": "number",
+  // Failed item count.
+  "failed": "number"
+}
+```
 
 **Example Response:**
 
-```json
+```jsonc
 {
+  // Unique batch job identifier.
   "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a",
+  // Current job status: queued, running, succeeded, failed, or partial.
   "status": "running",
+  // ISO-8601 timestamp when the job was created.
   "createdAt": "2024-05-30T10:00:00.000Z",
+  // Completion timestamp or null while running.
   "completedAt": null,
-  "total": 10,
-  "processed": 5,
-  "succeeded": 4,
+  // Total number of items in the batch.
+  "total": 25,
+  // Number of items processed so far.
+  "processed": 10,
+  // Successful item count.
+  "succeeded": 9,
+  // Failed item count.
   "failed": 1
 }
 ```
@@ -361,7 +403,7 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 
 ### Timeout Behavior
 
-- **Task timeout:** `taskTimeoutSecs` defines the total time budget for a single scraping task
+- **Task timeout:** `taskTimeoutSecs` defines the total time budget for a single scraping task with no enforced upper limit
 - **Scope:** This timeout caps the entire operation including HTTP requests, browser navigation, and content extraction
 - **Defaults:** 30 seconds per task (configurable via `DEFAULT_TASK_TIMEOUT_SECS`)
 
