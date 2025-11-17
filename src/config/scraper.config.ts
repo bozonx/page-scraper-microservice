@@ -120,6 +120,7 @@ export class ScraperConfig {
   // Webhook settings
   /**
    * Timeout in milliseconds for webhook HTTP requests (1000-60000)
+   * This is a global setting that cannot be overridden per webhook request
    */
   @IsInt()
   @Min(1000)
