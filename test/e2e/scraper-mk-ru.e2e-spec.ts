@@ -84,6 +84,8 @@ describe('Scraper MK.ru Article (e2e)', () => {
       expect(body).toHaveProperty('description')
       expect(body).toHaveProperty('body')
       expect(body).toHaveProperty('meta')
+      expect(body).toHaveProperty('date')
+      expect(body).toHaveProperty('author')
 
       // Verify URL
       expect(body.url).toBe(targetUrl)
@@ -98,6 +100,12 @@ describe('Scraper MK.ru Article (e2e)', () => {
       expect(body.description).toContain(
         'Самборского района за нарушение правил дорожного движения'
       )
+
+      // Verify date
+      expect(body.date).toBe('2025-11-17T00:31:57+0300')
+
+      // Verify author
+      expect(body.author).toBe('')
 
       // Verify body is converted to Markdown and contains expected content
       expect(body.body).toBeTruthy()
