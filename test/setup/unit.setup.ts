@@ -17,7 +17,7 @@ let originalFetch: any;
 jest.mock('crawlee', () => {
   class MockPlaywrightCrawler {
     private handler: (ctx: any) => Promise<void> | void;
-    constructor(options: any) {
+    constructor(options: any, _config?: any) {  // Добавляем второй параметр для config
       this.handler = options?.requestHandler ?? (async () => undefined);
     }
     addRequests = jest.fn();
@@ -32,7 +32,18 @@ jest.mock('crawlee', () => {
       await this.handler({ page });
     });
   }
-  return { PlaywrightCrawler: MockPlaywrightCrawler };
+  
+  // Добавляем мок для Configuration
+  class MockConfiguration {
+    constructor(_options: any) {
+      // Ничего не делаем, это просто мок
+    }
+  }
+  
+  return { 
+    PlaywrightCrawler: MockPlaywrightCrawler,
+    Configuration: MockConfiguration  // Экспортируем Configuration
+  };
 });
 
 // Note: @extractus/article-extractor is mocked at the test level
