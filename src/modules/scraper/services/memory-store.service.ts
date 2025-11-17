@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common'
+import { PinoLogger } from 'nestjs-pino'
 import { v4 as uuidv4 } from 'uuid'
 import { ScraperRequestDto } from '../dto/scraper-request.dto'
 import { ScraperResponseDto } from '../dto/scraper-response.dto'
@@ -14,10 +15,15 @@ export interface StoredPageRecord {
 export class MemoryStoreService {
   private readonly pages = new Map<string, StoredPageRecord>()
 
+  constructor(private readonly logger: PinoLogger) {
+    this.logger.setContext(MemoryStoreService.name)
+  }
+
   addPage(request: ScraperRequestDto, response: ScraperResponseDto): string {
     const id = uuidv4()
     const record: StoredPageRecord = { id, request, response, createdAt: new Date() }
     this.pages.set(id, record)
+    this.logger.debug(`Stored page ${id} for ${request.url ?? 'unknown URL'}`)
     return id
   }
 
@@ -26,11 +32,17 @@ export class MemoryStoreService {
   }
 
   deletePage(id: string): void {
-    this.pages.delete(id)
+    if (this.pages.delete(id)) {
+      this.logger.debug(`Deleted stored page ${id}`)
+    }
   }
 
   clearAllPages(): void {
+    const count = this.pages.size
     this.pages.clear()
+    if (count > 0) {
+      this.logger.debug(`Cleared ${count} stored page records`)
+    }
   }
 
   cleanupOlderThan(ttlMs: number): number {
@@ -41,6 +53,9 @@ export class MemoryStoreService {
         this.pages.delete(id)
         removed++
       }
+    }
+    if (removed > 0) {
+      this.logger.debug(`Removed ${removed} stored page records older than ${ttlMs}ms`)
     }
     return removed
   }

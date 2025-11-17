@@ -1,4 +1,5 @@
 import { MemoryStoreService } from '@/modules/scraper/services/memory-store.service.js'
+import { createMockLogger } from '@test/helpers/mocks.js'
 import type { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto.js'
 import type { ScraperResponseDto } from '@/modules/scraper/dto/scraper-response.dto.js'
 
@@ -6,7 +7,7 @@ describe('MemoryStoreService (unit)', () => {
   let store: MemoryStoreService
 
   beforeEach(() => {
-    store = new MemoryStoreService()
+    store = new MemoryStoreService(createMockLogger())
   })
 
   it('adds page and cleans up only records older than TTL', () => {

@@ -1,11 +1,11 @@
-import 'reflect-metadata';
-import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Logger } from 'nestjs-pino';
-import { AppModule } from '@/app.module';
-import type { AppConfig } from '@config/app.config';
+import 'reflect-metadata'
+import { NestFactory } from '@nestjs/core'
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify'
+import { ValidationPipe } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { Logger } from 'nestjs-pino'
+import { AppModule } from '@/app.module'
+import type { AppConfig } from '@config/app.config'
 
 /**
  * Bootstrap function that initializes and starts the NestJS application
@@ -20,42 +20,42 @@ async function bootstrap() {
     }),
     {
       bufferLogs: true,
-    },
-  );
+    }
+  )
 
   // Use Pino logger for the entire application
-  app.useLogger(app.get(Logger));
+  app.useLogger(app.get(Logger))
 
-  const configService = app.get(ConfigService);
-  const logger = app.get(Logger);
+  const configService = app.get(ConfigService)
+  const logger = app.get(Logger)
 
-  const appConfig = configService.get<AppConfig>('app')!;
+  const appConfig = configService.get<AppConfig>('app')!
 
   // Configure global validation pipe with transformation
   app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
-  );
+    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })
+  )
 
   // Configure global API prefix from configuration
-  const globalPrefix = `${appConfig.apiBasePath}/v1`;
-  app.setGlobalPrefix(globalPrefix);
+  const globalPrefix = `${appConfig.apiBasePath}/v1`
+  app.setGlobalPrefix(globalPrefix)
 
   // Enable graceful shutdown hooks for proper cleanup
-  app.enableShutdownHooks();
+  app.enableShutdownHooks()
 
   // Start the server
-  await app.listen(appConfig.port, appConfig.host);
+  await app.listen(appConfig.port, appConfig.host)
 
   // Log startup information
   logger.log(
     `🚀 NestJS service is running on: http://${appConfig.host}:${appConfig.port}/${globalPrefix}`,
-    'Bootstrap',
-  );
-  logger.log(`📊 Environment: ${appConfig.nodeEnv}`, 'Bootstrap');
-  logger.log(`📝 Log level: ${appConfig.logLevel}`, 'Bootstrap');
+    'Bootstrap'
+  )
+  logger.log(`📊 Environment: ${appConfig.nodeEnv}`, 'Bootstrap')
+  logger.log(`📝 Log level: ${appConfig.logLevel}`, 'Bootstrap')
 
   // Rely on enableShutdownHooks for graceful shutdown
 }
 
 // Start the application
-void bootstrap();
+void bootstrap()
