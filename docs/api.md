@@ -1,6 +1,6 @@
 # Page Scraper Microservice API Reference
 
-Complete REST API documentation for the Page Scraper Microservice. This service provides endpoints for single-page scraping, batch job orchestration, and health monitoring.
+Complete REST API documentation for Page Scraper Microservice. This service provides endpoints for single-page scraping, batch job orchestration, and health monitoring.
 
 ## Base URL
 
@@ -16,7 +16,7 @@ http://{host}:{port}/{API_BASE_PATH}/v1
 
 **Content Type:** All endpoints accept and return `application/json`.
 
-**Authentication:** No authentication is enforced by default. Implement authentication at the reverse proxy or API gateway level for production deployments.
+**Authentication:** No authentication is enforced by default. Implement authentication at reverse proxy or API gateway level for production deployments.
 
 ---
 
@@ -71,7 +71,7 @@ Scrapes a single web page and extracts structured article content.
 
 Note:
 
-- In Playwright mode, the fingerprint is applied to the page context (e.g., user agent and viewport). Timezone and locale are set via Playwright browser context options.
+- In Playwright mode, fingerprint is applied to page context (e.g., user agent and viewport). Timezone and locale are set via Playwright browser context options.
 - In extractor mode, fingerprint affects outbound request headers only (`User-Agent`, `Accept-Language`). Timezone is passed as `X-Timezone-Id` for downstream date parsing heuristics.
 
 #### Example Request
@@ -108,7 +108,7 @@ curl -X POST "http://localhost:8080/api/v1/page" \
   "body": "string",
   // Additional metadata collected during extraction.
   "meta": {
-    // IETF language code inferred from the page (e.g., en, es, fr).
+    // IETF language code inferred from page (e.g., en, es, fr).
     "lang": "string | null",
     // Estimated reading time in minutes (200 words per minute baseline).
     "readTimeMin": "number"
@@ -125,7 +125,7 @@ curl -X POST "http://localhost:8080/api/v1/page" \
   // Extracted page title.
   "title": "Sample Article Title",
   // Extracted meta description or article lead.
-  "description": "A brief description of the article content",
+  "description": "A brief description of article content",
   // ISO-8601 publication timestamp when detected.
   "date": "2024-05-30T10:00:00.000Z",
   // Author name when available.
@@ -134,7 +134,7 @@ curl -X POST "http://localhost:8080/api/v1/page" \
   "body": "# Article Heading\n\nArticle content in Markdown format...",
   // Additional metadata inferred during extraction.
   "meta": {
-    // IETF language code inferred from the page.
+    // IETF language code inferred from page.
     "lang": "en",
     // Estimated reading time in minutes.
     "readTimeMin": 5
@@ -180,7 +180,7 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
     "mode": "extractor",
     "taskTimeoutSecs": 60
   },
-  // Controls pacing and concurrency for the batch.
+  // Controls pacing and concurrency for batch.
   "schedule": {
     // Minimum wait between item requests per worker (ms). Default: DEFAULT_BATCH_MIN_DELAY_MS (1500). Range: 500–30000.
     "minDelayMs": 1500,
@@ -215,12 +215,12 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
 
 ```jsonc
 {
-  // Unique job identifier for the created batch.
+  // Unique job identifier for created batch.
   "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a"
 }
 ```
 
-The batch job is created and begins processing immediately. Use the returned `jobId` to poll job status via `GET /batch/:jobId`.
+The batch job is created and begins processing immediately. Use returned `jobId` to poll job status via `GET /batch/:jobId`.
 
 #### Error Responses
 
@@ -286,7 +286,7 @@ Retrieves the current status and progress of a batch scraping job.
 
 #### Error Responses
 
-- `404 Not Found` with `BatchJobNotFoundException` when the ID is unknown or data expired (jobs are purged after `BATCH_DATA_LIFETIME_MINS`).
+- `404 Not Found` with `BatchJobNotFoundException` when the ID is unknown or data expired (jobs are purged after `DATA_LIFETIME_MINS`).
 - Other errors are wrapped in `BatchJobStatusException` (HTTP 500).
 
 ---
@@ -339,7 +339,7 @@ When a webhook is configured, the service POSTs the following JSON after the job
       "status": "failed",
       "error": {
         "code": 422,
-        "message": "Failed to extract content from the page",
+        "message": "Failed to extract content from page",
         "details": "Page structure is not recognizable as an article"
       }
     }
@@ -365,14 +365,14 @@ All errors share a consistent JSON envelope:
 {
   "error": {
     "code": 422,
-    "message": "Failed to extract content from the page",
+    "message": "Failed to extract content from page",
     "details": "Page structure is not recognizable as an article"
   }
 }
 ```
 
-- `code` mirrors the HTTP status.
-- `message` summarises the failure.
+- `code` mirrors HTTP status.
+- `message` summarises failure.
 - `details` may be a string or array (validation errors produce an array of constraint messages).
 
 Validation failures emitted by Nest's `ValidationPipe` are normalized to:
@@ -396,10 +396,10 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 
 ### Batch Job Lifecycle
 
-- **Storage:** Batch state is stored in-memory and automatically purged after `BATCH_DATA_LIFETIME_MINS` (default: 60 minutes)
+- **Storage:** Batch state is stored in-memory and automatically purged after `DATA_LIFETIME_MINS` (default: 60 minutes)
 - **Status polling:** Fetching status for an expired job returns `404 Not Found`
 - **No batch timeout:** Individual items have their own `taskTimeoutSecs`, but there's no overall timeout for the entire batch job
-- **Concurrency:** Controlled by the `schedule.concurrency` parameter (default: 1)
+- **Concurrency:** Controlled by `schedule.concurrency` parameter (default: 1)
 
 ### Timeout Behavior
 
@@ -415,4 +415,4 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 
 ### Testing
 
-For implementation details, integration examples, and test fixtures, see the unit and e2e tests in the `test/` directory.
+For implementation details, integration examples, and test fixtures, see unit and e2e tests in the `test/` directory.

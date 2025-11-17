@@ -27,7 +27,7 @@ describe('WebhookService (unit)', () => {
     batchMinDelayMs: 1500,
     batchMaxDelayMs: 4000,
     batchConcurrency: 1,
-    batchDataLifetimeMins: 60,
+    dataLifetimeMins: 60,
     webhookTimeoutMs: 5000,
     defaultWebhookBackoffMs: 100,
     defaultWebhookMaxAttempts: 3,

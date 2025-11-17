@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
-import { ScraperConfig } from '@config/scraper.config'
-import { ScraperService } from './scraper.service'
-import { WebhookService } from './webhook.service'
+import { ScraperConfig } from '@/config/scraper.config.js'
+import { ScraperService } from './scraper.service.js'
+import { WebhookService } from './webhook.service.js'
 import {
   BatchRequestDto,
   BatchResponseDto,
@@ -13,9 +13,9 @@ import {
   BatchWebhookPayloadDto,
   BatchItemDto,
   BatchCommonSettingsDto,
-} from '../dto/batch.dto'
-import { ScraperRequestDto } from '../dto/scraper-request.dto'
-import { ScraperResponseDto } from '../dto/scraper-response.dto'
+} from '../dto/batch.dto.js'
+import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
+import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
 
 /**
  * Internal batch job interface
@@ -349,7 +349,7 @@ export class BatchService {
     if (!job) return
 
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-    const cleanupMs = scraperConfig.batchDataLifetimeMins * 60 * 1000
+    const cleanupMs = scraperConfig.dataLifetimeMins * 60 * 1000
 
     job.cleanupTimeout = setTimeout(() => {
       this.jobs.delete(jobId)

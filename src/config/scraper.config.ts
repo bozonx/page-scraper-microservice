@@ -115,7 +115,7 @@ export class ScraperConfig {
   @IsInt()
   @Min(1)
   @Max(1440)
-  public batchDataLifetimeMins!: number
+  public dataLifetimeMins!: number
 
   // Webhook settings
   /**
@@ -181,7 +181,7 @@ export default registerAs('scraper', (): ScraperConfig => {
     batchMinDelayMs: parseInt(process.env.DEFAULT_BATCH_MIN_DELAY_MS ?? '1500', 10),
     batchMaxDelayMs: parseInt(process.env.DEFAULT_BATCH_MAX_DELAY_MS ?? '4000', 10),
     batchConcurrency: parseInt(process.env.DEFAULT_BATCH_CONCURRENCY ?? '1', 10),
-    batchDataLifetimeMins: parseInt(process.env.BATCH_DATA_LIFETIME_MINS ?? '60', 10),
+    dataLifetimeMins: parseInt(process.env.DATA_LIFETIME_MINS ?? '60', 10),
 
     // Webhook settings
     webhookTimeoutMs: parseInt(process.env.WEBHOOK_TIMEOUT_MS ?? '10000', 10),

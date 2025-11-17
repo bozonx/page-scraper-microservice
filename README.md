@@ -36,7 +36,7 @@ Configuration is provided through environment variables and validated on startup
 | `DEFAULT_BATCH_MIN_DELAY_MS` | Minimum delay between requests | `1500` |
 | `DEFAULT_BATCH_MAX_DELAY_MS` | Maximum delay between requests | `4000` |
 | `DEFAULT_BATCH_CONCURRENCY` | Parallel workers | `1` |
-| `BATCH_DATA_LIFETIME_MINS` | Retention of batch results | `60` |
+| `DATA_LIFETIME_MINS` | Retention of batch results | `60` |
 | `WEBHOOK_TIMEOUT_MS` | Webhook request timeout | `10000` |
 | `DEFAULT_WEBHOOK_BACKOFF_MS` | Default backoff for retries (can be overridden per request) | `1000` |
 | `DEFAULT_WEBHOOK_MAX_ATTEMPTS` | Default max webhook attempts (can be overridden per request) | `3` |
@@ -116,7 +116,7 @@ The service runs at `http://localhost:8080/api/v1` by default. Logs are pretty-p
 
 ### Production Deployment
 
-1. **Build the application:**
+1. **Build application:**
    ```bash
    pnpm run build
    ```
@@ -146,7 +146,7 @@ The Dockerfile includes Playwright browser dependencies for full rendering suppo
 
 ## Operational Considerations
 
-- **Batch state management:** Jobs are stored in-memory and automatically purged after `BATCH_DATA_LIFETIME_MINS`. For persistent storage or distributed deployments, integrate an external job queue (e.g., Bull, BullMQ).
+- **Batch state management:** Jobs are stored in-memory and automatically purged after `DATA_LIFETIME_MINS`. For persistent storage or distributed deployments, integrate an external job queue (e.g., Bull, BullMQ).
 - **Resource requirements:** Playwright mode requires significantly more CPU and memory than Extractor. Plan infrastructure capacity accordingly.
   - **Anti-bot strategies:** Enable defaults (`DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT=true`, `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS=true`, `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES=true`) and customize per request via `fingerprint.rotateOnAntiBot`, `blockTrackers`, `blockHeavyResources`.
 - **Webhook security:** Webhook payloads contain full scraping results. Secure your webhook endpoints and consider implementing signature validation.
