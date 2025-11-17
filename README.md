@@ -12,36 +12,6 @@ A production-ready NestJS microservice for extracting structured article data fr
 - **Production logging:** Pino logger with request context, sensitive data redaction, and environment-aware formatting
 - **Type-safe validation:** Class-validator DTOs with consistent error responses across all endpoints
 
-## Project Structure
-
-```
-src/
-├── app.module.ts              # Root module with configuration, logging, and global filters
-├── main.ts                    # Application bootstrap with Fastify adapter
-├── common/
-│   ├── exceptions/            # Domain-specific HTTP exceptions
-│   ├── filters/               # Global exception filter for consistent error responses
-│   └── interceptors/          # Request/response interceptors
-├── config/
-│   ├── app.config.ts          # Application settings (host, port, API path, logging)
-│   └── scraper.config.ts      # Scraper configuration (modes, timeouts, batch, webhooks)
-├── modules/
-│   ├── health/                # Health check endpoint
-│   │   └── health.controller.ts
-│   └── scraper/               # Core scraping functionality
-│       ├── dto/               # Request/response DTOs with validation
-│       ├── scraper.controller.ts  # REST endpoints for scraping and batch jobs
-│       └── services/
-│           ├── scraper.service.ts     # Orchestrates scraping modes and extraction
-│           ├── batch.service.ts       # Manages batch job lifecycle and scheduling
-│           ├── fingerprint.service.ts # Browser fingerprint generation and rotation
-│           ├── turndown.service.ts    # HTML to Markdown conversion
-│           └── webhook.service.ts     # Webhook delivery with retry logic
-└── utils/                     # Shared utility functions
-```
-
-**Note:** Batch state is stored in-memory and purged after the configured lifetime. For horizontal scaling or persistent storage, integrate an external job queue.
-
 ## Configuration
 
 Configuration is provided through environment variables and validated on startup. Production defaults are documented in [`env.production.example`](env.production.example).
@@ -70,7 +40,6 @@ Configuration is provided through environment variables and validated on startup
 
 Set environment variables before launching the service to override defaults. 
 
-**Optional YAML Configuration:** Set `CONFIG_PATH` to point to a YAML file for additional scraper source metadata. The file should define sources under the `sources` namespace (see retrieved memory for details).
 
 ## Usage
 

@@ -329,12 +329,6 @@ Validation failures emitted by Nest’s `ValidationPipe` are normalized to:
 - **Fingerprint rotation:** Browser fingerprints rotate automatically when anti-bot signals are detected (configurable via `FINGERPRINT_ROTATE_ON_ANTI_BOT`)
 - **Delays and jitter:** Batch processing uses randomized delays to mimic human behavior
 
-### Configuration
-
-- **YAML sources:** Additional scraper source metadata can be provided via `CONFIG_PATH` environment variable
-- **Format:** YAML file with sources defined under the `sources` namespace
-- **Loading:** Configuration is loaded at startup and validated by NestJS Config module
-
 ### Testing
 
 For implementation details, integration examples, and test fixtures, see the unit and e2e tests in the `test/` directory.
