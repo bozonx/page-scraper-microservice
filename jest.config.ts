@@ -20,18 +20,13 @@ const moduleNameMapper = {
 // Common module file extensions
 const moduleFileExtensions = ['ts', 'js', 'json']
 
-// Transforms for unit (CJS) and e2e (ESM)
+// Transforms for unit and e2e (both ESM)
 const transformUnit = {
   '^.+\\.ts$': [
     'ts-jest',
     {
-      // Force CommonJS for unit tests so setup files can use require/jest.mock
-      tsconfig: {
-        module: 'CommonJS',
-        moduleResolution: 'node',
-        isolatedModules: false,
-      },
-      useESM: false,
+      tsconfig: 'tsconfig.spec.json',
+      useESM: true,
     },
   ],
 }
@@ -71,7 +66,7 @@ const config: Config = {
       coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/test/', '.module.ts$', 'main.ts$'],
       transform: transformUnit,
       moduleNameMapper,
-      // Unit project runs in CJS to keep jest.mock working in setup
+      extensionsToTreatAsEsm: ['.ts'],
       // Global timeout for unit tests (default: 5 seconds)
       testTimeout: 5000,
     },

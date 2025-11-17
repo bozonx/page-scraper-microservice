@@ -10,8 +10,12 @@
  * - Global timeout for unit tests is configured in jest.config.ts (5 seconds)
  * - Override per-test if needed using jest.setTimeout() or passing timeout as third arg to it()
  */
-const nock = require('nock');
+import { jest } from '@jest/globals'
+import nock from 'nock'
 let originalFetch: any;
+
+// Make jest available globally for ESM tests and helpers
+(globalThis as any).jest = jest
 
 // Lightweight mocks for heavy/IO-bound modules to ensure unit tests never hit real network/engines
 jest.mock('crawlee', () => {

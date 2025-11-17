@@ -5,7 +5,7 @@
   "main": "dist/src/main.js",
   "type": "module",
   "scripts": {
-    "build": "nest build",
+    "build": "nest build && tsc-alias -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "NODE_ENV=development nest start --watch",
@@ -16,9 +16,9 @@
     "test:unit": "NODE_OPTIONS=--experimental-vm-modules jest --selectProjects unit",
     "test:watch": "NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand --detectOpenHandles",
-    "test:unit:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand --selectProjects unit --detectOpenHandles",
-    "test:e2e:debug": "node --experimental-vm-modules --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand --selectProjects e2e --detectOpenHandles",
+    "test:debug": "node --inspect-brk --experimental-vm-modules node_modules/.bin/jest --runInBand --detectOpenHandles",
+    "test:unit:debug": "node --inspect-brk --experimental-vm-modules node_modules/.bin/jest --runInBand --selectProjects unit --detectOpenHandles",
+    "test:e2e:debug": "node --inspect-brk --experimental-vm-modules node_modules/.bin/jest --runInBand --selectProjects e2e --detectOpenHandles",
     "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --selectProjects e2e"
   },
   "dependencies": {
@@ -42,6 +42,7 @@
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@jest/globals": "^30.2.0",
     "@nestjs/cli": "^11.0.10",
     "@nestjs/schematics": "^11.0.9",
     "@nestjs/testing": "^11.1.9",
@@ -58,8 +59,9 @@
     "nock": "^14.0.10",
     "pino-pretty": "^13.1.2",
     "prettier": "^3.6.2",
-    "ts-jest": "^30.0.0",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.8",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.9.3"
   },

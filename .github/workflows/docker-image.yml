@@ -22,9 +22,9 @@ jobs:
             echo "package.json not found!"
             exit 1
           fi
-          echo "APP_VERSION=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
-          echo "NODE_VERSION=$(node -p "require('./package.json').engines.node.replace('>=', '').split('.')[0]")" >> $GITHUB_OUTPUT
-          echo "APP_NAME=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=$(node --input-type=module -e "import fs from 'node:fs'; console.log(JSON.parse(fs.readFileSync('package.json','utf8')).version)")" >> $GITHUB_OUTPUT
+          echo "NODE_VERSION=$(node --input-type=module -e "import fs from 'node:fs'; const v=JSON.parse(fs.readFileSync('package.json','utf8')).engines.node; console.log(v.replace('>=','').split('.')[0])")" >> $GITHUB_OUTPUT
+          echo "APP_NAME=$(node --input-type=module -e "import fs from 'node:fs'; console.log(JSON.parse(fs.readFileSync('package.json','utf8')).name)")" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: Setup pnpm
