@@ -20,7 +20,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   /**
-   * Catches and handles all exceptions thrown in the application
+   * Catches and handles all exceptions thrown in application
    * @param exception The exception that was thrown
    * @param host The arguments host containing request/response context
    */

@@ -73,7 +73,7 @@ export class ScraperContentExtractionException extends ScraperException {
    * @param details Optional detailed error information
    */
   constructor(details?: string) {
-    super(HttpStatus.UNPROCESSABLE_ENTITY, 'Failed to extract content from the page', details)
+    super(HttpStatus.UNPROCESSABLE_ENTITY, 'Failed to extract content from page', details)
   }
 }
 
@@ -83,7 +83,7 @@ export class ScraperContentExtractionException extends ScraperException {
 export class BatchJobNotFoundException extends ScraperException {
   /**
    * Creates a new batch job not found exception
-   * @param jobId The ID of the job that was not found
+   * @param jobId The ID of job that was not found
    */
   constructor(jobId: string) {
     super(

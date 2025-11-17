@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PinoLogger } from 'nestjs-pino';
-import { TurndownConverterService } from '@/modules/scraper/services/turndown.service';
-import { createMockLogger } from '@test/helpers/mocks';
+import { TurndownConverterService } from '@/modules/scraper/services/turndown.service.js';
+import { createMockLogger } from '@test/helpers/mocks.js';
 
 describe('TurndownConverterService (unit)', () => {
   let service: TurndownConverterService;
@@ -99,7 +99,7 @@ describe('TurndownConverterService (unit)', () => {
     });
 
     it('should handle HTML with special characters', () => {
-      const html = '<p>&lt;script&gt;alert("test")&lt;/script&gt;</p>';
+      const html = '<p><script>alert("test")</script></p>';
       const result = service.convertToMarkdown(html);
 
       expect(result).toBeDefined();

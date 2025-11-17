@@ -23,22 +23,22 @@ import { ScraperResponseDto } from '../dto/scraper-response.dto'
  */
 interface BatchJob {
   /**
-   * Unique identifier for the batch job
+   * Unique identifier for batch job
    */
   id: string
   
   /**
-   * Current status of the batch job
+   * Current status of batch job
    */
   status: BatchJobStatus
   
   /**
-   * Timestamp when the job was created
+   * Timestamp when job was created
    */
   createdAt: Date
   
   /**
-   * Timestamp when the job completed (if completed)
+   * Timestamp when job completed (if completed)
    */
   completedAt?: Date
   
@@ -144,7 +144,7 @@ export class BatchService {
   }
 
   /**
-   * Retrieves the current status of a batch job
+   * Retrieves current status of a batch job
    * @param jobId Job ID to look up
    * @returns Current job status or null if not found
    */
@@ -260,7 +260,7 @@ export class BatchService {
         status: 'failed',
         error: {
           code: 422,
-          message: 'Failed to extract content from the page',
+          message: 'Failed to extract content from page',
           details: errorMessage,
         },
       }
@@ -270,7 +270,7 @@ export class BatchService {
   }
 
   /**
-   * Updates the status of a batch job
+   * Updates status of a batch job
    * @param jobId Job ID
    * @param status New status
    */
@@ -288,7 +288,7 @@ export class BatchService {
    * Adds a result to a batch job and updates counters
    * @param jobId Job ID
    * @param result Item result
-   * @param succeeded Whether the item was processed successfully
+   * @param succeeded Whether item was processed successfully
    */
   private addJobResult(jobId: string, result: BatchItemResultDto, succeeded: boolean): void {
     const job = this.jobs.get(jobId)
@@ -304,7 +304,7 @@ export class BatchService {
   }
 
   /**
-   * Determines the final status of a completed batch job
+   * Determines final status of a completed batch job
    * @param job Batch job to evaluate
    * @returns Final job status
    */
@@ -383,7 +383,7 @@ export class BatchService {
   /**
    * Simple sleep utility for delaying execution
    * @param ms Milliseconds to sleep
-   * @returns Promise that resolves after the specified delay
+   * @returns Promise that resolves after specified delay
    */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))

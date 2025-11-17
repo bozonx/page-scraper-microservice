@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
-import { FingerprintService } from '@/modules/scraper/services/fingerprint.service';
-import { createMockLogger, createMockConfigService } from '@test/helpers/mocks';
-import type { ScraperConfig } from '@/config/scraper.config';
+import { FingerprintService } from '@/modules/scraper/services/fingerprint.service.js';
+import { createMockLogger, createMockConfigService } from '@test/helpers/mocks.js';
+import type { ScraperConfig } from '@/config/scraper.config.js';
 
 describe('FingerprintService (unit)', () => {
   let service: FingerprintService;
@@ -30,7 +30,7 @@ describe('FingerprintService (unit)', () => {
     batchDataLifetimeMins: 60,
     webhookTimeoutMs: 10000,
     webhookBackoffMs: 1000,
-    webhookMaxAttempts: 3,
+    webhookMaxAttempts:3,
   } as ScraperConfig;
 
   beforeAll(async () => {

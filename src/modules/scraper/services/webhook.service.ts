@@ -20,7 +20,7 @@ export class WebhookService {
   /**
    * Sends webhook notification with retry logic
    * @param webhookConfig Webhook configuration including URL and authentication
-   * @param payload Payload to send in the webhook request
+   * @param payload Payload to send in webhook request
    */
   async sendWebhook(
     webhookConfig: BatchWebhookDto,
@@ -117,7 +117,7 @@ export class WebhookService {
   /**
    * Simple sleep utility for delaying execution
    * @param ms Milliseconds to sleep
-   * @returns Promise that resolves after the specified delay
+   * @returns Promise that resolves after specified delay
    */
   private sleep(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms))

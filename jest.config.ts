@@ -2,22 +2,46 @@ import type { Config } from 'jest';
 
 // Common module name mapper for path aliases
 const moduleNameMapper = {
+  // Support ESM-style explicit .js in TS imports by stripping the extension
+  '^(\\.{1,2}/.*)\\.js$': '$1',
+  // Alias mappings (both with and without .js in specifier)
+  '^@/(.*)\\.js$': '<rootDir>/src/$1',
   '^@/(.*)$': '<rootDir>/src/$1',
+  '^@common/(.*)\\.js$': '<rootDir>/src/common/$1',
   '^@common/(.*)$': '<rootDir>/src/common/$1',
+  '^@modules/(.*)\\.js$': '<rootDir>/src/modules/$1',
   '^@modules/(.*)$': '<rootDir>/src/modules/$1',
+  '^@config/(.*)\\.js$': '<rootDir>/src/config/$1',
   '^@config/(.*)$': '<rootDir>/src/config/$1',
+  '^@test/(.*)\\.js$': '<rootDir>/test/$1',
   '^@test/(.*)$': '<rootDir>/test/$1',
 };
 
 // Common module file extensions
 const moduleFileExtensions = ['ts', 'js', 'json'];
 
-// Common transform configuration
-const transform = {
+// Transforms for unit (CJS) and e2e (ESM)
+const transformUnit = {
+  '^.+\\.ts$': [
+    'ts-jest',
+    {
+      // Force CommonJS for unit tests so setup files can use require/jest.mock
+      tsconfig: {
+        module: 'CommonJS',
+        moduleResolution: 'node',
+        isolatedModules: false,
+      },
+      useESM: false,
+    },
+  ],
+};
+
+const transformE2E = {
   '^.+\\.ts$': [
     'ts-jest',
     {
       tsconfig: 'tsconfig.spec.json',
+      useESM: true,
     },
   ],
 };
@@ -36,6 +60,7 @@ const config: Config = {
       displayName: 'unit',
       preset: 'ts-jest',
       testEnvironment: 'node',
+      injectGlobals: true,
       moduleFileExtensions,
       rootDir: '.',
       testMatch: ['<rootDir>/test/unit/**/*.spec.ts', '<rootDir>/test/unit/**/*.test.ts'],
@@ -44,8 +69,9 @@ const config: Config = {
       collectCoverageFrom: ['src/**/*.(t|j)s'],
       coverageDirectory: 'coverage',
       coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/test/', '.module.ts$', 'main.ts$'],
-      transform,
+      transform: transformUnit,
       moduleNameMapper,
+      // Unit project runs in CJS to keep jest.mock working in setup
       // Global timeout for unit tests (default: 5 seconds)
       testTimeout: 5000,
     },
@@ -54,6 +80,7 @@ const config: Config = {
       displayName: 'e2e',
       preset: 'ts-jest',
       testEnvironment: 'node',
+      injectGlobals: true,
       moduleFileExtensions,
       rootDir: '.',
       testMatch: ['<rootDir>/test/e2e/**/*.e2e-spec.ts'],
@@ -61,8 +88,9 @@ const config: Config = {
       collectCoverageFrom: ['src/**/*.(t|j)s'],
       coverageDirectory: 'coverage',
       coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/test/', '.module.ts$', 'main.ts$'],
-      transform,
+      transform: transformE2E,
       moduleNameMapper,
+      extensionsToTreatAsEsm: ['.ts'],
       // Global timeout for e2e tests (default: 30 seconds)
       testTimeout: 30000,
     },

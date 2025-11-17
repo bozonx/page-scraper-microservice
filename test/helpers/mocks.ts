@@ -7,8 +7,8 @@
 
 import type { PinoLogger } from 'nestjs-pino';
 import type { ConfigService } from '@nestjs/config';
-import type { IArticleExtractor } from '../../src/modules/scraper/services/article-extractor.interface';
-import type { TurndownConverterService } from '../../src/modules/scraper/services/turndown.service';
+import type { IArticleExtractor } from '../../src/modules/scraper/services/article-extractor.interface.js';
+import type { TurndownConverterService } from '../../src/modules/scraper/services/turndown.service.js';
 
 /**
  * Creates a mock PinoLogger instance with all required methods
@@ -28,7 +28,7 @@ export const createMockLogger = (): PinoLogger =>
   }) as unknown as PinoLogger;
 
 /**
- * Placeholder for future HTTP-related mocks if needed.
+ * Placeholder for future HTTP-related mocks if needed
  */
 
 /**

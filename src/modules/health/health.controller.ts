@@ -1,13 +1,13 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common'
 
 /**
  * Health check response interface
  * Defines the structure of health check responses
  */
 export interface HealthResponse {
-  status: 'ok' | 'error';
-  timestamp?: string;
-  uptime?: number;
+  status: 'ok' | 'error'
+  timestamp?: string
+  uptime?: number
 }
 
 /**
@@ -22,6 +22,6 @@ export class HealthController {
    */
   @Get()
   public check(): HealthResponse {
-    return { status: 'ok' };
+    return { status: 'ok' }
   }
 }

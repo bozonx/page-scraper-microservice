@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PinoLogger } from 'nestjs-pino';
-import { ArticleExtractorService } from '@/modules/scraper/services/article-extractor.service';
-import { createMockLogger } from '@test/helpers/mocks';
+import { ArticleExtractorService } from '@/modules/scraper/services/article-extractor.service.js';
+import { createMockLogger } from '@test/helpers/mocks.js';
 
 describe('ArticleExtractorService (unit)', () => {
   let service: ArticleExtractorService;

@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 /**
  * E2E tests global setup
  *

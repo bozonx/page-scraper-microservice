@@ -1,17 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
-import { ScraperService } from '@/modules/scraper/services/scraper.service';
-import { FingerprintService } from '@/modules/scraper/services/fingerprint.service';
-import { TurndownConverterService } from '@/modules/scraper/services/turndown.service';
-import type { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto';
-import type { ScraperConfig } from '@/config/scraper.config';
+import { ScraperService } from '@/modules/scraper/services/scraper.service.js';
+import { FingerprintService } from '@/modules/scraper/services/fingerprint.service.js';
+import { TurndownConverterService } from '@/modules/scraper/services/turndown.service.js';
+import type { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto.js';
+import type { ScraperConfig } from '@/config/scraper.config.js';
 import {
   createMockLogger,
   createMockConfigService,
   createMockTurndownConverterService,
   createMockArticleExtractor,
-} from '@test/helpers/mocks';
+} from '@test/helpers/mocks.js';
 
 describe('ScraperService (unit)', () => {
   let moduleRef: TestingModule;

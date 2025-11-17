@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PinoLogger } from 'nestjs-pino';
-import { WebhookService } from '@/modules/scraper/services/webhook.service';
-import { createMockLogger, createMockConfigService } from '@test/helpers/mocks';
-import type { ScraperConfig } from '@/config/scraper.config';
-import type { BatchWebhookDto, BatchWebhookPayloadDto } from '@/modules/scraper/dto/batch.dto';
+import { WebhookService } from '@/modules/scraper/services/webhook.service.js';
+import { createMockLogger, createMockConfigService } from '@test/helpers/mocks.js';
+import type { ScraperConfig } from '@/config/scraper.config.js';
+import type { BatchWebhookDto, BatchWebhookPayloadDto } from '@/modules/scraper/dto/batch.dto.js';
 
 describe('WebhookService (unit)', () => {
   let service: WebhookService;
@@ -31,7 +31,7 @@ describe('WebhookService (unit)', () => {
     batchDataLifetimeMins: 60,
     webhookTimeoutMs: 5000,
     webhookBackoffMs: 100,
-    webhookMaxAttempts: 3,
+    webhookMaxAttempts:3,
   } as ScraperConfig;
 
   const mockWebhookConfig: BatchWebhookDto = {

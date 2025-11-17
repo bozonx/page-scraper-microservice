@@ -7,7 +7,7 @@ import { ScraperRequestDto } from '../dto/scraper-request.dto'
 import { ScraperResponseDto } from '../dto/scraper-response.dto'
 import { FingerprintService } from './fingerprint.service'
 import { TurndownConverterService } from './turndown.service'
-import { IArticleExtractor } from './article-extractor.interface'
+import type { IArticleExtractor } from './article-extractor.interface'
 
 /**
  * Main scraper service
@@ -120,7 +120,7 @@ export class ScraperService {
           continue
         }
 
-        // If it's the last attempt or no anti-bot detected, throw the error
+        // If it's last attempt or no anti-bot detected, throw error
         throw error
       }
     }
@@ -189,13 +189,13 @@ export class ScraperService {
             )
           }
 
-          // Navigate to the page
+          // Navigate to page
           await page.goto(request.url, {
             waitUntil: 'networkidle',
             timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
           })
 
-          // Get the HTML content
+          // Get HTML content
           const html = await page.content()
 
           // Extract content using article extractor
@@ -211,7 +211,7 @@ export class ScraperService {
       },
     })
 
-    // Add request to the queue and start crawling
+    // Add request to queue and start crawling
     crawler.addRequests([request.url])
     await crawler.run()
 

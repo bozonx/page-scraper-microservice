@@ -1,16 +1,20 @@
+import { jest } from '@jest/globals';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 import { ValidationPipe } from '@nestjs/common';
 import { FastifyAdapter } from '@nestjs/platform-fastify';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { AppModule } from '@/app.module';
-import { ArticleExtractorService } from '@modules/scraper/services/article-extractor.service';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { AppModule } from '@/app.module.js';
+import { ArticleExtractorService } from '@modules/scraper/services/article-extractor.service.js';
+import { load as cheerioLoad } from 'cheerio';
 
 describe('Scraper MK.ru Article (e2e)', () => {
   let app: NestFastifyApplication;
   const targetUrl = 'https://www.mk.ru/incident/2025/11/17/voditel-podorval-granatu-vo-vremya-obshheniya-s-policiey-vo-lvovskoy-oblasti.html';
-  const htmlPath = join(__dirname, 'examples', 'mk-ru-1.html');
+  const __dirname_es = dirname(fileURLToPath(import.meta.url));
+  const htmlPath = join(__dirname_es, 'examples', 'mk-ru-1.html');
 
   beforeEach(async () => {
     // Read HTML file once
@@ -38,8 +42,7 @@ describe('Scraper MK.ru Article (e2e)', () => {
       extractFromHtml: jest.fn(async (htmlContent: string): Promise<any> => {
         // Parse HTML with Cheerio to extract article data
         // This mimics what @extractus/article-extractor does
-        const cheerio = require('cheerio');
-        const $ = cheerio.load(htmlContent);
+        const $ = cheerioLoad(htmlContent);
         
         // Extract metadata from HTML
         const title = $('meta[property="og:title"]').attr('content') || $('title').text();

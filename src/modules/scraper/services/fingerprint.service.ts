@@ -386,7 +386,7 @@ export class FingerprintService {
   }
 
   /**
-   * Selects a random vendor from the provided list
+   * Selects a random vendor from provided list
    * @param vendors Array of vendor names
    * @returns Selected vendor name
    */
@@ -395,7 +395,7 @@ export class FingerprintService {
   }
 
   /**
-   * Selects a random renderer from the provided list
+   * Selects a random renderer from provided list
    * @param renderers Array of renderer names
    * @returns Selected renderer name
    */
@@ -404,7 +404,7 @@ export class FingerprintService {
   }
 
   /**
-   * Selects a random version from the provided list
+   * Selects a random version from provided list
    * @param versions Array of version strings
    * @returns Selected version string
    */
