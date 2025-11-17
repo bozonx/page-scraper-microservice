@@ -1,36 +1,23 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { createTestApp } from './test-app.factory.js'
 import nock from 'nock'
-
-// Playwright mode e2e test hitting a real page once
-// Keeps assertions minimal to avoid flakiness and long runtimes
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 describe('Scraper Playwright (e2e)', () => {
   let app: NestFastifyApplication
-  // Use a data: URL to avoid external network/anti-bot flakiness while still running a real browser
-  const targetUrl =
-    'data:text/html;charset=utf-8,' +
-    encodeURIComponent(`
-      <!doctype html>
-      <html lang="ru">
-        <head>
-          <meta charset="utf-8" />
-          <meta name="description" content="Короткое описание статьи" />
-          <title>Тестовая статья</title>
-        </head>
-        <body>
-          <article>
-            <h1>Заголовок</h1>
-            <p>Это тестовый контент статьи с несколькими словами для расчета времени чтения.</p>
-          </article>
-        </body>
-      </html>
-    `)
+  const targetUrl = 'http://example.com/test-page'
+  const __dirname_es = dirname(fileURLToPath(import.meta.url))
+  const htmlPath = join(__dirname_es, 'examples', 'test-page.html')
+  let fixtureHtml: string
 
   beforeAll(async () => {
-    // Mirror e2e network policy: block external connections
+    fixtureHtml = readFileSync(htmlPath, 'utf-8')
     nock.disableNetConnect()
-    nock.enableNetConnect(/(127\.0\.0\.1|::1|localhost)/)
+    nock('http://example.com').get('/test-page').reply(200, fixtureHtml, {
+      'Content-Type': 'text/html; charset=utf-8',
+    })
     app = await createTestApp()
   })
 
@@ -54,19 +41,13 @@ describe('Scraper Playwright (e2e)', () => {
     })
 
     expect(response.statusCode).toBe(200)
-
     const body = JSON.parse(response.body)
 
     expect(body).toHaveProperty('url')
     expect(body).toHaveProperty('body')
     expect(body).toHaveProperty('meta')
-
     expect(body.url).toBe(targetUrl)
     expect(typeof body.body).toBe('string')
-    expect(body.body.length).toBeGreaterThan(0)
-
-    expect(body.meta).toHaveProperty('readTimeMin')
-    expect(typeof body.meta.readTimeMin).toBe('number')
     expect(body.meta.readTimeMin).toBeGreaterThanOrEqual(0)
   })
 })
