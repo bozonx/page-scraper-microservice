@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
 import { v4 as uuidv4 } from 'uuid'
-import { ScraperRequestDto } from '../dto/scraper-request.dto'
-import { ScraperResponseDto } from '../dto/scraper-response.dto'
+import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
+import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
 
 export interface StoredPageRecord {
   id: string

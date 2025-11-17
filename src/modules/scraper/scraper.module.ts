@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common'
-import { ScraperController } from './scraper.controller'
-import { ScraperService } from './services/scraper.service'
-import { BatchService } from './services/batch.service'
-import { WebhookService } from './services/webhook.service'
-import { FingerprintService } from './services/fingerprint.service'
-import { TurndownConverterService } from './services/turndown.service'
-import { ArticleExtractorService } from './services/article-extractor.service'
-import { CleanupService } from './services/cleanup.service'
-import { MemoryStoreService } from './services/memory-store.service'
+import { ScraperController } from './scraper.controller.js'
+import { ScraperService } from './services/scraper.service.js'
+import { BatchService } from './services/batch.service.js'
+import { WebhookService } from './services/webhook.service.js'
+import { FingerprintService } from './services/fingerprint.service.js'
+import { TurndownConverterService } from './services/turndown.service.js'
+import { ArticleExtractorService } from './services/article-extractor.service.js'
+import { CleanupService } from './services/cleanup.service.js'
+import { MemoryStoreService } from './services/memory-store.service.js'
 
 /**
  * Scraper module
@@ -27,8 +27,8 @@ import { MemoryStoreService } from './services/memory-store.service'
     {
       // Provide article extractor as an interface for better testability
       provide: 'IArticleExtractor',
-      useClass: ArticleExtractorService
-    }
+      useClass: ArticleExtractorService,
+    },
   ],
   exports: [
     ScraperService,
@@ -38,7 +38,7 @@ import { MemoryStoreService } from './services/memory-store.service'
     TurndownConverterService,
     CleanupService,
     MemoryStoreService,
-    'IArticleExtractor'
+    'IArticleExtractor',
   ],
 })
 export class ScraperModule {}

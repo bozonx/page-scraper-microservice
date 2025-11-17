@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
-import { ScraperConfig } from '@config/scraper.config'
-import { FingerprintConfigDto } from '../dto/scraper-request.dto'
+import { ScraperConfig } from '@config/scraper.config.js'
+import { FingerprintConfigDto } from '../dto/scraper-request.dto.js'
 
 /**
  * Browser fingerprint interface
@@ -13,32 +13,32 @@ export interface BrowserFingerprint {
    * Browser user agent string
    */
   userAgent: string
-  
+
   /**
    * Browser viewport dimensions
    */
   viewport: { width: number; height: number }
-  
+
   /**
    * Browser name (e.g., 'chrome', 'firefox')
    */
   browserName: string
-  
+
   /**
    * Operating system platform
    */
   platform: string
-  
+
   /**
    * Browser language setting
    */
   language: string
-  
+
   /**
    * Browser timezone setting
    */
   timezone: string
-  
+
   /**
    * WebGL rendering parameters
    */
@@ -47,7 +47,7 @@ export interface BrowserFingerprint {
     renderer: string
     version: string
   }
-  
+
   /**
    * Canvas fingerprint parameters
    */
@@ -55,24 +55,24 @@ export interface BrowserFingerprint {
     fingerprint: string
     hacked: boolean
   }
-  
+
   /**
    * Audio context parameters
    */
   audio: {
     contextId: number
   }
-  
+
   /**
    * List of browser plugins
    */
   plugins: string[]
-  
+
   /**
    * List of available fonts
    */
   fonts: string[]
-  
+
   /**
    * Screen parameters
    */
@@ -82,7 +82,7 @@ export interface BrowserFingerprint {
     colorDepth: number
     pixelDepth: number
   }
-  
+
   /**
    * Hardware parameters
    */

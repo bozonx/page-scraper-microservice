@@ -12,7 +12,7 @@ import {
   IsArray,
 } from 'class-validator'
 import { Type } from 'class-transformer'
-import { ScraperRequestDto, FingerprintConfigDto } from './scraper-request.dto'
+import { ScraperRequestDto, FingerprintConfigDto } from './scraper-request.dto.js'
 
 /**
  * Batch item DTO

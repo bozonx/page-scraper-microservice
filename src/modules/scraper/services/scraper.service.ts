@@ -2,12 +2,12 @@ import { Injectable, Inject } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { PlaywrightCrawler, Configuration } from 'crawlee'
-import { ScraperConfig } from '@config/scraper.config'
-import { ScraperRequestDto } from '../dto/scraper-request.dto'
-import { ScraperResponseDto } from '../dto/scraper-response.dto'
-import { FingerprintService } from './fingerprint.service'
-import { TurndownConverterService } from './turndown.service'
-import type { IArticleExtractor } from './article-extractor.interface'
+import { ScraperConfig } from '@config/scraper.config.js'
+import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
+import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
+import { FingerprintService } from './fingerprint.service.js'
+import { TurndownConverterService } from './turndown.service.js'
+import type { IArticleExtractor } from './article-extractor.interface.js'
 
 /**
  * Main scraper service
@@ -176,75 +176,79 @@ export class ScraperService {
       },
     }
 
-    const crawler = new PlaywrightCrawler({
-      launchContext,
-      requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
-      navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+    const crawler = new PlaywrightCrawler(
+      {
+        launchContext,
+        requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+        navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
 
-      async requestHandler({ page }) {
-        try {
-          // Apply fingerprint to page context
-          if (fingerprint.userAgent) {
-            await page.addInitScript((ua) => {
-              Object.defineProperty(navigator, 'userAgent', {
-                value: ua,
-                writable: false,
+        async requestHandler({ page }) {
+          try {
+            // Apply fingerprint to page context
+            if (fingerprint.userAgent) {
+              await page.addInitScript((ua) => {
+                Object.defineProperty(navigator, 'userAgent', {
+                  value: ua,
+                  writable: false,
+                })
+              }, fingerprint.userAgent)
+            }
+
+            if (fingerprint.viewport) {
+              await page.setViewportSize({
+                width: fingerprint.viewport.width,
+                height: fingerprint.viewport.height,
               })
-            }, fingerprint.userAgent)
-          }
+            }
 
-          if (fingerprint.viewport) {
-            await page.setViewportSize({
-              width: fingerprint.viewport.width,
-              height: fingerprint.viewport.height,
+            // Timezone is set via contextOptions.timezoneId at context creation time
+
+            // Determine effective blocking flags: request overrides default config when provided
+            const effectiveBlockTrackers =
+              request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+            const effectiveBlockHeavy =
+              request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
+
+            // Block trackers and heavy resources based on effective flags
+            if (effectiveBlockTrackers) {
+              await page.route(
+                '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
+                (route) => route.abort()
+              )
+            }
+
+            if (effectiveBlockHeavy) {
+              await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
+                route.abort()
+              )
+            }
+
+            // Navigate to page
+            await page.goto(request.url, {
+              waitUntil: 'networkidle',
             })
+
+            // Get HTML content
+            const html = await page.content()
+
+            // Extract content using article extractor with same header hints
+            const headers: Record<string, string> = {}
+            if (fingerprint.language) headers['Accept-Language'] = fingerprint.language
+            if (fingerprint.userAgent) headers['User-Agent'] = fingerprint.userAgent
+            if (tzForContext) headers['X-Timezone-Id'] = tzForContext as string
+            extracted = await articleExtractor.extractFromHtml(html, { headers })
+          } catch (error) {
+            runError = error instanceof Error ? error : new Error(String(error))
           }
+        },
 
-          // Timezone is set via contextOptions.timezoneId at context creation time
-
-          // Determine effective blocking flags: request overrides default config when provided
-          const effectiveBlockTrackers =
-            request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
-          const effectiveBlockHeavy =
-            request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
-
-          // Block trackers and heavy resources based on effective flags
-          if (effectiveBlockTrackers) {
-            await page.route('**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}', (route) =>
-              route.abort()
-            )
-          }
-
-          if (effectiveBlockHeavy) {
-            await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
-              route.abort()
-            )
-          }
-
-          // Navigate to page
-          await page.goto(request.url, {
-            waitUntil: 'networkidle',
-          })
-
-          // Get HTML content
-          const html = await page.content()
-
-          // Extract content using article extractor with same header hints
-          const headers: Record<string, string> = {}
-          if (fingerprint.language) headers['Accept-Language'] = fingerprint.language
-          if (fingerprint.userAgent) headers['User-Agent'] = fingerprint.userAgent
-          if (tzForContext) headers['X-Timezone-Id'] = tzForContext as string
-          extracted = await articleExtractor.extractFromHtml(html, { headers })
-        } catch (error) {
-          runError = error instanceof Error ? error : new Error(String(error))
-        }
+        failedRequestHandler({ request: req, error }) {
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          runError = new Error(`Failed to load ${req.url}: ${errorMessage}`)
+        },
       },
-
-      failedRequestHandler({ request: req, error }) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        runError = new Error(`Failed to load ${req.url}: ${errorMessage}`)
-      },
-    }, new Configuration({ persistStorage: false }))
+      new Configuration({ persistStorage: false })
+    )
 
     // Run with a single URL without persisting storage
     await crawler.run([request.url])
@@ -255,5 +259,4 @@ export class ScraperService {
     }
     return extracted
   }
-
 }

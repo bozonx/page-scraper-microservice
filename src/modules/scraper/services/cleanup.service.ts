@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
-import { ScraperConfig } from '@config/scraper.config'
-import { MemoryStoreService } from './memory-store.service'
-import { BatchService } from './batch.service'
+import { ScraperConfig } from '@config/scraper.config.js'
+import { MemoryStoreService } from './memory-store.service.js'
+import { BatchService } from './batch.service.js'
 
 @Injectable()
 export class CleanupService {

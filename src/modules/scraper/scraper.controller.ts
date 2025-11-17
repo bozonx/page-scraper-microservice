@@ -1,12 +1,12 @@
 import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
-import { ScraperService } from './services/scraper.service'
-import { BatchService } from './services/batch.service'
-import { CleanupService } from './services/cleanup.service'
-import { MemoryStoreService } from './services/memory-store.service'
-import { ScraperRequestDto } from './dto/scraper-request.dto'
-import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto'
-import { BatchRequestDto, BatchResponseDto, BatchJobStatusDto } from './dto/batch.dto'
+import { ScraperService } from './services/scraper.service.js'
+import { BatchService } from './services/batch.service.js'
+import { CleanupService } from './services/cleanup.service.js'
+import { MemoryStoreService } from './services/memory-store.service.js'
+import { ScraperRequestDto } from './dto/scraper-request.dto.js'
+import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto.js'
+import { BatchRequestDto, BatchResponseDto, BatchJobStatusDto } from './dto/batch.dto.js'
 import {
   ScraperException,
   ScraperTimeoutException,
@@ -16,7 +16,7 @@ import {
   BatchJobNotFoundException,
   BatchJobCreationException,
   BatchJobStatusException,
-} from '@common/exceptions/scraper.exception'
+} from '@common/exceptions/scraper.exception.js'
 
 /**
  * Scraper controller
@@ -45,10 +45,12 @@ export class ScraperController {
     try {
       this.logger.info(`Received scrape request for URL: ${request.url}`)
       const cleanupPromise = this.cleanupService.triggerCleanup()
-      const resultPromise = this.scraperService.scrapePage(request).then((res: ScraperResponseDto) => {
-        this.memoryStoreService.addPage(request, res)
-        return res
-      })
+      const resultPromise = this.scraperService
+        .scrapePage(request)
+        .then((res: ScraperResponseDto) => {
+          this.memoryStoreService.addPage(request, res)
+          return res
+        })
       const [, result] = await Promise.all([cleanupPromise, resultPromise])
       this.logger.info(`Successfully scraped ${request.url}`)
       return result
@@ -174,5 +176,4 @@ export class ScraperController {
     // Default to content extraction error
     return 422
   }
-
 }

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
-import type { IArticleExtractor, IArticleExtractorOptions } from './article-extractor.interface'
+import type { IArticleExtractor, IArticleExtractorOptions } from './article-extractor.interface.js'
 
 /**
  * Implementation of article extractor service using @extractus/article-extractor library
