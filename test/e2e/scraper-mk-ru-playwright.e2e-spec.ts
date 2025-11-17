@@ -1,30 +1,22 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { createTestApp } from './test-app.factory.js'
-import nock from 'nock'
-import { readFileSync } from 'node:fs'
-import { dirname, join } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { startTestServer } from './test-server.js'
 
 describe('Scraper Playwright (e2e)', () => {
   let app: NestFastifyApplication
-  const targetUrl = 'http://example.com/test-page'
-  const __dirname_es = dirname(fileURLToPath(import.meta.url))
-  const htmlPath = join(__dirname_es, 'examples', 'test-page.html')
-  let fixtureHtml: string
+  let testServer: ReturnType<typeof startTestServer>
+  const targetUrl = 'http://localhost:8080/test-page'
 
   beforeAll(async () => {
-    fixtureHtml = readFileSync(htmlPath, 'utf-8')
-    nock.disableNetConnect()
-    nock('http://example.com').get('/test-page').reply(200, fixtureHtml, {
-      'Content-Type': 'text/html; charset=utf-8',
-    })
+    testServer = startTestServer()
+    // Даем серверу время запуститься
+    await new Promise(resolve => setTimeout(resolve, 500))
     app = await createTestApp()
-  })
+  }, 15000)
 
   afterAll(async () => {
     if (app) await app.close()
-    nock.cleanAll()
-    nock.enableNetConnect()
+    testServer.close()
   })
 
   it('POST /api/v1/page in playwright mode returns structured content', async () => {
@@ -43,11 +35,9 @@ describe('Scraper Playwright (e2e)', () => {
     expect(response.statusCode).toBe(200)
     const body = JSON.parse(response.body)
 
-    expect(body).toHaveProperty('url')
+    expect(body).toHaveProperty('url', targetUrl)
     expect(body).toHaveProperty('body')
-    expect(body).toHaveProperty('meta')
-    expect(body.url).toBe(targetUrl)
     expect(typeof body.body).toBe('string')
     expect(body.meta.readTimeMin).toBeGreaterThanOrEqual(0)
-  })
+  }, 15000)
 })
