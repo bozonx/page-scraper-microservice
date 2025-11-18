@@ -353,29 +353,6 @@ Retrieves the current status and progress of a batch scraping job.
 }
 ```
 
-**Example Response:**
-
-```jsonc
-{
-  // Unique batch job identifier.
-  "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a",
-  // Current job status: queued, running, succeeded, failed, or partial.
-  "status": "running",
-  // ISO-8601 timestamp when the job was created.
-  "createdAt": "2024-05-30T10:00:00.000Z",
-  // Completion timestamp or null while running.
-  "completedAt": null,
-  // Total number of items in the batch.
-  "total": 25,
-  // Number of items processed so far.
-  "processed": 10,
-  // Successful item count.
-  "succeeded": 9,
-  // Failed item count.
-  "failed": 1
-}
-```
-
 #### Error Responses
 
 - `404 Not Found` with `BatchJobNotFoundException` when the ID is unknown or data expired (jobs are purged after `DATA_LIFETIME_MINS`).
