@@ -8,7 +8,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js'
 import appConfig from './config/app.config.js'
 import scraperConfig from './config/scraper.config.js'
 import type { AppConfig } from './config/app.config.js'
-import pkg from '../package.json'
+import pkg from '../package.json' with { type: 'json' }
 
 /**
  * Root module of the application

@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "module": "Node16",
-    "moduleResolution": "node16",
+    "module": "node18",
+    "moduleResolution": "node18",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -19,14 +19,7 @@
     "noImplicitOverride": true,
     "useUnknownInCatchVariables": true,
     "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@/*": ["src/*"],
-      "@common/*": ["src/common/*"],
-      "@modules/*": ["src/modules/*"],
-      "@config/*": ["src/config/*"],
-      "@test/*": ["test/*"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "coverage"]

@@ -5,7 +5,7 @@
   "main": "dist/src/main.js",
   "type": "module",
   "scripts": {
-    "build": "nest build && tsc-alias -p tsconfig.build.json",
+    "build": "nest build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",
     "start:dev": "NODE_ENV=development nest start --watch",
