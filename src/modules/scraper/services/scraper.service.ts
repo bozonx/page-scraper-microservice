@@ -2,6 +2,7 @@ import { Injectable, Inject } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { PlaywrightCrawler, Configuration } from 'crawlee'
+import type { PlaywrightCrawlerOptions } from 'crawlee'
 import { ScraperConfig } from '../../../config/scraper.config.js'
 import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
 import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
@@ -176,23 +177,29 @@ export class ScraperService {
     const tzForContext = request.timezoneId || scraperConfig.defaultTimezoneId
     const localeForContext = request.locale || scraperConfig.defaultLocale
 
-    const launchContext: any = {
+    const launchContext = {
       launchOptions: {
         timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
         headless: scraperConfig.playwrightHeadless,
       },
-      // Apply per-context options so all pages use the desired timezone/locale
-      contextOptions: {
-        ...(tzForContext ? { timezoneId: tzForContext } : {}),
-        ...(localeForContext ? { locale: localeForContext as string } : {}),
-      },
-    }
+    } satisfies PlaywrightCrawlerOptions['launchContext']
 
     const crawler = new PlaywrightCrawler(
       {
         launchContext,
         requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
         navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+
+        preNavigationHooks: [
+          async ({ page }) => {
+            // Set timezone and locale via browser context
+            if (tzForContext || localeForContext) {
+              await page.context().addInitScript(() => {
+                // Timezone and locale are set at context creation time
+              })
+            }
+          },
+        ],
 
         async requestHandler({ page }) {
           try {
@@ -212,8 +219,6 @@ export class ScraperService {
                 height: fingerprint.viewport.height,
               })
             }
-
-            // Timezone is set via contextOptions.timezoneId at context creation time
 
             // Determine effective blocking flags: request overrides default config when provided
             const effectiveBlockTrackers =
@@ -346,23 +351,29 @@ export class ScraperService {
     const tzForContext = request.timezoneId || scraperConfig.defaultTimezoneId
     const localeForContext = request.locale || scraperConfig.defaultLocale
 
-    const launchContext: any = {
+    const launchContext = {
       launchOptions: {
         timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
         headless: scraperConfig.playwrightHeadless,
       },
-      // Apply per-context options so all pages use the desired timezone/locale
-      contextOptions: {
-        ...(tzForContext ? { timezoneId: tzForContext } : {}),
-        ...(localeForContext ? { locale: localeForContext as string } : {}),
-      },
-    }
+    } satisfies PlaywrightCrawlerOptions['launchContext']
 
     const crawler = new PlaywrightCrawler(
       {
         launchContext,
         requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
         navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+
+        preNavigationHooks: [
+          async ({ page }) => {
+            // Set timezone and locale via browser context
+            if (tzForContext || localeForContext) {
+              await page.context().addInitScript(() => {
+                // Timezone and locale are set at context creation time
+              })
+            }
+          },
+        ],
 
         async requestHandler({ page }) {
           try {
