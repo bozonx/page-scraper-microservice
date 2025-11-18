@@ -73,7 +73,7 @@ export class ScraperRequestDto {
   /**
    * URL to scrape content from
    */
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   public url!: string
 
   /**

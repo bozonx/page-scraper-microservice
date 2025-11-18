@@ -35,6 +35,8 @@ describe('CleanupService (unit)', () => {
   })
 
   afterEach(() => {
+    // Ensure interval timers are cleared to avoid leaks between tests
+    cleanup.onModuleDestroy()
     jest.useRealTimers()
   })
 
@@ -49,15 +51,18 @@ describe('CleanupService (unit)', () => {
     // Arrange: interval 5 minutes in mock config
     cleanup.onModuleInit()
 
-    // Act: advance fake timers by exactly one interval
+    // Act: run first interval task deterministically
     jest.advanceTimersByTime(5 * 60 * 1000)
+    await Promise.resolve()
 
     // Assert: cleanup invoked once
     expect(memoryStore.cleanupOlderThan).toHaveBeenCalledTimes(1)
     expect(batchService.cleanupOlderThan).toHaveBeenCalledTimes(1)
 
-    // Advance another interval and expect another run
+    // Move system time forward beyond throttle and run next interval
+    jest.setSystemTime(new Date(Date.now() + 5 * 60 * 1000 + 1))
     jest.advanceTimersByTime(5 * 60 * 1000)
+    await Promise.resolve()
     expect(memoryStore.cleanupOlderThan).toHaveBeenCalledTimes(2)
     expect(batchService.cleanupOlderThan).toHaveBeenCalledTimes(2)
   })
