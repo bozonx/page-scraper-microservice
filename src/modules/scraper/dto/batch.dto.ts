@@ -236,36 +236,25 @@ export interface BatchResponseDto {
 export type BatchJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'partial'
 
 /**
- * Batch job meta information
- * Provides additional context regarding batch completion
+ * Batch job status meta information
+ * Provides concise completion stats and first error message (if any)
  */
-export interface BatchMetaDto {
+export interface StatusMetaDto {
   /**
-   * Total number of items that completed (succeeded + failed) at the time of finalization
+   * Number of items that were successfully processed
    */
-  completedCount?: number
+  succeeded: number
 
   /**
-   * Error attribution for failed batches
+   * Number of items that failed to process
    */
-  error?: {
-    /**
-     * Human-readable error message
-     */
-    message: string
+  failed: number
 
-    /**
-     * Categorizes where the error originated from
-     * - pre_start: error occurred before first item started processing
-     * - first_item: error of the first processed item
-     */
-    kind: 'pre_start' | 'first_item'
-
-    /**
-     * Optional error details
-     */
-    details?: string
-  }
+  /**
+   * Error message if an error occurred (either pre-start or first failed task)
+   * Example: "Task 0 error: not found"
+   */
+  message?: string
 }
 
 /**
@@ -313,9 +302,9 @@ export interface BatchJobStatusDto {
   completedAt?: string
 
   /**
-   * Additional metadata about batch completion
+   * Status metadata including counters and first error message if present
    */
-  meta?: BatchMetaDto
+  statusMeta: StatusMetaDto
 }
 
 /**
@@ -409,7 +398,7 @@ export interface BatchWebhookPayloadDto {
   results: BatchItemResultDto[]
 
   /**
-   * Additional metadata about batch completion
+   * Status metadata including counters and first error message if present
    */
-  meta?: BatchMetaDto
+  statusMeta: StatusMetaDto
 }

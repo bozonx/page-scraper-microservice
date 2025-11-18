@@ -13,7 +13,7 @@ import {
   BatchWebhookPayloadDto,
   BatchItemDto,
   BatchCommonSettingsDto,
-  BatchMetaDto,
+  StatusMetaDto,
 } from '../dto/batch.dto.js'
 import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
 import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
@@ -99,9 +99,9 @@ interface BatchJob {
   firstError?: { message: string; details?: string }
 
   /**
-   * Completion metadata
+   * Status metadata (message only stored; counts derived from counters)
    */
-  meta?: BatchMetaDto
+  statusMeta?: StatusMetaDto
 }
 
 /**
@@ -182,6 +182,12 @@ export class BatchService implements OnApplicationShutdown {
       return null
     }
 
+    const statusMeta: StatusMetaDto = {
+      succeeded: job.succeeded,
+      failed: job.failed,
+      message: job.statusMeta?.message,
+    }
+
     return {
       jobId: job.id,
       status: job.status,
@@ -191,7 +197,7 @@ export class BatchService implements OnApplicationShutdown {
       processed: job.processed,
       succeeded: job.succeeded,
       failed: job.failed,
-      meta: job.meta,
+      statusMeta,
     }
   }
 
@@ -212,12 +218,10 @@ export class BatchService implements OnApplicationShutdown {
       schedule = job.request.schedule || {}
     } catch (err) {
       // Pre-start error before any item began
-      job.meta = {
-        ...(job.meta || {}),
-        error: {
-          kind: 'pre_start',
-          message: err instanceof Error ? err.message : String(err),
-        },
+      job.statusMeta = {
+        succeeded: 0,
+        failed: 0,
+        message: err instanceof Error ? err.message : String(err),
       }
       this.updateJobStatus(jobId, 'failed')
       if (job.request.webhook) {
@@ -247,7 +251,7 @@ export class BatchService implements OnApplicationShutdown {
 
       if (job.cancelRequested) break
       const item = items[current]
-      await this.processBatchItem(jobId, item)
+      await this.processBatchItem(jobId, item, current)
     }
 
     // If job was force-finalized during shutdown, skip normal finalization
@@ -274,7 +278,7 @@ export class BatchService implements OnApplicationShutdown {
    * @param jobId Job ID
    * @param item Item to process
    */
-  private async processBatchItem(jobId: string, item: BatchItemDto): Promise<void> {
+  private async processBatchItem(jobId: string, item: BatchItemDto, index: number): Promise<void> {
     const job = this.jobs.get(jobId)
     if (!job) return
 
@@ -313,9 +317,14 @@ export class BatchService implements OnApplicationShutdown {
         error: errorObj,
       }
 
-      // Capture first error attribution
-      if (!job.firstError) {
-        job.firstError = { message: errorObj.message, details: errorObj.details }
+      // Capture first error for message if not set yet
+      if (!job.statusMeta?.message) {
+        const msg = `Task ${index} error: ${errorMessage}`
+        job.statusMeta = {
+          succeeded: job.succeeded,
+          failed: job.failed + 1,
+          message: msg,
+        }
       }
 
       if (job.acceptResults !== false) {
@@ -337,22 +346,10 @@ export class BatchService implements OnApplicationShutdown {
         job.completedAt = new Date()
       }
 
-      // Attach meta for partial/failed as required
-      if (status === 'partial') {
-        job.meta = {
-          ...(job.meta || {}),
-          completedCount: job.succeeded + job.failed,
-        }
-      }
-      if (status === 'failed' && job.succeeded === 0) {
-        job.meta = {
-          ...(job.meta || {}),
-          error: job.meta?.error ?? {
-            kind: job.startedAny ? 'first_item' : 'pre_start',
-            message: job.firstError?.message || 'Batch failed',
-            details: job.firstError?.details,
-          },
-        }
+      // Ensure statusMeta counters are in sync on terminal states if message already exists
+      if (['succeeded', 'failed', 'partial'].includes(status)) {
+        const msg = job.statusMeta?.message
+        job.statusMeta = { succeeded: job.succeeded, failed: job.failed, message: msg }
       }
     }
   }
@@ -412,7 +409,11 @@ export class BatchService implements OnApplicationShutdown {
       succeeded: job.succeeded,
       failed: job.failed,
       results: job.results,
-      meta: job.meta,
+      statusMeta: {
+        succeeded: job.succeeded,
+        failed: job.failed,
+        message: job.statusMeta?.message,
+      },
     }
 
     await this.webhookService.sendWebhook(webhookConfig, payload)
@@ -493,10 +494,6 @@ export class BatchService implements OnApplicationShutdown {
         job.acceptResults = false
 
         // Finalize immediately as partial and report how many items completed
-        job.meta = {
-          ...(job.meta || {}),
-          completedCount: job.succeeded + job.failed,
-        }
         job.finalized = true
         this.updateJobStatus(jobId, 'partial')
 

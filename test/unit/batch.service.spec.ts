@@ -122,10 +122,10 @@ describe('BatchService (unit)', () => {
 
     const job = jobsMap.get(jobId)
     expect(job.status).toBe('partial')
-    expect(job.meta?.completedCount).toBe(1)
+    expect((job.statusMeta?.succeeded ?? 0) + (job.statusMeta?.failed ?? 0)).toBe(1)
     expect(webhookService.sendWebhook).toHaveBeenCalledTimes(1)
     const args = webhookService.sendWebhook.mock.calls[0]
-    expect(args[1].meta?.completedCount).toBe(1)
+    expect((args[1].statusMeta.succeeded ?? 0) + (args[1].statusMeta.failed ?? 0)).toBe(1)
   })
 
   it('sets partial with completedCount=0 when no tasks finished on shutdown', async () => {
@@ -159,14 +159,14 @@ describe('BatchService (unit)', () => {
 
     const job = jobsMap.get(jobId)
     expect(job.status).toBe('partial')
-    expect(job.meta?.completedCount).toBe(0)
+    expect((job.statusMeta?.succeeded ?? 0) + (job.statusMeta?.failed ?? 0)).toBe(0)
     expect(webhookService.sendWebhook).toHaveBeenCalledTimes(1)
     const args = webhookService.sendWebhook.mock.calls[0]
-    expect(args[1].meta?.completedCount).toBe(0)
+    expect((args[1].statusMeta.succeeded ?? 0) + (args[1].statusMeta.failed ?? 0)).toBe(0)
   })
 
 
-  it('failed batch captures first item error in meta as first_item', async () => {
+  it('failed batch sets statusMeta.message from first failed task', async () => {
     // Arrange scraper to always throw
     scraperService.scrapePage.mockRejectedValue(new Error('Boom'))
 
@@ -198,8 +198,6 @@ describe('BatchService (unit)', () => {
 
     const status = await batchService.getBatchJobStatus(jobId)
     expect(status?.status).toBe('failed')
-    expect(status?.meta?.error?.kind).toBe('first_item')
-    expect(status?.meta?.error?.message).toBe('Failed to extract content from page')
-    expect(status?.meta?.error?.details).toBe('Boom')
+    expect(status?.statusMeta.message).toBe('Task 0 error: Boom')
   })
 })

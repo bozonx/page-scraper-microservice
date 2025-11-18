@@ -334,16 +334,12 @@ Retrieves the current status and progress of a batch scraping job.
   "succeeded": "number",
   // Failed item count.
   "failed": "number",
-  // Additional metadata about completion (only present for terminal states)
-  // For partial: { completedCount: number }
-  // For failed: { error: { kind: "pre_start" | "first_item", message: string, details?: string } }
-  "meta": {
-    "completedCount": 3,
-    "error": {
-      "kind": "first_item",
-      "message": "Failed to extract content from page",
-      "details": "Boom"
-    }
+  // Status metadata with counters and first error message (if any)
+  // message is either a pre-start error or the first failed task message in format: "Task <index> error: <reason>"
+  "statusMeta": {
+    "succeeded": 3,
+    "failed": 1,
+    "message": "Task 0 error: not found"
   }
 }
 ```
@@ -408,9 +404,10 @@ When a webhook is configured, the service POSTs the following JSON after the job
       }
     }
   ],
-  "meta": {
-    // For partial (e.g., service shutdown): how many items were completed successfully or failed
-    "completedCount": 5
+  "statusMeta": {
+    "succeeded": 4,
+    "failed": 1,
+    "message": "Task 3 error: Page structure is not recognizable as an article"
   }
 }
 ```

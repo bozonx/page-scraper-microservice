@@ -46,6 +46,7 @@ describe('WebhookService (unit)', () => {
     succeeded: 10,
     failed: 0,
     results: [],
+    statusMeta: { succeeded: 10, failed: 0 },
   };
 
   beforeAll(async () => {
