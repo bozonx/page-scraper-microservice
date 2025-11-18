@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import pLimit, { LimitFunction } from 'p-limit'
-import type { ScraperConfig } from '@config/scraper.config.js'
+import type { ScraperConfig } from '../../../config/scraper.config.js'
 
 @Injectable()
 export class ConcurrencyService {

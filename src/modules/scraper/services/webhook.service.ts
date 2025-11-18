@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
-import { ScraperConfig } from '@config/scraper.config.js'
+import { ScraperConfig } from '../../../config/scraper.config.js'
 import { BatchWebhookPayloadDto, BatchWebhookDto } from '../dto/batch.dto.js'
 
 /**

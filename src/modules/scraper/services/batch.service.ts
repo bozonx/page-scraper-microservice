@@ -1,7 +1,7 @@
 import { Injectable, OnApplicationShutdown } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
-import { ScraperConfig } from '@/config/scraper.config.js'
+import { ScraperConfig } from '../../../config/scraper.config.js'
 import { ScraperService } from './scraper.service.js'
 import { WebhookService } from './webhook.service.js'
 import {

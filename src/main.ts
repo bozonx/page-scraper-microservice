@@ -4,8 +4,8 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Logger } from 'nestjs-pino'
-import { AppModule } from '@/app.module.js'
-import type { AppConfig } from '@config/app.config.js'
+import { AppModule } from './app.module.js'
+import type { AppConfig } from './config/app.config.js'
 
 /**
  * Bootstrap function that initializes and starts the NestJS application

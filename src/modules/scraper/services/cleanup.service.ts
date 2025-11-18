@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
-import { ScraperConfig } from '@config/scraper.config.js'
+import { ScraperConfig } from '../../../config/scraper.config.js'
 import { MemoryStoreService } from './memory-store.service.js'
 import { BatchService } from './batch.service.js'
 

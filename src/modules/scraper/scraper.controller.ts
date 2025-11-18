@@ -17,7 +17,7 @@ import {
   BatchJobNotFoundException,
   BatchJobCreationException,
   BatchJobStatusException,
-} from '@common/exceptions/scraper.exception.js'
+} from '../../common/exceptions/scraper.exception.js'
 
 /**
  * Scraper controller
