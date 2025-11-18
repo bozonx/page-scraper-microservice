@@ -124,7 +124,7 @@ export class PageScraper implements INodeType {
         placeholder: 'Add Option',
         options: [
           {
-            displayName: 'Task Timeout (seconds)',
+            displayName: 'Task Timeout (Seconds)',
             name: 'taskTimeoutSecs',
             type: 'number',
             default: 30,
@@ -293,7 +293,7 @@ export class PageScraper implements INodeType {
                     value: 'playwright',
                   },
                 ],
-                default: '',
+                default: 'extractor',
                 description: 'Scraper mode (optional, uses common settings if empty)',
               },
             ],
@@ -331,7 +331,7 @@ export class PageScraper implements INodeType {
             description: 'Default scraper mode for all items',
           },
           {
-            displayName: 'Task Timeout (seconds)',
+            displayName: 'Task Timeout (Seconds)',
             name: 'taskTimeoutSecs',
             type: 'number',
             default: 60,
@@ -373,14 +373,14 @@ export class PageScraper implements INodeType {
         placeholder: 'Add Schedule Option',
         options: [
           {
-            displayName: 'Min Delay (ms)',
+            displayName: 'Min Delay (Ms)',
             name: 'minDelayMs',
             type: 'number',
             default: 1500,
             description: 'Minimum wait between requests (500-30000)',
           },
           {
-            displayName: 'Max Delay (ms)',
+            displayName: 'Max Delay (Ms)',
             name: 'maxDelayMs',
             type: 'number',
             default: 4000,
@@ -448,7 +448,7 @@ export class PageScraper implements INodeType {
             ],
           },
           {
-            displayName: 'Backoff (ms)',
+            displayName: 'Backoff (Ms)',
             name: 'backoffMs',
             type: 'number',
             default: 1000,
@@ -464,6 +464,7 @@ export class PageScraper implements INodeType {
         ],
       },
     ],
+		usableAsTool: true,
   };
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
