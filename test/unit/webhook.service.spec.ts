@@ -119,7 +119,7 @@ describe('WebhookService (unit)', () => {
       );
     });
 
-    it('should include authentication header when provided', async () => {
+    it('should include Authorization header when provided via headers', async () => {
       (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
@@ -127,8 +127,7 @@ describe('WebhookService (unit)', () => {
 
       const configWithAuth: BatchWebhookDto = {
         ...mockWebhookConfig,
-        authHeaderName: 'Authorization',
-        authHeaderValue: 'Bearer token123',
+        headers: { Authorization: 'Bearer token123' },
       };
 
       await service.sendWebhook(configWithAuth, mockPayload);
@@ -137,7 +136,7 @@ describe('WebhookService (unit)', () => {
         mockWebhookConfig.url,
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Authorization': 'Bearer token123',
+            Authorization: 'Bearer token123',
           }),
         })
       );

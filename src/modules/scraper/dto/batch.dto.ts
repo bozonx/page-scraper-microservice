@@ -90,20 +90,6 @@ export class BatchWebhookDto {
   public headers?: Record<string, string>
 
   /**
-   * Name of authentication header
-   */
-  @IsOptional()
-  @IsString()
-  public authHeaderName?: string
-
-  /**
-   * Value of authentication header
-   */
-  @IsOptional()
-  @IsString()
-  public authHeaderValue?: string
-
-  /**
    * Backoff delay in milliseconds between webhook retry attempts (100-30000)
    */
   @IsOptional()

@@ -274,14 +274,11 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
   "webhook": {
     // Destination endpoint (required when webhook is provided).
     "url": "https://example.com/webhook",
-    // Additional headers per request.
+    // Additional headers per request (including auth if needed).
     "headers": {
-      "X-Custom-Header": "value"
+      "X-Custom-Header": "value",
+      "Authorization": "Bearer token"
     },
-    // Header key for auth token.
-    "authHeaderName": "Authorization",
-    // Header value for auth token.
-    "authHeaderValue": "Bearer token",
     // Base delay for exponential backoff (ms). Default: DEFAULT_WEBHOOK_BACKOFF_MS (1000). Range: 100–30000.
     "backoffMs": 1000,
     // Retry limit. Default: DEFAULT_WEBHOOK_MAX_ATTEMPTS (3). Range: 1–10.

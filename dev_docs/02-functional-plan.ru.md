@@ -135,9 +135,7 @@ graph TB
   },
   "webhook": {
     "url": "https://example.com/webhook",
-    "headers": { "X-Source": "page-scraper" },
-    "authHeaderName": "Authorization",
-    "authHeaderValue": "Bearer <token>",
+    "headers": { "X-Source": "page-scraper", "Authorization": "Bearer <token>" },
     "backoffMs": 1000,
     "maxAttempts": 3
   }

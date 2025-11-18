@@ -36,11 +36,6 @@ export class WebhookService {
         ...webhookConfig.headers,
       }
 
-      // Add authentication header if provided
-      if (webhookConfig.authHeaderName && webhookConfig.authHeaderValue) {
-        headers[webhookConfig.authHeaderName] = webhookConfig.authHeaderValue
-      }
-
       // Get retry configuration - use per-request values or fall back to defaults
       const maxAttempts = webhookConfig.maxAttempts ?? scraperConfig.defaultWebhookMaxAttempts
       const backoffMs = webhookConfig.backoffMs ?? scraperConfig.defaultWebhookBackoffMs

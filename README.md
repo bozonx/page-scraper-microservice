@@ -92,8 +92,9 @@ curl -X POST "http://localhost:8080/api/v1/batch" \
         "schedule": { "minDelayMs": 1000, "maxDelayMs": 3000 },
         "webhook": {
           "url": "https://consumer.local/webhook",
-          "authHeaderName": "Authorization",
-          "authHeaderValue": "Bearer <token>"
+          "headers": {
+            "Authorization": "Bearer <token>"
+          }
         }
       }'
 ```
