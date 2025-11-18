@@ -128,6 +128,7 @@ Refer to [`docs/api.md`](docs/api.md) for full REST contract, response schemas, 
 1. **Install dependencies:**
    ```bash
    pnpm install
+   pnpm dlx playwright install chromium
    ```
 
 2. **Start development server:**
