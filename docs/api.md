@@ -47,7 +47,7 @@ Scrapes a single web page and extracts structured article content.
   // Locale used for date parsing. Falls back to locale when omitted. Default constant: DEFAULT_DATE_LOCALE.
   "dateLocale": "en-US",
   // Target timezone for date normalization. Applied via Playwright context or X-Timezone-Id header in extractor mode. Default: DEFAULT_TIMEZONE_ID ("UTC").
- Examples: "Europe/Moscow" (UTC+3), "Europe/London" (UTC+0/UTC+1), "America/New_York" (UTC-5/UTC-4), "Europe/Berlin" (UTC+1/UTC+2), "America/Argentina/Buenos_Aires" (UTC-3).
+  // Examples: "Europe/Moscow" (UTC+3), "Europe/London" (UTC+0/UTC+1), "America/New_York" (UTC-5/UTC-4), "Europe/Berlin" (UTC+1/UTC+2), "America/Argentina/Buenos_Aires" (UTC-3).
   "timezoneId": "UTC",
   // Default Playwright behavior blocks analytics/tracking scripts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS (true).
   "blockTrackers": true,
@@ -118,34 +118,6 @@ curl -X POST "http://localhost:8080/api/v1/page" \
     "readTimeMin": "number",
     // Whether the body is returned as raw extractor output (no Markdown conversion)
     "rawBody": "boolean"
-  }
-}
-```
-
-**Example Response:**
-
-```jsonc
-{
-  // Original URL that was scraped.
-  "url": "https://example.com/article",
-  // Extracted page title.
-  "title": "Sample Article Title",
-  // Extracted meta description or article lead.
-  "description": "A brief description of article content",
-  // ISO-8601 publication timestamp when detected.
-  "date": "2024-05-30T10:00:00.000Z",
-  // Author name when available.
-  "author": "John Doe",
-  // Main article content converted to Markdown format.
-  "body": "# Article Heading\n\nArticle content in Markdown format...",
-  // Additional metadata inferred during extraction.
-  "meta": {
-    // IETF language code inferred from page.
-    "lang": "en",
-    // Estimated reading time in minutes.
-    "readTimeMin": 5,
-    // Body is Markdown by default (rawBody=false)
-    "rawBody": false
   }
 }
 ```
@@ -366,7 +338,18 @@ Retrieves the current status and progress of a batch scraping job.
   // Successful item count.
   "succeeded": "number",
   // Failed item count.
-  "failed": "number"
+  "failed": "number",
+  // Additional metadata about completion (only present for terminal states)
+  // For partial: { completedCount: number }
+  // For failed: { error: { kind: "pre_start" | "first_item", message: string, details?: string } }
+  "meta": {
+    "completedCount": 3,
+    "error": {
+      "kind": "first_item",
+      "message": "Failed to extract content from page",
+      "details": "Boom"
+    }
+  }
 }
 ```
 
@@ -452,7 +435,11 @@ When a webhook is configured, the service POSTs the following JSON after the job
         "details": "Page structure is not recognizable as an article"
       }
     }
-  ]
+  ],
+  "meta": {
+    // For partial (e.g., service shutdown): how many items were completed successfully or failed
+    "completedCount": 5
+  }
 }
 ```
 
@@ -461,6 +448,7 @@ When a webhook is configured, the service POSTs the following JSON after the job
 - **Max attempts:** Controlled by `maxAttempts` configuration (default: `DEFAULT_WEBHOOK_MAX_ATTEMPTS` = 3)
 - **Timeout:** Each webhook request times out after `WEBHOOK_TIMEOUT_MS` milliseconds (default: 10000, global setting that cannot be overridden per request)
 - **Trigger:** Webhook is sent when batch reaches a terminal state (`succeeded`, `failed`, or `partial`)
+- **One-shot on shutdown:** If service shutdown cancels remaining work, the batch is finalized as `partial` and a one-shot webhook is awaited. If delivery fails, batch remains `partial` and no further action is taken
 - **Default values:** `DEFAULT_WEBHOOK_BACKOFF_MS` and `DEFAULT_WEBHOOK_MAX_ATTEMPTS` are used as fallbacks when per-request values are not provided
 
 ---
@@ -507,7 +495,7 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 
 - **In-memory retention:** All data (single-page results and batch job state/results) is kept strictly in memory for at least `DATA_LIFETIME_MINS` minutes (default: 60)
 - **Cleanup schedule:** Cleanup runs on a background interval every `CLEANUP_INTERVAL_MINS` minutes. It is not tied to incoming requests
-- **No startup cleanup:** On service start, no cleanup is performed because data is in-memory only
+- **Startup handling:** If unfinished batches are detected at startup (e.g., due to an unexpected hard stop), they are marked `failed` and a webhook is attempted once
 - **Concurrency/Throttling:** Cleanup never runs concurrently and will not run more often than `CLEANUP_INTERVAL_MINS` (default: 5)
 - **TTL policy:** Only data older than `DATA_LIFETIME_MINS` is deleted; younger data is skipped
 - **No persistence:** No data is written to disk by the cleanup mechanism. After TTL passes and cleanup executes, the data is fully removed from memory
@@ -517,6 +505,18 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 
 - **No batch timeout:** Individual items have their own `taskTimeoutSecs`, but there's no overall timeout for the entire batch job
 - **Concurrency:** Controlled by `schedule.concurrency` parameter (default: 1)
+
+### Shutdown Behavior
+
+- On graceful shutdown, all running batches stop accepting results; in-flight items are disregarded
+- Batch final state becomes `partial`. Metadata always includes `meta.completedCount` with the number of items completed before shutdown
+- A one-shot webhook is sent and awaited before shutdown completes (subject to retry policy). If delivery fails, no further action is taken
+
+### Failure Attribution
+
+- For `failed` batches with zero successes, metadata includes `meta.error` with `kind` and message
+- `kind = pre_start` indicates an error occurred before the first item began
+- `kind = first_item` indicates the error of the first processed item
 
 ### Timeout Behavior
 

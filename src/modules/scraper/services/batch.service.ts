@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, OnApplicationShutdown, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '@/config/scraper.config.js'
@@ -13,6 +13,7 @@ import {
   BatchWebhookPayloadDto,
   BatchItemDto,
   BatchCommonSettingsDto,
+  BatchMetaDto,
 } from '../dto/batch.dto.js'
 import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
 import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
@@ -72,6 +73,35 @@ interface BatchJob {
    */
   request: BatchRequestDto
   
+  /**
+   * Cancellation was requested (e.g., service shutdown)
+   */
+  cancelRequested?: boolean
+
+  /**
+   * When false, results from in-flight tasks are ignored (post-cancel)
+   */
+  acceptResults?: boolean
+
+  /**
+   * Whether job has been force-finalized (e.g., during shutdown). Prevents duplicate finalization/webhook.
+   */
+  finalized?: boolean
+
+  /**
+   * Whether any item processing has started
+   */
+  startedAny?: boolean
+
+  /**
+   * First error captured for attribution when job fails with zero successes
+   */
+  firstError?: { message: string; details?: string }
+
+  /**
+   * Completion metadata
+   */
+  meta?: BatchMetaDto
 }
 
 /**
@@ -79,7 +109,7 @@ interface BatchJob {
  * Handles job creation, execution, status tracking, and cleanup
  */
 @Injectable()
-export class BatchService {
+export class BatchService implements OnApplicationShutdown, OnModuleInit {
   private readonly jobs = new Map<string, BatchJob>()
 
   constructor(
@@ -89,6 +119,35 @@ export class BatchService {
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(BatchService.name)
+  }
+
+  /**
+   * On startup, if any jobs are present and unfinished (should not normally happen),
+   * finalize them as failed to reflect unexpected hard shutdown.
+   */
+  async onModuleInit(): Promise<void> {
+    const finalizePromises: Promise<void>[] = []
+    for (const [jobId, job] of this.jobs.entries()) {
+      if (job.status === 'running' || job.status === 'queued') {
+        job.meta = {
+          ...(job.meta || {}),
+          error: {
+            kind: 'pre_start',
+            message: 'Detected unfinished batch at startup',
+          },
+        }
+        this.updateJobStatus(jobId, 'failed')
+        if (job.request.webhook) {
+          const p = this.sendWebhook(jobId).catch((err) => {
+            this.logger.error(`Failed to send webhook for job ${jobId} at startup:`, err)
+          })
+          finalizePromises.push(p)
+        }
+      }
+    }
+    if (finalizePromises.length > 0) {
+      await Promise.allSettled(finalizePromises)
+    }
   }
 
   /**
@@ -115,6 +174,10 @@ export class BatchService {
       failed: 0,
       results: [],
       request,
+      cancelRequested: false,
+      acceptResults: true,
+      finalized: false,
+      startedAny: false,
     }
 
     // Store job
@@ -155,6 +218,7 @@ export class BatchService {
       processed: job.processed,
       succeeded: job.succeeded,
       failed: job.failed,
+      meta: job.meta,
     }
   }
 
@@ -168,8 +232,28 @@ export class BatchService {
       throw new Error(`Job ${jobId} not found`)
     }
 
-    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-    const schedule = job.request.schedule || {}
+    let scraperConfig: ScraperConfig
+    let schedule: any
+    try {
+      scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+      schedule = job.request.schedule || {}
+    } catch (err) {
+      // Pre-start error before any item began
+      job.meta = {
+        ...(job.meta || {}),
+        error: {
+          kind: 'pre_start',
+          message: err instanceof Error ? err.message : String(err),
+        },
+      }
+      this.updateJobStatus(jobId, 'failed')
+      if (job.request.webhook) {
+        await this.sendWebhook(jobId).catch((error) => {
+          this.logger.error(`Failed to send webhook for job ${jobId}:`, error)
+        })
+      }
+      return
+    }
 
     // Apply scheduling: concurrency, delays and jitter
     const concurrency = schedule.concurrency ?? scraperConfig.batchConcurrency
@@ -180,11 +264,11 @@ export class BatchService {
     const items = [...job.request.items]
 
     let index = 0
-    
+
     // Worker function that processes items sequentially with delays
     const worker = async () => {
-      // Each worker processes multiple items in sequence with delays between items
       while (true) {
+        if (job.cancelRequested) break
         const current = index++
         if (current >= items.length) break
 
@@ -196,6 +280,7 @@ export class BatchService {
           await this.sleep(delay)
         }
 
+        if (job.cancelRequested) break
         await this.processBatchItem(jobId, item)
       }
     }
@@ -203,6 +288,11 @@ export class BatchService {
     // Create and run workers in parallel
     const workers = Array.from({ length: Math.max(1, concurrency) }, () => worker())
     await Promise.allSettled(workers)
+
+    // If job was force-finalized during shutdown, skip normal finalization
+    if (job.finalized) {
+      return
+    }
 
     // Determine final status
     const finalStatus = this.determineFinalStatus(job)
@@ -228,6 +318,8 @@ export class BatchService {
     if (!job) return
 
     try {
+      if (job.cancelRequested) return
+      job.startedAny = true
       // Build scraper request from common settings and item-specific settings
       const scraperRequest: ScraperRequestDto = this.buildScraperRequest(
         job.request.commonSettings,
@@ -242,21 +334,32 @@ export class BatchService {
         data: result,
       }
 
-      this.addJobResult(jobId, itemResult, true)
+      if (job.acceptResults !== false) {
+        this.addJobResult(jobId, itemResult, true)
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
+
+      const errorObj = {
+        code: 422,
+        message: 'Failed to extract content from page',
+        details: errorMessage,
+      }
 
       const itemResult: BatchItemResultDto = {
         url: item.url,
         status: 'failed',
-        error: {
-          code: 422,
-          message: 'Failed to extract content from page',
-          details: errorMessage,
-        },
+        error: errorObj,
       }
 
-      this.addJobResult(jobId, itemResult, false)
+      // Capture first error attribution
+      if (!job.firstError) {
+        job.firstError = { message: errorObj.message, details: errorObj.details }
+      }
+
+      if (job.acceptResults !== false) {
+        this.addJobResult(jobId, itemResult, false)
+      }
     }
   }
 
@@ -271,6 +374,24 @@ export class BatchService {
       job.status = status
       if (['succeeded', 'failed', 'partial'].includes(status)) {
         job.completedAt = new Date()
+      }
+
+      // Attach meta for partial/failed as required
+      if (status === 'partial') {
+        job.meta = {
+          ...(job.meta || {}),
+          completedCount: job.succeeded + job.failed,
+        }
+      }
+      if (status === 'failed' && job.succeeded === 0) {
+        job.meta = {
+          ...(job.meta || {}),
+          error: job.meta?.error ?? {
+            kind: job.startedAny ? 'first_item' : 'pre_start',
+            message: job.firstError?.message || 'Batch failed',
+            details: job.firstError?.details,
+          },
+        }
       }
     }
   }
@@ -330,6 +451,7 @@ export class BatchService {
       succeeded: job.succeeded,
       failed: job.failed,
       results: job.results,
+      meta: job.meta,
     }
 
     await this.webhookService.sendWebhook(webhookConfig, payload)
@@ -393,5 +515,42 @@ export class BatchService {
       ...item,
       url: item.url,
     } as ScraperRequestDto
+  }
+
+  /**
+   * Handle application shutdown: cancel all running/queued jobs and finalize as partial.
+   * Wait for one-shot webhook delivery (success or failure) before returning.
+   */
+  async onApplicationShutdown(_signal?: string): Promise<void> {
+    const finalizePromises: Promise<void>[] = []
+
+    for (const [jobId, job] of this.jobs.entries()) {
+      if (job.finalized) continue
+      if (job.status === 'running' || job.status === 'queued') {
+        // Request cancellation and stop accepting results
+        job.cancelRequested = true
+        job.acceptResults = false
+
+        // Finalize immediately as partial and report how many items completed
+        job.meta = {
+          ...(job.meta || {}),
+          completedCount: job.succeeded + job.failed,
+        }
+        job.finalized = true
+        this.updateJobStatus(jobId, 'partial')
+
+        if (job.request.webhook) {
+          const p = this.sendWebhook(jobId).catch((err) => {
+            this.logger.error(`Failed to send webhook for job ${jobId} during shutdown:`, err)
+          })
+          finalizePromises.push(p)
+        }
+      }
+    }
+
+    // Await all webhooks (one-shot) before shutdown completes
+    if (finalizePromises.length > 0) {
+      await Promise.allSettled(finalizePromises)
+    }
   }
 }

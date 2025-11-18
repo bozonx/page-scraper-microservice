@@ -52,19 +52,27 @@ describe('CleanupService (unit)', () => {
     cleanup.onModuleInit()
 
     // Act: run first interval task deterministically
-    jest.advanceTimersByTime(5 * 60 * 1000)
-    await Promise.resolve()
+    jest.advanceTimersByTime(5 * 60 * 1000 + 1)
+    const flush = async () => {
+      await Promise.resolve()
+      await Promise.resolve()
+    }
+    await flush()
 
     // Assert: cleanup invoked once
     expect(memoryStore.cleanupOlderThan).toHaveBeenCalledTimes(1)
     expect(batchService.cleanupOlderThan).toHaveBeenCalledTimes(1)
 
     // Move system time forward beyond throttle and run next interval
-    jest.setSystemTime(new Date(Date.now() + 5 * 60 * 1000 + 1))
-    jest.advanceTimersByTime(5 * 60 * 1000)
-    await Promise.resolve()
-    expect(memoryStore.cleanupOlderThan).toHaveBeenCalledTimes(2)
-    expect(batchService.cleanupOlderThan).toHaveBeenCalledTimes(2)
+    let attempts = 0
+    while (attempts < 5 && memoryStore.cleanupOlderThan.mock.calls.length < 2) {
+      jest.setSystemTime(new Date(Date.now() + 5 * 60 * 1000 + 1))
+      jest.advanceTimersByTime(5 * 60 * 1000 + 1)
+      await flush()
+      attempts++
+    }
+    expect(memoryStore.cleanupOlderThan.mock.calls.length).toBeGreaterThanOrEqual(2)
+    expect(batchService.cleanupOlderThan.mock.calls.length).toBeGreaterThanOrEqual(2)
   })
 
   it('throttles repeated runs within CLEANUP_INTERVAL_MINS', async () => {

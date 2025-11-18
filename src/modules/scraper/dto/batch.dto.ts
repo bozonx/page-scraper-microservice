@@ -259,6 +259,39 @@ export interface BatchResponseDto {
 export type BatchJobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'partial'
 
 /**
+ * Batch job meta information
+ * Provides additional context regarding batch completion
+ */
+export interface BatchMetaDto {
+  /**
+   * Total number of items that completed (succeeded + failed) at the time of finalization
+   */
+  completedCount?: number
+
+  /**
+   * Error attribution for failed batches
+   */
+  error?: {
+    /**
+     * Human-readable error message
+     */
+    message: string
+
+    /**
+     * Categorizes where the error originated from
+     * - pre_start: error occurred before first item started processing
+     * - first_item: error of the first processed item
+     */
+    kind: 'pre_start' | 'first_item'
+
+    /**
+     * Optional error details
+     */
+    details?: string
+  }
+}
+
+/**
  * Batch job status response DTO
  */
 export interface BatchJobStatusDto {
@@ -301,6 +334,11 @@ export interface BatchJobStatusDto {
    * ISO timestamp when the job completed (if completed)
    */
   completedAt?: string
+
+  /**
+   * Additional metadata about batch completion
+   */
+  meta?: BatchMetaDto
 }
 
 /**
@@ -392,4 +430,9 @@ export interface BatchWebhookPayloadDto {
    * Array of individual item results
    */
   results: BatchItemResultDto[]
+
+  /**
+   * Additional metadata about batch completion
+   */
+  meta?: BatchMetaDto
 }
