@@ -504,8 +504,9 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 ### Data Lifecycle & Cleanup
 
 - **In-memory retention:** All data (single-page results and batch job state/results) is kept strictly in memory for at least `DATA_LIFETIME_MINS` minutes (default: 60)
-- **Cleanup trigger:** Cleanup runs in parallel with each `POST /page` and `POST /batch` call; the HTTP request completes only after both the main operation and cleanup finish
-- **Throttling:** Cleanup does not run more often than `CLEANUP_INTERVAL_MINS` (default: 5) and will not start if a previous cleanup is already running
+- **Cleanup schedule:** Cleanup runs on a background interval every `CLEANUP_INTERVAL_MINS` minutes. It is not tied to incoming requests
+- **No startup cleanup:** On service start, no cleanup is performed because data is in-memory only
+- **Concurrency/Throttling:** Cleanup never runs concurrently and will not run more often than `CLEANUP_INTERVAL_MINS` (default: 5)
 - **TTL policy:** Only data older than `DATA_LIFETIME_MINS` is deleted; younger data is skipped
 - **No persistence:** No data is written to disk by the cleanup mechanism. After TTL passes and cleanup executes, the data is fully removed from memory
 - **Batch status:** Polling a purged batch job returns `404 Not Found`

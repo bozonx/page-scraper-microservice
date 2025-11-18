@@ -164,8 +164,10 @@ The Dockerfile includes Playwright browser dependencies for full rendering suppo
 
 ## Operational Considerations
 
-- **In-memory data retention:** Single-page results and batch jobs are stored in memory only and kept for at least `DATA_LIFETIME_MINS`. A cleanup runs in parallel with every `POST /page` and `POST /batch`, but not more often than `CLEANUP_INTERVAL_MINS`, and never concurrently. Only data older than `DATA_LIFETIME_MINS` is removed; younger data is skipped.
-- **After-TTL deletion:** Once TTL elapses and cleanup runs, data is fully removed from memory with no persistence on disk by the cleanup mechanism.
+- **In-memory data retention:** Single-page results and batch jobs are stored in memory only and kept for at least `DATA_LIFETIME_MINS`.
+- **Scheduled cleanup:** Cleanup runs in the background on an interval defined by `CLEANUP_INTERVAL_MINS` and is not tied to incoming requests. It never runs concurrently and will not execute more frequently than the configured interval.
+- **No startup cleanup:** On service start, cleanup is not executed since data exists in memory only.
+- **After-TTL deletion:** Once TTL elapses and a scheduled cleanup runs, data is fully removed from memory with no persistence on disk by the cleanup mechanism.
 - **Resource requirements:** Playwright mode requires significantly more CPU and memory than Extractor. Plan infrastructure capacity accordingly.
   - **Anti-bot strategies:** Enable defaults (`DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT=true`, `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS=true`, `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES=true`) and customize per request via `fingerprint.rotateOnAntiBot`, `blockTrackers`, `blockHeavyResources`.
 - **Webhook security:** Webhook payloads contain full scraping results. Secure your webhook endpoints and consider implementing signature validation.

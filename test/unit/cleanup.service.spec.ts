@@ -45,6 +45,23 @@ describe('CleanupService (unit)', () => {
     expect(batchService.cleanupOlderThan).toHaveBeenCalledWith(60 * 60 * 1000)
   })
 
+  it('schedules periodic cleanup on module init', async () => {
+    // Arrange: interval 5 minutes in mock config
+    cleanup.onModuleInit()
+
+    // Act: advance fake timers by exactly one interval
+    jest.advanceTimersByTime(5 * 60 * 1000)
+
+    // Assert: cleanup invoked once
+    expect(memoryStore.cleanupOlderThan).toHaveBeenCalledTimes(1)
+    expect(batchService.cleanupOlderThan).toHaveBeenCalledTimes(1)
+
+    // Advance another interval and expect another run
+    jest.advanceTimersByTime(5 * 60 * 1000)
+    expect(memoryStore.cleanupOlderThan).toHaveBeenCalledTimes(2)
+    expect(batchService.cleanupOlderThan).toHaveBeenCalledTimes(2)
+  })
+
   it('throttles repeated runs within CLEANUP_INTERVAL_MINS', async () => {
     const p1 = cleanup.triggerCleanup()
     await p1

@@ -2,7 +2,6 @@ import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestj
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service.js'
 import { BatchService } from './services/batch.service.js'
-import { CleanupService } from './services/cleanup.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
 import { ScraperRequestDto } from './dto/scraper-request.dto.js'
 import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto.js'
@@ -29,7 +28,6 @@ export class ScraperController {
   constructor(
     private readonly scraperService: ScraperService,
     private readonly batchService: BatchService,
-    private readonly cleanupService: CleanupService,
     private readonly memoryStoreService: MemoryStoreService,
     private readonly logger: PinoLogger
   ) {
@@ -46,14 +44,12 @@ export class ScraperController {
   async scrapePage(@Body() request: ScraperRequestDto): Promise<ScraperResponseDto> {
     try {
       this.logger.info(`Received scrape request for URL: ${request.url}`)
-      const cleanupPromise = this.cleanupService.triggerCleanup()
-      const resultPromise = this.scraperService
+      const result = await this.scraperService
         .scrapePage(request)
         .then((res: ScraperResponseDto) => {
           this.memoryStoreService.addPage(request, res)
           return res
         })
-      const [, result] = await Promise.all([cleanupPromise, resultPromise])
       this.logger.info(`Successfully scraped ${request.url}`)
       return result
     } catch (error) {
@@ -92,9 +88,7 @@ export class ScraperController {
   async getHtml(@Body() request: HtmlRequestDto): Promise<HtmlResponseDto> {
     try {
       this.logger.info(`Received HTML request for URL: ${request.url}`)
-      const cleanupPromise = this.cleanupService.triggerCleanup()
-      const resultPromise = this.scraperService.getHtml(request)
-      const [, result] = await Promise.all([cleanupPromise, resultPromise])
+      const result = await this.scraperService.getHtml(request)
       this.logger.info(`Successfully retrieved HTML from ${request.url}`)
       return result
     } catch (error) {
@@ -132,9 +126,7 @@ export class ScraperController {
   async createBatchJob(@Body() request: BatchRequestDto): Promise<BatchResponseDto> {
     try {
       this.logger.info(`Received batch request with ${request.items.length} items`)
-      const cleanupPromise = this.cleanupService.triggerCleanup()
-      const createPromise = this.batchService.createBatchJob(request)
-      const [, result] = await Promise.all([cleanupPromise, createPromise])
+      const result = await this.batchService.createBatchJob(request)
       this.logger.info(`Created batch job: ${result.jobId}`)
       return result
     } catch (error) {

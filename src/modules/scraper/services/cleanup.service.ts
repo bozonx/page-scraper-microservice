@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '@config/scraper.config.js'
@@ -6,10 +6,11 @@ import { MemoryStoreService } from './memory-store.service.js'
 import { BatchService } from './batch.service.js'
 
 @Injectable()
-export class CleanupService {
+export class CleanupService implements OnModuleInit, OnModuleDestroy {
   private running = false
   private runningPromise: Promise<void> | null = null
   private lastRunStartedAt = 0
+  private intervalHandle: NodeJS.Timeout | null = null
 
   constructor(
     private readonly configService: ConfigService,
@@ -18,6 +19,22 @@ export class CleanupService {
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(CleanupService.name)
+  }
+
+  onModuleInit(): void {
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+    const intervalMs = scraperConfig.cleanupIntervalMins * 60 * 1000
+    if (this.intervalHandle) return
+    this.intervalHandle = setInterval(() => {
+      void this.triggerCleanup()
+    }, intervalMs)
+  }
+
+  onModuleDestroy(): void {
+    if (this.intervalHandle) {
+      clearInterval(this.intervalHandle)
+      this.intervalHandle = null
+    }
   }
 
   triggerCleanup(): Promise<void> {
