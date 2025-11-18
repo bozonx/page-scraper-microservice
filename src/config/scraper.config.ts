@@ -102,14 +102,6 @@ export class ScraperConfig {
   public batchMaxDelayMs!: number
 
   /**
-   * Number of concurrent requests to process simultaneously (1-10)
-   */
-  @IsInt()
-  @Min(1)
-  @Max(10)
-  public batchConcurrency!: number
-
-  /**
    * Maximum number of heavy scraping tasks running concurrently across the entire service (>=1)
    */
   @IsInt()
@@ -195,7 +187,6 @@ export default registerAs('scraper', (): ScraperConfig => {
     // Batch processing settings
     batchMinDelayMs: parseInt(process.env.DEFAULT_BATCH_MIN_DELAY_MS ?? '1500', 10),
     batchMaxDelayMs: parseInt(process.env.DEFAULT_BATCH_MAX_DELAY_MS ?? '4000', 10),
-    batchConcurrency: parseInt(process.env.DEFAULT_BATCH_CONCURRENCY ?? '1', 10),
     globalMaxConcurrency: parseInt(process.env.MAX_CONCURRENCY ?? '3', 10),
     dataLifetimeMins: parseInt(process.env.DATA_LIFETIME_MINS ?? '60', 10),
     cleanupIntervalMins: parseInt(process.env.CLEANUP_INTERVAL_MINS ?? '5', 10),

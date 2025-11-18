@@ -228,39 +228,27 @@ export class BatchService implements OnApplicationShutdown {
       return
     }
 
-    // Apply scheduling: concurrency, delays and jitter
-    const concurrency = schedule.concurrency ?? scraperConfig.batchConcurrency
+    // Apply scheduling: delays and jitter (no per-batch concurrency)
     const minDelayMs = schedule.minDelayMs ?? scraperConfig.batchMinDelayMs
     const maxDelayMs = schedule.maxDelayMs ?? scraperConfig.batchMaxDelayMs
     const jitter = schedule.jitter ?? true
 
     const items = [...job.request.items]
 
-    let index = 0
+    // Process items sequentially; global concurrency is enforced in ScraperService
+    for (let current = 0; current < items.length; current++) {
+      if (job.cancelRequested) break
 
-    // Worker function that processes items sequentially with delays
-    const worker = async () => {
-      while (true) {
-        if (job.cancelRequested) break
-        const current = index++
-        if (current >= items.length) break
-
-        const item = items[current]
-
-        // Add delay between requests (except for very first processed by this worker)
-        if (current >= concurrency) {
-          const delay = this.calculateDelay(minDelayMs, maxDelayMs, jitter)
-          await this.sleep(delay)
-        }
-
-        if (job.cancelRequested) break
-        await this.processBatchItem(jobId, item)
+      // Add delay between requests after the first item only
+      if (current > 0) {
+        const delay = this.calculateDelay(minDelayMs, maxDelayMs, jitter)
+        await this.sleep(delay)
       }
-    }
 
-    // Create and run workers in parallel
-    const workers = Array.from({ length: Math.max(1, concurrency) }, () => worker())
-    await Promise.allSettled(workers)
+      if (job.cancelRequested) break
+      const item = items[current]
+      await this.processBatchItem(jobId, item)
+    }
 
     // If job was force-finalized during shutdown, skip normal finalization
     if (job.finalized) {

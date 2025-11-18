@@ -42,7 +42,7 @@ export class BatchItemDto {
 
 /**
  * Batch scheduling configuration
- * Defines timing and concurrency parameters for batch processing
+ * Defines timing parameters for batch processing
  */
 export class BatchScheduleDto {
   /**
@@ -69,15 +69,6 @@ export class BatchScheduleDto {
   @IsOptional()
   @IsBoolean()
   public jitter?: boolean
-
-  /**
-   * Number of concurrent requests to process simultaneously (1-10)
-   */
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  @Max(10)
-  public concurrency?: number
 }
 
 /**

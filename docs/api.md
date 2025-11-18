@@ -261,16 +261,14 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
     // If true returns body as provided by extractor (no Markdown conversion). Default: false.
     "rawBody": false
   },
-  // Controls pacing and concurrency for batch.
+  // Controls pacing for batch.
   "schedule": {
-    // Minimum wait between item requests per worker (ms). Default: DEFAULT_BATCH_MIN_DELAY_MS (1500). Range: 500–30000.
+    // Minimum wait between item requests (ms). Default: DEFAULT_BATCH_MIN_DELAY_MS (1500). Range: 500–30000.
     "minDelayMs": 1500,
     // Maximum wait between item requests (ms). Default: DEFAULT_BATCH_MAX_DELAY_MS (4000). Range: 1000–60000.
     "maxDelayMs": 4000,
     // Adds ±20% random jitter to delays. Default: true.
-    "jitter": true,
-    // Parallel worker count. Default: DEFAULT_BATCH_CONCURRENCY (1). Range: 1–10. Note: effective concurrency is further bounded by the global MAX_CONCURRENCY limiter.
-    "concurrency": 2
+    "jitter": true
   },
   // Webhook configuration triggered after completion.
   "webhook": {
@@ -480,7 +478,7 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 ### Batch Job Execution
 
 - **No batch timeout:** Individual items have their own `taskTimeoutSecs`, but there's no overall timeout for the entire batch job
-- **Concurrency:** Controlled by `schedule.concurrency` parameter (default: 1)
+- **Concurrency:** Global-only via `MAX_CONCURRENCY`. All `/page`, `/html`, and individual batch items share the same limiter. There is no per-batch concurrency.
 
 ### Shutdown Behavior
 

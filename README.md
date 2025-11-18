@@ -6,7 +6,7 @@ A production-ready NestJS microservice for extracting structured article data fr
 
 - **Dual scraping modes:** Extractor (@extractus/article-extractor) for fast static HTML parsing or Playwright for JavaScript-rendered content
 - **Rich article extraction:** Title, description, author, publication date, language, body (Markdown by default or raw HTML via `rawBody`), and estimated reading time
-- **Batch processing:** Asynchronous job orchestration with configurable concurrency, delays, and jitter
+- **Batch processing:** Asynchronous job orchestration with delays and jitter
 - **Anti-bot protection:** Rotating browser fingerprints and selective resource blocking to minimize detection
 - **Webhook notifications:** Reliable delivery with exponential backoff, retries, and authentication support
 - **Production logging:** Pino logger with request context, sensitive data redaction, and environment-aware formatting
@@ -36,7 +36,6 @@ Configuration is provided through environment variables and validated on startup
 | `DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT` | Default: rotate on detection signals (request can override) | `true` |
 | `DEFAULT_BATCH_MIN_DELAY_MS` | Minimum delay between requests | `1500` |
 | `DEFAULT_BATCH_MAX_DELAY_MS` | Maximum delay between requests | `4000` |
-| `DEFAULT_BATCH_CONCURRENCY` | Parallel workers | `1` |
 | `DATA_LIFETIME_MINS` | Retention of in-memory data (single page results and batch jobs) | `60` |
 | `CLEANUP_INTERVAL_MINS` | Minimum interval between cleanup runs | `5` |
 | `WEBHOOK_TIMEOUT_MS` | Webhook request timeout | `10000` |
@@ -90,7 +89,7 @@ curl -X POST "http://localhost:8080/api/v1/batch" \
           { "url": "https://site2.com/b", "mode": "playwright" }
         ],
         "commonSettings": { "taskTimeoutSecs": 45, "rawBody": false },
-        "schedule": { "concurrency": 2, "minDelayMs": 1000, "maxDelayMs": 3000 },
+        "schedule": { "minDelayMs": 1000, "maxDelayMs": 3000 },
         "webhook": {
           "url": "https://consumer.local/webhook",
           "authHeaderName": "Authorization",

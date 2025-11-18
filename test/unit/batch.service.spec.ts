@@ -16,7 +16,6 @@ describe('BatchService (unit)', () => {
   beforeEach(() => {
     configService = createMockConfigService({
       scraper: {
-        batchConcurrency: 1,
         batchMinDelayMs: 1500,
         batchMaxDelayMs: 4000,
       },
@@ -177,7 +176,7 @@ describe('BatchService (unit)', () => {
         { url: 'https://b' },
       ],
       // No webhook needed here
-      schedule: { minDelayMs: 0, maxDelayMs: 0, concurrency: 1 } as any,
+      schedule: { minDelayMs: 0, maxDelayMs: 0 } as any,
     } as any
 
     const { jobId } = await batchService.createBatchJob(request)

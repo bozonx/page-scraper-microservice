@@ -25,7 +25,6 @@ describe('FingerprintService (unit)', () => {
     fingerprintRotateOnAntiBot: true,
     batchMinDelayMs: 1500,
     batchMaxDelayMs: 4000,
-    batchConcurrency: 1,
     dataLifetimeMins: 60,
     webhookTimeoutMs: 10000,
     defaultWebhookBackoffMs: 1000,
