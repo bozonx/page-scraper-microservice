@@ -172,7 +172,6 @@ The Dockerfile includes Playwright browser dependencies for full rendering suppo
 - **In-memory data retention:** Single-page results and batch jobs are stored in memory only and kept for at least `DATA_LIFETIME_MINS`.
 - **Global concurrency gate:** All scrape and HTML retrieval requests (including batch workers) pass through an in-memory limiter configured by `MAX_CONCURRENCY`. When the limit is reached, new tasks queue until a slot is free. This bounds resource usage regardless of incoming load or batch size.
 - **Scheduled cleanup:** Cleanup runs in the background on an interval defined by `CLEANUP_INTERVAL_MINS` and is not tied to incoming requests. It never runs concurrently and will not execute more frequently than the configured interval.
-- **Startup handling:** If unfinished batches are detected at startup (e.g., due to an unexpected hard stop), they are marked `failed` and a webhook is attempted once.
 - **After-TTL deletion:** Once TTL elapses and a scheduled cleanup runs, data is fully removed from memory with no persistence on disk by the cleanup mechanism.
 - **Resource requirements:** Playwright mode requires significantly more CPU and memory than Extractor. Plan infrastructure capacity accordingly.
   - **Anti-bot strategies:** Enable defaults (`DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT=true`, `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS=true`, `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES=true`) and customize per request via `fingerprint.rotateOnAntiBot`, `blockTrackers`, `blockHeavyResources`.

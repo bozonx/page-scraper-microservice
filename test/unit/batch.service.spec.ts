@@ -166,38 +166,6 @@ describe('BatchService (unit)', () => {
     expect(args[1].meta?.completedCount).toBe(0)
   })
 
-  it('marks unfinished batches as failed at startup and sends webhook', async () => {
-    const jobsMap = (batchService as any).jobs as Map<string, any>
-
-    const jobId = 'unfinished-at-startup'
-    const mockRequest: BatchRequestDto = {
-      items: [{ url: 'https://a' }, { url: 'https://b' }],
-      webhook: { url: 'https://example.com/webhook' },
-    } as any
-
-    jobsMap.set(jobId, {
-      id: jobId,
-      status: 'running' as BatchJobStatus,
-      createdAt: new Date(),
-      total: 2,
-      processed: 1,
-      succeeded: 0,
-      failed: 1,
-      results: [
-        { url: 'https://a', status: 'failed', error: { code: 422, message: 'x' } },
-      ],
-      request: mockRequest,
-    })
-
-    webhookService.sendWebhook.mockResolvedValue()
-
-    await batchService.onModuleInit()
-
-    const job = jobsMap.get(jobId)
-    expect(job.status).toBe('failed')
-    expect(job.meta?.error?.kind).toBe('pre_start')
-    expect(webhookService.sendWebhook).toHaveBeenCalledTimes(1)
-  })
 
   it('failed batch captures first item error in meta as first_item', async () => {
     // Arrange scraper to always throw

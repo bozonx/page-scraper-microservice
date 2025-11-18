@@ -1,4 +1,4 @@
-import { Injectable, OnApplicationShutdown, OnModuleInit } from '@nestjs/common'
+import { Injectable, OnApplicationShutdown } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '@/config/scraper.config.js'
@@ -109,7 +109,7 @@ interface BatchJob {
  * Handles job creation, execution, status tracking, and cleanup
  */
 @Injectable()
-export class BatchService implements OnApplicationShutdown, OnModuleInit {
+export class BatchService implements OnApplicationShutdown {
   private readonly jobs = new Map<string, BatchJob>()
 
   constructor(
@@ -121,34 +121,7 @@ export class BatchService implements OnApplicationShutdown, OnModuleInit {
     this.logger.setContext(BatchService.name)
   }
 
-  /**
-   * On startup, if any jobs are present and unfinished (should not normally happen),
-   * finalize them as failed to reflect unexpected hard shutdown.
-   */
-  async onModuleInit(): Promise<void> {
-    const finalizePromises: Promise<void>[] = []
-    for (const [jobId, job] of this.jobs.entries()) {
-      if (job.status === 'running' || job.status === 'queued') {
-        job.meta = {
-          ...(job.meta || {}),
-          error: {
-            kind: 'pre_start',
-            message: 'Detected unfinished batch at startup',
-          },
-        }
-        this.updateJobStatus(jobId, 'failed')
-        if (job.request.webhook) {
-          const p = this.sendWebhook(jobId).catch((err) => {
-            this.logger.error(`Failed to send webhook for job ${jobId} at startup:`, err)
-          })
-          finalizePromises.push(p)
-        }
-      }
-    }
-    if (finalizePromises.length > 0) {
-      await Promise.allSettled(finalizePromises)
-    }
-  }
+  
 
   /**
    * Creates a new batch job and starts processing
