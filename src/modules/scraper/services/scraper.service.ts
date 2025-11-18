@@ -10,6 +10,7 @@ import { HtmlResponseDto } from '../dto/html-response.dto.js'
 import { FingerprintService } from './fingerprint.service.js'
 import { TurndownConverterService } from './turndown.service.js'
 import type { IArticleExtractor } from './article-extractor.interface.js'
+import { ConcurrencyService } from './concurrency.service.js'
 
 /**
  * Main scraper service
@@ -24,7 +25,8 @@ export class ScraperService {
     private readonly fingerprintService: FingerprintService,
     private readonly logger: PinoLogger,
     private readonly turndownConverterService: TurndownConverterService,
-    @Inject('IArticleExtractor') private readonly articleExtractor: IArticleExtractor
+    @Inject('IArticleExtractor') private readonly articleExtractor: IArticleExtractor,
+    private readonly concurrencyService: ConcurrencyService
   ) {
     this.logger.setContext(ScraperService.name)
   }
@@ -35,6 +37,7 @@ export class ScraperService {
    * @returns Extracted page content
    */
   async scrapePage(request: ScraperRequestDto): Promise<ScraperResponseDto> {
+    return this.concurrencyService.run(async () => {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const mode = request.mode || scraperConfig.defaultMode
 
@@ -82,6 +85,7 @@ export class ScraperService {
       this.logger.error(`Failed to scrape page ${request.url}:`, error)
       throw error
     }
+    })
   }
 
   /**
@@ -274,6 +278,7 @@ export class ScraperService {
    * @returns Raw HTML content
    */
   async getHtml(request: HtmlRequestDto): Promise<HtmlResponseDto> {
+    return this.concurrencyService.run(async () => {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
     this.logger.info(`Retrieving HTML from: ${request.url}`)
@@ -319,6 +324,7 @@ export class ScraperService {
       this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
       throw error
     }
+    })
   }
 
   /**

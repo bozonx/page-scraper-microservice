@@ -8,6 +8,7 @@ import { TurndownConverterService } from './services/turndown.service.js'
 import { ArticleExtractorService } from './services/article-extractor.service.js'
 import { CleanupService } from './services/cleanup.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
+import { ConcurrencyService } from './services/concurrency.service.js'
 
 /**
  * Scraper module
@@ -24,6 +25,7 @@ import { MemoryStoreService } from './services/memory-store.service.js'
     TurndownConverterService,
     CleanupService,
     MemoryStoreService,
+    ConcurrencyService,
     {
       // Provide article extractor as an interface for better testability
       provide: 'IArticleExtractor',
@@ -38,6 +40,7 @@ import { MemoryStoreService } from './services/memory-store.service.js'
     TurndownConverterService,
     CleanupService,
     MemoryStoreService,
+    ConcurrencyService,
     'IArticleExtractor',
   ],
 })
