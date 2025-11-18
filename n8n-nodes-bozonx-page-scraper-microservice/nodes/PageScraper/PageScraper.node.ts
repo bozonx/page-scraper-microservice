@@ -27,6 +27,14 @@ export class PageScraper implements INodeType {
     ],
     properties: [
       {
+        displayName: 'Base Path',
+        name: 'basePath',
+        type: 'string',
+        default: 'page/api/v1',
+        description:
+          'API base path appended to the Gateway URL (leading/trailing slashes are ignored)',
+      },
+      {
         displayName: 'Operation',
         name: 'operation',
         type: 'options',
@@ -464,7 +472,7 @@ export class PageScraper implements INodeType {
         ],
       },
     ],
-		usableAsTool: true,
+    usableAsTool: true,
   };
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
@@ -474,7 +482,9 @@ export class PageScraper implements INodeType {
 
     const credentials = await this.getCredentials('bozonxMicroservicesApi');
     const baseUrl = (credentials.gatewayUrl as string).replace(/\/$/, '');
-    const apiUrl = `${baseUrl}/api/v1`;
+    const rawBasePath = this.getNodeParameter('basePath', 0, 'page/api/v1') as string;
+    const normalizedBasePath = rawBasePath.replace(/^\/+|\/+$/g, '');
+    const apiUrl = normalizedBasePath ? `${baseUrl}/${normalizedBasePath}` : baseUrl;
 
     for (let i = 0; i < items.length; i++) {
       try {
@@ -495,7 +505,7 @@ export class PageScraper implements INodeType {
           // Build fingerprint object if any options are set
           if (Object.keys(fingerprintOptions).length > 0) {
             const fingerprint: Record<string, any> = {};
-            
+
             if (fingerprintOptions.generate !== undefined) {
               fingerprint.generate = fingerprintOptions.generate;
             }
@@ -551,7 +561,7 @@ export class PageScraper implements INodeType {
           // Build fingerprint object
           if (Object.keys(fingerprintOptions).length > 0) {
             const fingerprint: Record<string, any> = {};
-            
+
             if (fingerprintOptions.generate !== undefined) {
               fingerprint.generate = fingerprintOptions.generate;
             }
@@ -688,7 +698,7 @@ export class PageScraper implements INodeType {
         if (this.continueOnFail()) {
           returnData.push({
             json: {
-              error: error.message,
+              error: (error as Error).message,
             },
             pairedItem: { item: i },
           });
