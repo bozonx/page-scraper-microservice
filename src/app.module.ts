@@ -8,6 +8,7 @@ import { AllExceptionsFilter } from '@common/filters/all-exceptions.filter.js'
 import appConfig from '@config/app.config.js'
 import scraperConfig from '@config/scraper.config.js'
 import type { AppConfig } from '@config/app.config.js'
+import pkg from '../package.json'
 
 /**
  * Root module of the application
@@ -35,7 +36,7 @@ import type { AppConfig } from '@config/app.config.js'
             level: appConfig.logLevel,
             timestamp: () => `,"@timestamp":"${new Date().toISOString()}"`,
             base: {
-              service: 'page-scraper-microservice',
+              service: (pkg as any).name ?? 'app',
               environment: appConfig.nodeEnv,
             },
             // Pretty printing for development environment
