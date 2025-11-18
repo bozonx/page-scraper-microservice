@@ -1,0 +1,34 @@
+# Exclude development and project configuration
+.vscode/
+.devcontainer/
+.github/
+.idea/
+scripts/
+
+dev_docs/
+docs/
+
+# Do not publish sources (we publish compiled files from dist)
+src/
+nodes/
+credentials/
+
+# Node/build artifacts
+node_modules/
+dist/**/*.map
+coverage/
+.nyc_output/
+*.tsbuildinfo
+*.log
+
+# Tooling configs and locks
+.eslint*
+eslint.config.*
+.prettier*
+.prettierrc.js
+.prettierignore
+.editorconfig
+
+yarn.lock
+pnpm-lock.yaml
+package-lock.json
