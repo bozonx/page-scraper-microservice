@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import pLimit, { LimitFunction } from 'p-limit'
+import type { ScraperConfig } from '@config/scraper.config.js'
 
 @Injectable()
 export class ConcurrencyService {
   private readonly limit: LimitFunction
 
-  constructor() {
-    const max = Math.max(1, parseInt(process.env.MAX_CONCURRENCY ?? '3', 10))
+  constructor(private readonly configService: ConfigService) {
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')
+    const configuredMax = scraperConfig?.globalMaxConcurrency ?? 3
+    const max = Math.max(1, configuredMax)
     this.limit = pLimit(max)
   }
 

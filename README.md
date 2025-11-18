@@ -22,6 +22,7 @@ Configuration is provided through environment variables and validated on startup
 | `LISTEN_PORT` | HTTP port | `8080` |
 | `API_BASE_PATH` | Prefix for REST endpoints | `api` |
 | `LOG_LEVEL` | Pino log level (`trace`…`silent`) | `warn` |
+| `MAX_CONCURRENCY` | Global limit for concurrent Playwright/Extractor tasks across all endpoints. Enforced via in-memory limiter (p-limit). | `3` |
 | `DEFAULT_MODE` | Scraper mode (`extractor` / `playwright`) | `extractor` |
 | `DEFAULT_TASK_TIMEOUT_SECS` | Per-page timeout in seconds (>=1, no upper limit) | `30` |
 | `DEFAULT_LOCALE` | Preferred locale for extraction heuristics | `en-US` |
@@ -165,6 +166,7 @@ The Dockerfile includes Playwright browser dependencies for full rendering suppo
 ## Operational Considerations
 
 - **In-memory data retention:** Single-page results and batch jobs are stored in memory only and kept for at least `DATA_LIFETIME_MINS`.
+- **Global concurrency gate:** All scrape and HTML retrieval requests (including batch workers) pass through an in-memory limiter configured by `MAX_CONCURRENCY`. When the limit is reached, new tasks queue until a slot is free. This bounds resource usage regardless of incoming load or batch size.
 - **Scheduled cleanup:** Cleanup runs in the background on an interval defined by `CLEANUP_INTERVAL_MINS` and is not tied to incoming requests. It never runs concurrently and will not execute more frequently than the configured interval.
 - **No startup cleanup:** On service start, cleanup is not executed since data exists in memory only.
 - **After-TTL deletion:** Once TTL elapses and a scheduled cleanup runs, data is fully removed from memory with no persistence on disk by the cleanup mechanism.
@@ -172,6 +174,14 @@ The Dockerfile includes Playwright browser dependencies for full rendering suppo
   - **Anti-bot strategies:** Enable defaults (`DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT=true`, `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS=true`, `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES=true`) and customize per request via `fingerprint.rotateOnAntiBot`, `blockTrackers`, `blockHeavyResources`.
 - **Webhook security:** Webhook payloads contain full scraping results. Secure your webhook endpoints and consider implementing signature validation.
 - **Logging privacy:** Sensitive headers (`Authorization`, `x-api-key`) are automatically redacted from logs.
+- ### Global concurrency limiter
+
+  The service ships with a singleton `ConcurrencyService` that wraps heavy scraping operations (`ScraperService.scrapePage` and `ScraperService.getHtml`) in a [`p-limit`](https://github.com/sindresorhus/p-limit) gate. The limiter size is controlled by the `MAX_CONCURRENCY` environment variable (default `3`).
+
+  - The limit applies uniformly to `/page`, `/html`, and every item processed through `/batch`.
+  - When the concurrent threshold is reached, additional tasks wait in FIFO order until a slot becomes free. Requests are *not* rejected—only delayed—so upstream clients should honour their HTTP timeouts.
+  - Adjust `MAX_CONCURRENCY` according to available CPU/RAM and Playwright capacity. Increasing the value raises resource usage; decreasing it provides stronger isolation.
+
 
 ## License
 

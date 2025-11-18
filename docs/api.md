@@ -18,6 +18,8 @@ http://{host}:{port}/{API_BASE_PATH}/v1
 
 **Authentication:** No authentication is enforced by default. Implement authentication at reverse proxy or API gateway level for production deployments.
 
+**Concurrency guard:** The service enforces a global in-memory limiter sized by the `MAX_CONCURRENCY` environment variable (default `3`). All scrape operations (single page, HTML, batch items) share this pool—when at capacity, new tasks wait until existing work finishes.
+
 ---
 
 ## Endpoints
@@ -295,7 +297,7 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
     "maxDelayMs": 4000,
     // Adds ±20% random jitter to delays. Default: true.
     "jitter": true,
-    // Parallel worker count. Default: DEFAULT_BATCH_CONCURRENCY (1). Range: 1–10.
+    // Parallel worker count. Default: DEFAULT_BATCH_CONCURRENCY (1). Range: 1–10. Note: effective concurrency is further bounded by the global MAX_CONCURRENCY limiter.
     "concurrency": 2
   },
   // Webhook configuration triggered after completion.

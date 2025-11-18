@@ -12,6 +12,7 @@ import {
   createMockTurndownConverterService,
   createMockArticleExtractor,
 } from '@test/helpers/mocks.js'
+import { ConcurrencyService } from '@/modules/scraper/services/concurrency.service.js'
 
 describe('ScraperService - getHtml (unit)', () => {
   let moduleRef: TestingModule
@@ -81,6 +82,12 @@ describe('ScraperService - getHtml (unit)', () => {
         { provide: PinoLogger, useValue: logger },
         { provide: TurndownConverterService, useValue: createMockTurndownConverterService() },
         { provide: 'IArticleExtractor', useValue: articleExtractor },
+        {
+          provide: ConcurrencyService,
+          useValue: {
+            run: <T>(fn: () => Promise<T>) => fn(),
+          },
+        },
       ],
     }).compile()
 
