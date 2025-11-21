@@ -182,7 +182,7 @@ export default registerAs('scraper', (): ScraperConfig => {
     batchMaxDelayMs: parseInt(process.env.DEFAULT_BATCH_MAX_DELAY_MS ?? '4000', 10),
     globalMaxConcurrency: parseInt(process.env.MAX_CONCURRENCY ?? '3', 10),
     dataLifetimeMins: parseInt(process.env.DATA_LIFETIME_MINS ?? '60', 10),
-    cleanupIntervalMins: parseInt(process.env.CLEANUP_INTERVAL_MINS ?? '5', 10),
+    cleanupIntervalMins: parseInt(process.env.CLEANUP_INTERVAL_MINS ?? '10', 10),
 
     // Webhook settings
     webhookTimeoutMs: parseInt(process.env.WEBHOOK_TIMEOUT_MS ?? '10000', 10),
