@@ -3,7 +3,7 @@ import type {
   INodeExecutionData,
   INodeType,
   INodeTypeDescription,
-} from 'n8n-workflow';
+} from 'n8n-workflow'
 
 export class PageScraper implements INodeType {
   description: INodeTypeDescription = {
@@ -385,21 +385,22 @@ export class PageScraper implements INodeType {
             name: 'minDelayMs',
             type: 'number',
             default: 1500,
-            description: 'Minimum wait between requests (500-30000)',
+            description:
+              'Minimum delay between requests in milliseconds (500-3600000, up to 1 hour). Defaults to 1500 if omitted',
           },
           {
             displayName: 'Max Delay (Ms)',
             name: 'maxDelayMs',
             type: 'number',
             default: 4000,
-            description: 'Maximum wait between requests (1000-60000)',
+            description:
+              'Maximum delay between requests in milliseconds (1000-3600000, up to 1 hour). Defaults to 4000 if omitted',
           },
           {
             displayName: 'Jitter',
             name: 'jitter',
             type: 'boolean',
             default: true,
-            description: 'Whether to add ±20% random jitter to delays',
           },
         ],
       },
@@ -460,75 +461,82 @@ export class PageScraper implements INodeType {
             name: 'backoffMs',
             type: 'number',
             default: 1000,
-            description: 'Base delay for exponential backoff (100-30000)',
+            description:
+              'Base delay for exponential backoff between retries in milliseconds (100-600000, up to 10 minutes). Defaults to 1000 if omitted',
           },
           {
             displayName: 'Max Attempts',
             name: 'maxAttempts',
             type: 'number',
             default: 3,
-            description: 'Maximum retry attempts (1-10)',
+            description: 'Maximum number of retry attempts (1-100). Defaults to 3 if omitted',
           },
         ],
       },
     ],
     usableAsTool: true,
-  };
+  }
 
   async execute(this: IExecuteFunctions): Promise<INodeExecutionData[][]> {
-    const items = this.getInputData();
-    const returnData: INodeExecutionData[] = [];
-    const operation = this.getNodeParameter('operation', 0) as string;
+    const items = this.getInputData()
+    const returnData: INodeExecutionData[] = []
+    const operation = this.getNodeParameter('operation', 0) as string
 
-    const credentials = await this.getCredentials('bozonxMicroservicesApi');
-    const baseUrl = (credentials.gatewayUrl as string).replace(/\/$/, '');
-    const rawBasePath = this.getNodeParameter('basePath', 0, 'page/api/v1') as string;
-    const normalizedBasePath = rawBasePath.replace(/^\/+|\/+$/g, '');
-    const apiUrl = normalizedBasePath ? `${baseUrl}/${normalizedBasePath}` : baseUrl;
+    const credentials = await this.getCredentials('bozonxMicroservicesApi')
+    const baseUrl = (credentials.gatewayUrl as string).replace(/\/$/, '')
+    const rawBasePath = this.getNodeParameter('basePath', 0, 'page/api/v1') as string
+    const normalizedBasePath = rawBasePath.replace(/^\/+|\/+$/g, '')
+    const apiUrl = normalizedBasePath ? `${baseUrl}/${normalizedBasePath}` : baseUrl
 
     for (let i = 0; i < items.length; i++) {
       try {
         if (operation === 'page') {
-          const url = this.getNodeParameter('url', i) as string;
-          const mode = this.getNodeParameter('mode', i) as string;
-          const rawBody = this.getNodeParameter('rawBody', i) as boolean;
-          const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as Record<string, any>;
-          const fingerprintOptions = this.getNodeParameter('fingerprintOptions', i, {}) as Record<string, any>;
+          const url = this.getNodeParameter('url', i) as string
+          const mode = this.getNodeParameter('mode', i) as string
+          const rawBody = this.getNodeParameter('rawBody', i) as boolean
+          const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as Record<
+            string,
+            any
+          >
+          const fingerprintOptions = this.getNodeParameter('fingerprintOptions', i, {}) as Record<
+            string,
+            any
+          >
 
           const body: Record<string, any> = {
             url,
             mode,
             rawBody,
             ...additionalOptions,
-          };
+          }
 
           // Build fingerprint object if any options are set
           if (Object.keys(fingerprintOptions).length > 0) {
-            const fingerprint: Record<string, any> = {};
+            const fingerprint: Record<string, any> = {}
 
             if (fingerprintOptions.generate !== undefined) {
-              fingerprint.generate = fingerprintOptions.generate;
+              fingerprint.generate = fingerprintOptions.generate
             }
             if (fingerprintOptions.userAgent) {
-              fingerprint.userAgent = fingerprintOptions.userAgent;
+              fingerprint.userAgent = fingerprintOptions.userAgent
             }
             if (fingerprintOptions.locale) {
-              fingerprint.locale = fingerprintOptions.locale;
+              fingerprint.locale = fingerprintOptions.locale
             }
             if (fingerprintOptions.timezoneId) {
-              fingerprint.timezoneId = fingerprintOptions.timezoneId;
+              fingerprint.timezoneId = fingerprintOptions.timezoneId
             }
             if (fingerprintOptions.rotateOnAntiBot !== undefined) {
-              fingerprint.rotateOnAntiBot = fingerprintOptions.rotateOnAntiBot;
+              fingerprint.rotateOnAntiBot = fingerprintOptions.rotateOnAntiBot
             }
             if (fingerprintOptions.browsers) {
               fingerprint.generator = {
                 browsers: fingerprintOptions.browsers.split(',').map((b: string) => b.trim()),
-              };
+              }
             }
 
             if (Object.keys(fingerprint).length > 0) {
-              body.fingerprint = fingerprint;
+              body.fingerprint = fingerprint
             }
           }
 
@@ -540,51 +548,56 @@ export class PageScraper implements INodeType {
               url: `${apiUrl}/page`,
               body,
               json: true,
-            },
-          );
+            }
+          )
 
           returnData.push({
             json: response as Record<string, any>,
             pairedItem: { item: i },
-          });
-
+          })
         } else if (operation === 'html') {
-          const url = this.getNodeParameter('url', i) as string;
-          const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as Record<string, any>;
-          const fingerprintOptions = this.getNodeParameter('fingerprintOptions', i, {}) as Record<string, any>;
+          const url = this.getNodeParameter('url', i) as string
+          const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as Record<
+            string,
+            any
+          >
+          const fingerprintOptions = this.getNodeParameter('fingerprintOptions', i, {}) as Record<
+            string,
+            any
+          >
 
           const body: Record<string, any> = {
             url,
             ...additionalOptions,
-          };
+          }
 
           // Build fingerprint object
           if (Object.keys(fingerprintOptions).length > 0) {
-            const fingerprint: Record<string, any> = {};
+            const fingerprint: Record<string, any> = {}
 
             if (fingerprintOptions.generate !== undefined) {
-              fingerprint.generate = fingerprintOptions.generate;
+              fingerprint.generate = fingerprintOptions.generate
             }
             if (fingerprintOptions.userAgent) {
-              fingerprint.userAgent = fingerprintOptions.userAgent;
+              fingerprint.userAgent = fingerprintOptions.userAgent
             }
             if (fingerprintOptions.locale) {
-              fingerprint.locale = fingerprintOptions.locale;
+              fingerprint.locale = fingerprintOptions.locale
             }
             if (fingerprintOptions.timezoneId) {
-              fingerprint.timezoneId = fingerprintOptions.timezoneId;
+              fingerprint.timezoneId = fingerprintOptions.timezoneId
             }
             if (fingerprintOptions.rotateOnAntiBot !== undefined) {
-              fingerprint.rotateOnAntiBot = fingerprintOptions.rotateOnAntiBot;
+              fingerprint.rotateOnAntiBot = fingerprintOptions.rotateOnAntiBot
             }
             if (fingerprintOptions.browsers) {
               fingerprint.generator = {
                 browsers: fingerprintOptions.browsers.split(',').map((b: string) => b.trim()),
-              };
+              }
             }
 
             if (Object.keys(fingerprint).length > 0) {
-              body.fingerprint = fingerprint;
+              body.fingerprint = fingerprint
             }
           }
 
@@ -596,68 +609,76 @@ export class PageScraper implements INodeType {
               url: `${apiUrl}/html`,
               body,
               json: true,
-            },
-          );
+            }
+          )
 
           returnData.push({
             json: response as Record<string, any>,
             pairedItem: { item: i },
-          });
-
+          })
         } else if (operation === 'batch') {
-          const itemsParam = this.getNodeParameter('items', i, {}) as any;
-          const commonSettings = this.getNodeParameter('commonSettings', i, {}) as Record<string, any>;
-          const scheduleOptions = this.getNodeParameter('scheduleOptions', i, {}) as Record<string, any>;
-          const webhookOptions = this.getNodeParameter('webhookOptions', i, {}) as Record<string, any>;
+          const itemsParam = this.getNodeParameter('items', i, {}) as any
+          const commonSettings = this.getNodeParameter('commonSettings', i, {}) as Record<
+            string,
+            any
+          >
+          const scheduleOptions = this.getNodeParameter('scheduleOptions', i, {}) as Record<
+            string,
+            any
+          >
+          const webhookOptions = this.getNodeParameter('webhookOptions', i, {}) as Record<
+            string,
+            any
+          >
 
           const body: Record<string, any> = {
             items: [],
-          };
+          }
 
           // Build items array
           if (itemsParam.item && Array.isArray(itemsParam.item)) {
             body.items = itemsParam.item.map((item: any) => {
-              const batchItem: Record<string, any> = { url: item.url };
+              const batchItem: Record<string, any> = { url: item.url }
               if (item.mode) {
-                batchItem.mode = item.mode;
+                batchItem.mode = item.mode
               }
-              return batchItem;
-            });
+              return batchItem
+            })
           }
 
           // Add common settings
           if (Object.keys(commonSettings).length > 0) {
-            body.commonSettings = commonSettings;
+            body.commonSettings = commonSettings
           }
 
           // Add schedule
           if (Object.keys(scheduleOptions).length > 0) {
-            body.schedule = scheduleOptions;
+            body.schedule = scheduleOptions
           }
 
           // Add webhook
           if (webhookOptions.url) {
             const webhook: Record<string, any> = {
               url: webhookOptions.url,
-            };
+            }
 
             if (webhookOptions.headers?.header && Array.isArray(webhookOptions.headers.header)) {
-              webhook.headers = {};
+              webhook.headers = {}
               webhookOptions.headers.header.forEach((h: any) => {
                 if (h.name && h.value) {
-                  webhook.headers[h.name] = h.value;
+                  webhook.headers[h.name] = h.value
                 }
-              });
+              })
             }
 
             if (webhookOptions.backoffMs !== undefined) {
-              webhook.backoffMs = webhookOptions.backoffMs;
+              webhook.backoffMs = webhookOptions.backoffMs
             }
             if (webhookOptions.maxAttempts !== undefined) {
-              webhook.maxAttempts = webhookOptions.maxAttempts;
+              webhook.maxAttempts = webhookOptions.maxAttempts
             }
 
-            body.webhook = webhook;
+            body.webhook = webhook
           }
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
@@ -668,16 +689,15 @@ export class PageScraper implements INodeType {
               url: `${apiUrl}/batch`,
               body,
               json: true,
-            },
-          );
+            }
+          )
 
           returnData.push({
             json: response as Record<string, any>,
             pairedItem: { item: i },
-          });
-
+          })
         } else if (operation === 'batchStatus') {
-          const jobId = this.getNodeParameter('jobId', i) as string;
+          const jobId = this.getNodeParameter('jobId', i) as string
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
             this,
@@ -686,13 +706,13 @@ export class PageScraper implements INodeType {
               method: 'GET',
               url: `${apiUrl}/batch/${jobId}`,
               json: true,
-            },
-          );
+            }
+          )
 
           returnData.push({
             json: response as Record<string, any>,
             pairedItem: { item: i },
-          });
+          })
         }
       } catch (error) {
         if (this.continueOnFail()) {
@@ -701,13 +721,13 @@ export class PageScraper implements INodeType {
               error: (error as Error).message,
             },
             pairedItem: { item: i },
-          });
-          continue;
+          })
+          continue
         }
-        throw error;
+        throw error
       }
     }
 
-    return [returnData];
+    return [returnData]
   }
 }

@@ -110,14 +110,14 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
   - Locale
   - Timezone ID
 - **Schedule Options**: Control request pacing
-  - Min Delay (ms): 500-30000, default 1500
-  - Max Delay (ms): 1000-60000, default 4000
+  - Min Delay (ms): 500-3600000, default 1500
+  - Max Delay (ms): 1000-3600000, default 4000
   - Jitter: Add ±20% random variation
 - **Webhook Options**: Notification when job completes
   - Webhook URL
   - Headers (for authentication)
-  - Backoff (ms): 100-30000, default 1000
-  - Max Attempts: 1-10, default 3
+  - Backoff (ms): 100-600000, default 1000
+  - Max Attempts: 1-100, default 3
 
 **Output:**
 ```json

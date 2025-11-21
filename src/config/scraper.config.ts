@@ -39,8 +39,6 @@ export class ScraperConfig {
   @IsString()
   public defaultTimezoneId!: string
 
-
-
   // Playwright settings
   /**
    * Run Playwright in headless mode (true = no browser UI, false = show browser)
@@ -82,19 +80,19 @@ export class ScraperConfig {
 
   // Batch processing settings
   /**
-   * Minimum delay between requests in milliseconds to avoid rate limiting (500-30000)
+   * Minimum delay between requests in milliseconds to avoid rate limiting (500-3600000)
    */
   @IsInt()
   @Min(500)
-  @Max(30000)
+  @Max(3600000)
   public batchMinDelayMs!: number
 
   /**
-   * Maximum delay between requests in milliseconds (1000-60000)
+   * Maximum delay between requests in milliseconds (1000-3600000)
    */
   @IsInt()
   @Min(1000)
-  @Max(60000)
+  @Max(3600000)
   public batchMaxDelayMs!: number
 
   /**
@@ -105,47 +103,47 @@ export class ScraperConfig {
   public globalMaxConcurrency!: number
 
   /**
-   * Time in minutes to retain batch job data in memory before cleanup (1-1440)
+   * Time in minutes to retain batch job data in memory before cleanup (1-44640)
    */
   @IsInt()
   @Min(1)
-  @Max(1440)
+  @Max(44640)
   public dataLifetimeMins!: number
 
   /**
-   * Minimum interval in minutes between cleanup runs (1-1440)
+   * Minimum interval in minutes between cleanup runs (1-10080)
    */
   @IsInt()
   @Min(1)
-  @Max(1440)
+  @Max(10080)
   public cleanupIntervalMins!: number
 
   // Webhook settings
   /**
-   * Timeout in milliseconds for webhook HTTP requests (1000-60000)
+   * Timeout in milliseconds for webhook HTTP requests (1000-600000)
    * This is a global setting that cannot be overridden per webhook request
    */
   @IsInt()
   @Min(1000)
-  @Max(60000)
+  @Max(600000)
   public webhookTimeoutMs!: number
 
   /**
-   * Default backoff delay in milliseconds between webhook retry attempts (100-30000)
+   * Default backoff delay in milliseconds between webhook retry attempts (100-600000)
    * These are default values that can be overridden per webhook request
    */
   @IsInt()
   @Min(100)
-  @Max(30000)
+  @Max(600000)
   public defaultWebhookBackoffMs!: number
 
   /**
-   * Default maximum number of retry attempts for failed webhook deliveries (1-10)
+   * Default maximum number of retry attempts for failed webhook deliveries (1-100)
    * These are default values that can be overridden per webhook request
    */
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(100)
   public defaultWebhookMaxAttempts!: number
 }
 
@@ -156,25 +154,19 @@ export class ScraperConfig {
 export default registerAs('scraper', (): ScraperConfig => {
   // Support both new (with FINGERPRINT prefix) and legacy environment variable names
   // for backward compatibility
-  const derivedDefaultLocale = 
-    process.env.DEFAULT_FINGERPRINT_LOCALE || 
-    process.env.DEFAULT_LOCALE || 
-    'en-US'
+  const derivedDefaultLocale =
+    process.env.DEFAULT_FINGERPRINT_LOCALE || process.env.DEFAULT_LOCALE || 'en-US'
 
   const config = plainToClass(ScraperConfig, {
     // Default scraper settings
     defaultMode: process.env.DEFAULT_MODE ?? 'extractor',
     defaultTaskTimeoutSecs: parseInt(process.env.DEFAULT_TASK_TIMEOUT_SECS ?? '60', 10),
     // Support both new and legacy variable names
-    defaultUserAgent: 
-      process.env.DEFAULT_FINGERPRINT_USER_AGENT || 
-      process.env.DEFAULT_USER_AGENT || 
-      'auto',
+    defaultUserAgent:
+      process.env.DEFAULT_FINGERPRINT_USER_AGENT || process.env.DEFAULT_USER_AGENT || 'auto',
     defaultLocale: derivedDefaultLocale,
-    defaultTimezoneId: 
-      process.env.DEFAULT_FINGERPRINT_TIMEZONE_ID || 
-      process.env.DEFAULT_TIMEZONE_ID || 
-      'UTC',
+    defaultTimezoneId:
+      process.env.DEFAULT_FINGERPRINT_TIMEZONE_ID || process.env.DEFAULT_TIMEZONE_ID || 'UTC',
 
     // Playwright settings - default to true unless explicitly set to 'false'
     playwrightHeadless: process.env.PLAYWRIGHT_HEADLESS !== 'false',

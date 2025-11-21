@@ -256,9 +256,9 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
   },
   // Controls pacing for batch.
   "schedule": {
-    // Minimum wait between item requests (ms). Default: DEFAULT_BATCH_MIN_DELAY_MS (1500). Range: 500–30000.
+    // Minimum wait between item requests (ms). Default: DEFAULT_BATCH_MIN_DELAY_MS (1500). Range: 500–3600000 (up to 1 hour).
     "minDelayMs": 1500,
-    // Maximum wait between item requests (ms). Default: DEFAULT_BATCH_MAX_DELAY_MS (4000). Range: 1000–60000.
+    // Maximum wait between item requests (ms). Default: DEFAULT_BATCH_MAX_DELAY_MS (4000). Range: 1000–3600000 (up to 1 hour).
     "maxDelayMs": 4000,
     // Adds ±20% random jitter to delays. Default: true.
     "jitter": true
@@ -272,9 +272,9 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
       "X-Custom-Header": "value",
       "Authorization": "Bearer token"
     },
-    // Base delay for exponential backoff (ms). Default: DEFAULT_WEBHOOK_BACKOFF_MS (1000). Range: 100–30000.
+    // Base delay for exponential backoff (ms). Default: DEFAULT_WEBHOOK_BACKOFF_MS (1000). Range: 100–600000 (up to 10 minutes).
     "backoffMs": 1000,
-    // Retry limit. Default: DEFAULT_WEBHOOK_MAX_ATTEMPTS (3). Range: 1–10.
+    // Retry limit. Default: DEFAULT_WEBHOOK_MAX_ATTEMPTS (3). Range: 1–100.
     "maxAttempts": 3
   }
 }

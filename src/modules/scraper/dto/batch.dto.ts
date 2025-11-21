@@ -46,21 +46,21 @@ export class BatchItemDto {
  */
 export class BatchScheduleDto {
   /**
-   * Minimum delay between requests in milliseconds (500-30000)
+   * Minimum delay between requests in milliseconds (500-3600000)
    */
   @IsOptional()
   @IsInt()
   @Min(500)
-  @Max(30000)
+  @Max(3600000)
   public minDelayMs?: number
 
   /**
-   * Maximum delay between requests in milliseconds (1000-60000)
+   * Maximum delay between requests in milliseconds (1000-3600000)
    */
   @IsOptional()
   @IsInt()
   @Min(1000)
-  @Max(60000)
+  @Max(3600000)
   public maxDelayMs?: number
 
   /**
@@ -90,21 +90,21 @@ export class BatchWebhookDto {
   public headers?: Record<string, string>
 
   /**
-   * Backoff delay in milliseconds between webhook retry attempts (100-30000)
+   * Backoff delay in milliseconds between webhook retry attempts (100-600000)
    */
   @IsOptional()
   @IsInt()
   @Min(100)
-  @Max(30000)
+  @Max(600000)
   public backoffMs?: number
 
   /**
-   * Maximum number of retry attempts for failed webhook deliveries (1-10)
+   * Maximum number of retry attempts for failed webhook deliveries (1-100)
    */
   @IsOptional()
   @IsInt()
   @Min(1)
-  @Max(10)
+  @Max(100)
   public maxAttempts?: number
 }
 
@@ -133,8 +133,6 @@ export class BatchCommonSettingsDto {
   @IsOptional()
   @IsBoolean()
   public rawBody?: boolean
-
-
 
   /**
    * Whether to block trackers for all items
