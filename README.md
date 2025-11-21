@@ -27,9 +27,9 @@ Configuration is provided through environment variables and validated on startup
 | `MAX_CONCURRENCY` | Global limit for concurrent Playwright/Extractor tasks across all endpoints. Enforced via in-memory limiter (p-limit). | `3` |
 | `DEFAULT_MODE` | Scraper mode (`extractor` / `playwright`) | `extractor` |
 | `DEFAULT_TASK_TIMEOUT_SECS` | Per-page timeout in seconds (>=1, no upper limit) | `60` |
-| `DEFAULT_USER_AGENT` | Default user agent string (`auto` to let fingerprint-generator decide, or specify custom value) | `auto` |
-| `DEFAULT_LOCALE` | Browser locale for fingerprint generation (e.g., `en-US`, `ru-RU`) | `en-US` |
-| `DEFAULT_TIMEZONE_ID` | Timezone for browser fingerprint and date normalization. Examples: `Europe/Moscow` (UTC+3), `Europe/London` (UTC+0/UTC+1), `America/New_York` (UTC-5/UTC-4), `Europe/Berlin` (UTC+1/UTC+2), `America/Argentina/Buenos_Aires` (UTC-3) | `UTC` |
+| `DEFAULT_FINGERPRINT_USER_AGENT` | Default user agent string (`auto` to let fingerprint-generator decide, or specify custom value) | `auto` |
+| `DEFAULT_FINGERPRINT_LOCALE` | Browser locale for fingerprint generation (e.g., `en-US`, `ru-RU`) | `en-US` |
+| `DEFAULT_FINGERPRINT_TIMEZONE_ID` | Timezone for browser fingerprint and date normalization. Examples: `Europe/Moscow` (UTC+3), `Europe/London` (UTC+0/UTC+1), `America/New_York` (UTC-5/UTC-4), `Europe/Berlin` (UTC+1/UTC+2), `America/Argentina/Buenos_Aires` (UTC-3) | `UTC` |
 | `PLAYWRIGHT_HEADLESS` | Headless browser flag | `true` |
 | `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS` | Default: block analytics resources (request can override) | `true` |
 | `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` | Default: block heavy media (request can override) | `true` |
@@ -77,7 +77,7 @@ curl -X POST "http://localhost:8080/api/v1/html" \
       }'
 ```
 
-Returns the complete rendered HTML without extraction or processing. Always uses Playwright for browser automation.
+Returns complete rendered HTML without extraction or processing. Always uses Playwright for browser automation.
 
 ### 3. Submit batch job
 
@@ -120,7 +120,7 @@ curl "http://localhost:8080/api/v1/health"
 
 Returns `{ "status": "ok" }` when the service is operational.
 
-Refer to [`docs/api.md`](docs/api.md) for full REST contract, response schemas, and error envelopes.
+Refer to [`docs/api.md`](docs/api.md) for the full REST contract, response schemas, and error envelopes.
 
 ## Quick Start
 

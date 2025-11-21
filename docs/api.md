@@ -49,11 +49,11 @@ Scrapes a single web page and extracts structured article content.
   "fingerprint": {
     // Default toggle for automatic fingerprint generation. Per-request value overrides. Default: DEFAULT_FINGERPRINT_GENERATE (true).
     "generate": true,
-    // Custom or auto-generated user agent string. Omit to use DEFAULT_USER_AGENT env var, "auto" to let fingerprint-generator decide, or specify custom value.
+    // Custom or auto-generated user agent string. Omit to use DEFAULT_FINGERPRINT_USER_AGENT env var, "auto" to let fingerprint-generator decide, or specify custom value.
     "userAgent": "auto",
-    // Browser locale. Omit to use DEFAULT_LOCALE env var, "auto" to let fingerprint-generator decide, or specify custom value (e.g. "ru-RU").
+    // Browser locale. Omit to use DEFAULT_FINGERPRINT_LOCALE env var, "auto" to let fingerprint-generator decide, or specify custom value (e.g. "ru-RU").
     "locale": "auto",
-    // Browser timezone. Omit to use DEFAULT_TIMEZONE_ID env var, or specify custom value (e.g. "Europe/Moscow"). Note: "auto" is not supported.
+    // Browser timezone. Omit to use DEFAULT_FINGERPRINT_TIMEZONE_ID env var, or specify custom value (e.g. "Europe/Moscow"). Note: "auto" is not supported.
     "timezoneId": "UTC",
     // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
     "rotateOnAntiBot": true,
@@ -153,11 +153,11 @@ Retrieves raw HTML content from a web page using Playwright browser automation. 
   "fingerprint": {
     // Default toggle for automatic fingerprint generation. Per-request value overrides. Default: DEFAULT_FINGERPRINT_GENERATE (true).
     "generate": true,
-    // Custom or auto-generated user agent string. Omit to use DEFAULT_USER_AGENT env var, "auto" to let fingerprint-generator decide, or specify custom value.
+    // Custom or auto-generated user agent string. Omit to use DEFAULT_FINGERPRINT_USER_AGENT env var, "auto" to let fingerprint-generator decide, or specify custom value.
     "userAgent": "auto",
-    // Browser locale. Omit to use DEFAULT_LOCALE env var, "auto" to let fingerprint-generator decide, or specify custom value (e.g. "ru-RU").
+    // Browser locale. Omit to use DEFAULT_FINGERPRINT_LOCALE env var, "auto" to let fingerprint-generator decide, or specify custom value (e.g. "ru-RU").
     "locale": "auto",
-    // Browser timezone. Omit to use DEFAULT_TIMEZONE_ID env var, or specify custom value (e.g. "Europe/Moscow"). Note: "auto" is not supported.
+    // Browser timezone. Omit to use DEFAULT_FINGERPRINT_TIMEZONE_ID env var, or specify custom value (e.g. "Europe/Moscow"). Note: "auto" is not supported.
     "timezoneId": "UTC",
     // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
     "rotateOnAntiBot": true,
@@ -488,7 +488,7 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 ### Anti-Bot Features
 
 - **Resource blocking:** Playwright mode respects `blockTrackers` and `blockHeavyResources` flags to minimize detection
-- **Fingerprint rotation:** Browser fingerprints rotate automatically when anti-bot signals are detected (configurable via `FINGERPRINT_ROTATE_ON_ANTI_BOT`)
+- **Fingerprint rotation:** Browser fingerprints rotate automatically when anti-bot signals are detected (configurable via `DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT`)
 - **Delays and jitter:** Batch processing uses randomized delays to mimic human behavior
 
 ### Testing

@@ -154,15 +154,27 @@ export class ScraperConfig {
  * Validates and provides scraper configuration from environment variables
  */
 export default registerAs('scraper', (): ScraperConfig => {
-  const derivedDefaultLocale = process.env.DEFAULT_LOCALE ?? 'en-US'
+  // Support both new (with FINGERPRINT prefix) and legacy environment variable names
+  // for backward compatibility
+  const derivedDefaultLocale = 
+    process.env.DEFAULT_FINGERPRINT_LOCALE || 
+    process.env.DEFAULT_LOCALE || 
+    'en-US'
 
   const config = plainToClass(ScraperConfig, {
     // Default scraper settings
     defaultMode: process.env.DEFAULT_MODE ?? 'extractor',
     defaultTaskTimeoutSecs: parseInt(process.env.DEFAULT_TASK_TIMEOUT_SECS ?? '60', 10),
-    defaultUserAgent: process.env.DEFAULT_USER_AGENT ?? 'auto',
+    // Support both new and legacy variable names
+    defaultUserAgent: 
+      process.env.DEFAULT_FINGERPRINT_USER_AGENT || 
+      process.env.DEFAULT_USER_AGENT || 
+      'auto',
     defaultLocale: derivedDefaultLocale,
-    defaultTimezoneId: process.env.DEFAULT_TIMEZONE_ID ?? 'UTC',
+    defaultTimezoneId: 
+      process.env.DEFAULT_FINGERPRINT_TIMEZONE_ID || 
+      process.env.DEFAULT_TIMEZONE_ID || 
+      'UTC',
 
     // Playwright settings - default to true unless explicitly set to 'false'
     playwrightHeadless: process.env.PLAYWRIGHT_HEADLESS !== 'false',
