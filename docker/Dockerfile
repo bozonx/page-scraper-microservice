@@ -8,6 +8,7 @@ ENV LISTEN_HOST=0.0.0.0
 ENV LISTEN_PORT=8080
 ENV TZ=UTC
 ENV LOG_LEVEL=warn
+ENV PLAYWRIGHT_BROWSERS_PATH=/playwright
 
 # pnpm
 RUN corepack enable
@@ -23,15 +24,10 @@ RUN apt-get update \
     wget \
  && rm -rf /var/lib/apt/lists/*
 
-# Установка зависимостей приложения
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile --prefer-offline || pnpm install --prod --prefer-offline
-
-# Установка Playwright deps + Chromium (без devDeps в образе)
-# Скрипт сам подтянет системные зависимости (apt) и браузер
 RUN pnpm dlx playwright install --with-deps chromium firefox
 
-# Копия предсобранного приложения
 COPY dist ./dist
 
 EXPOSE 8080
