@@ -635,6 +635,15 @@ export class PageScraper implements INodeType {
 
           // Add schedule
           if (Object.keys(scheduleOptions).length > 0) {
+            if (
+              scheduleOptions.minDelayMs !== undefined &&
+              scheduleOptions.maxDelayMs !== undefined &&
+              scheduleOptions.minDelayMs > scheduleOptions.maxDelayMs
+            ) {
+              throw new Error(
+                'Validation failed: "schedule.minDelayMs" must be less than or equal to "schedule.maxDelayMs"'
+              )
+            }
             body.schedule = scheduleOptions
           }
 
