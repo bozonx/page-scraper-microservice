@@ -18,8 +18,6 @@ http://{host}:{port}/{API_BASE_PATH}/v1
 
 **Authentication:** No authentication is enforced by default. Implement authentication at reverse proxy or API gateway level for production deployments.
 
-**Concurrency guard:** The service enforces a global in-memory limiter sized by the `MAX_CONCURRENCY` environment variable (default `3`). All scrape operations (single page, HTML, batch items) share this pool—when at capacity, new tasks wait until existing work finishes.
-
 ---
 
 ## Endpoints

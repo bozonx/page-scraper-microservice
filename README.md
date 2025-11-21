@@ -12,6 +12,8 @@ A production-ready NestJS microservice for extracting structured article data fr
 - **Production logging:** Pino logger with request context, sensitive data redaction, and environment-aware formatting
 - **Type-safe validation:** Class-validator DTOs with consistent error responses across all endpoints
 
+**Concurrency guard:** The service enforces a global in-memory limiter sized by the `MAX_CONCURRENCY` environment variable (default `3`). All scrape operations (single page, HTML, batch items) share this pool—when at capacity, new tasks wait until existing work finishes.
+
 ## Configuration
 
 Configuration is provided through environment variables and validated on startup. Production defaults are documented in [`env.production.example`](env.production.example).

@@ -1,6 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
-import { createTestApp } from './test-app.factory.js'
-import { startTestServer } from './test-server.js'
+import { createTestApp } from '../helpers/test-app.factory.js'
+import { startTestServer } from '../helpers/test-server.js'
 
 describe('Scraper Playwright (e2e)', () => {
   let app: NestFastifyApplication
@@ -10,7 +10,7 @@ describe('Scraper Playwright (e2e)', () => {
   beforeAll(async () => {
     testServer = startTestServer()
     // Даем серверу время запуститься
-    await new Promise(resolve => setTimeout(resolve, 500))
+    await new Promise((resolve) => setTimeout(resolve, 500))
     app = await createTestApp()
   }, 15000)
 
