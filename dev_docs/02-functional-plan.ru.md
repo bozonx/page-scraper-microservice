@@ -63,16 +63,13 @@ graph TB
   "url": "https://example.com/article",
   "mode": "extractor|playwright",
   "taskTimeoutSecs": 30,
-  "locale": "en-US",
-  "dateLocale": "ru",
-  "timezoneId": "UTC",
   "blockTrackers": true,
   "blockHeavyResources": true,
   "fingerprint": {
     "generate": true,
     "userAgent": "auto",
-    "locale": "source",
-    "timezoneId": "source",
+    "locale": "en-US",
+    "timezoneId": "UTC",
     "rotateOnAntiBot": true,
     "generator": {
       "browsers": ["chrome"]
@@ -112,16 +109,13 @@ graph TB
   "commonSettings": {
     "mode": "extractor",
     "taskTimeoutSecs": 30,
-    "locale": "en-US",
-    "timezoneId": "UTC",
-    "dateLocale": "ru",
     "blockTrackers": true,
     "blockHeavyResources": true,
     "fingerprint": {
       "generate": true,
       "userAgent": "auto",
-      "locale": "source",
-      "timezoneId": "source",
+      "locale": "en-US",
+      "timezoneId": "UTC",
       "rotateOnAntiBot": true,
       "generator": {
         "browsers": ["chrome"]
@@ -233,10 +227,8 @@ graph TB
 - `DEFAULT_MODE` — режим скрапинга по умолчанию (`extractor|playwright`)
 - `DEFAULT_TASK_TIMEOUT_SECS` — таймаут задачи по умолчанию в секундах (по умолчанию `60`)
 - `DEFAULT_USER_AGENT` — пользовательский агент по умолчанию (`auto|yourString`)
-- `DEFAULT_LOCALE` — локаль по умолчанию (например `en-US`)
- Примеры: Europe/Moscow (UTC+3), Europe/London (UTC+0/UTC+1), America/New_York (UTC-5/UTC-4), Europe/Berlin (UTC+1/UTC+2), America/Argentina/Buenos_Aires (UTC-3)
-- `DEFAULT_TIMEZONE_ID` — часовой пояс по умолчанию (например `UTC`)
-- `DEFAULT_DATE_LOCALE` — локаль для парсинга дат по умолчанию (например `ru`)
+- `DEFAULT_LOCALE` — локаль браузера для генерации отпечатка (например `en-US`, `ru-RU`)
+- `DEFAULT_TIMEZONE_ID` — часовой пояс для отпечатка браузера и нормализации дат (например `UTC`). Примеры: Europe/Moscow (UTC+3), Europe/London (UTC+0/UTC+1), America/New_York (UTC-5/UTC-4), Europe/Berlin (UTC+1/UTC+2), America/Argentina/Buenos_Aires (UTC-3)
 
 ### Настройки браузера
 - `PLAYWRIGHT_HEADLESS` — режим без графического интерфейса (`true|false`)

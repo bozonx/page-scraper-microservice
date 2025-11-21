@@ -26,11 +26,10 @@ Configuration is provided through environment variables and validated on startup
 | `LOG_LEVEL` | Pino log level (`trace`…`silent`) | `warn` |
 | `MAX_CONCURRENCY` | Global limit for concurrent Playwright/Extractor tasks across all endpoints. Enforced via in-memory limiter (p-limit). | `3` |
 | `DEFAULT_MODE` | Scraper mode (`extractor` / `playwright`) | `extractor` |
-| `DEFAULT_TASK_TIMEOUT_SECS` | Per-page timeout in seconds (>=1, no upper limit) | `30` |
-| `DEFAULT_LOCALE` | Preferred locale for extraction heuristics | `en-US` |
- Examples: "Europe/Moscow" (UTC+3), "Europe/London" (UTC+0/UTC+1), "America/New_York" (UTC-5/UTC-4), "Europe/Berlin" (UTC+1/UTC+2), "America/Argentina/Buenos_Aires" (UTC-3).
-| `DEFAULT_TIMEZONE_ID` | Timezone for date normalization | `UTC` |
-| `DEFAULT_DATE_LOCALE` | Locale used for date parsing | falls back to `DEFAULT_LOCALE` if unset |
+| `DEFAULT_TASK_TIMEOUT_SECS` | Per-page timeout in seconds (>=1, no upper limit) | `60` |
+| `DEFAULT_USER_AGENT` | Default user agent string (`auto` to let fingerprint-generator decide, or specify custom value) | `auto` |
+| `DEFAULT_LOCALE` | Browser locale for fingerprint generation (e.g., `en-US`, `ru-RU`) | `en-US` |
+| `DEFAULT_TIMEZONE_ID` | Timezone for browser fingerprint and date normalization. Examples: `Europe/Moscow` (UTC+3), `Europe/London` (UTC+0/UTC+1), `America/New_York` (UTC-5/UTC-4), `Europe/Berlin` (UTC+1/UTC+2), `America/Argentina/Buenos_Aires` (UTC-3) | `UTC` |
 | `PLAYWRIGHT_HEADLESS` | Headless browser flag | `true` |
 | `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS` | Default: block analytics resources (request can override) | `true` |
 | `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` | Default: block heavy media (request can override) | `true` |
@@ -195,12 +194,6 @@ The Dockerfile includes Playwright browser dependencies for full rendering suppo
   - Adjust `MAX_CONCURRENCY` according to available CPU/RAM and Playwright capacity. Increasing the value raises resource usage; decreasing it provides stronger isolation.
 
 
-## License
-
-MIT License. See [`LICENSE`](LICENSE) for full details.
-
----
-
 ## Development Reference
 
 | Task | Command |
@@ -228,23 +221,9 @@ MIT License. See [`LICENSE`](LICENSE) for full details.
 | `pnpm run lint` | Run ESLint |
 | `pnpm run format` | Format code with Prettier |
 
-### Test Organization
-
-```
-test/
-├── unit/                          # Unit tests for services and utilities
-│   ├── article-extractor.service.spec.ts
-│   ├── fingerprint.service.spec.ts
-│   ├── health.controller.spec.ts
-│   └── ...
-├── e2e/                           # End-to-end API tests
-│   ├── health.e2e-spec.ts        # Health endpoint tests
-│   ├── scraper-mk-ru.e2e-spec.ts # Real scraping scenarios
-│   └── examples/                  # Test fixtures (HTML files)
-├── setup/                         # Jest configuration
-│   ├── unit.setup.ts
-│   └── e2e.setup.ts
-└── helpers/                       # Test utilities and mocks
-```
-
 **Testing Philosophy:** E2E tests use minimal mocking—only HTTP requests are intercepted to return local HTML fixtures. All parsing, conversion, and extraction logic runs without mocks to ensure realistic validation.
+
+
+## License
+
+MIT License. See [`LICENSE`](LICENSE) for full details.
