@@ -442,7 +442,7 @@ When a webhook is configured, the service POSTs the following JSON after the job
 **Delivery Behavior:**
 - **Retry logic:** Exponential backoff with formula `backoffMs * 2^(attempt-1)` plus 10% jitter
 - **Max attempts:** Controlled by `maxAttempts` configuration (default: `DEFAULT_WEBHOOK_MAX_ATTEMPTS` = 3)
-- **Timeout:** Each webhook request times out after `WEBHOOK_TIMEOUT_MS` milliseconds (default: 10000, global setting that cannot be overridden per request)
+- **Timeout:** Each webhook request times out after `WEBHOOK_TIMEOUT_SECS` seconds (default: 10, global setting that cannot be overridden per request)
 - **Trigger:** Webhook is sent when batch reaches a terminal state (`succeeded`, `failed`, or `partial`)
 - **One-shot on shutdown:** If service shutdown cancels remaining work, the batch is finalized as `partial` and a one-shot webhook is awaited. If delivery fails, batch remains `partial` and no further action is taken
 - **Default values:** `DEFAULT_WEBHOOK_BACKOFF_MS` and `DEFAULT_WEBHOOK_MAX_ATTEMPTS` are used as fallbacks when per-request values are not provided
