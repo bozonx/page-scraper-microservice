@@ -139,35 +139,6 @@ export class PageScraper implements INodeType {
             description: 'Maximum time for the entire operation',
           },
           {
-            displayName: 'Locale',
-            name: 'locale',
-            type: 'string',
-            default: 'en-US',
-            description: 'Preferred locale for extraction',
-            placeholder: 'en-US',
-          },
-          {
-            displayName: 'Date Locale',
-            name: 'dateLocale',
-            type: 'string',
-            displayOptions: {
-              show: {
-                '/operation': ['page'],
-              },
-            },
-            default: '',
-            description: 'Locale for date parsing (falls back to locale if empty)',
-            placeholder: 'en-US',
-          },
-          {
-            displayName: 'Timezone ID',
-            name: 'timezoneId',
-            type: 'string',
-            default: 'UTC',
-            description: 'Target timezone for date normalization',
-            placeholder: 'UTC',
-          },
-          {
             displayName: 'Block Trackers',
             name: 'blockTrackers',
             type: 'boolean',
@@ -214,17 +185,17 @@ export class PageScraper implements INodeType {
             displayName: 'Fingerprint Locale',
             name: 'locale',
             type: 'string',
-            default: 'source',
-            description: 'Browser locale or "source" to randomize',
-            placeholder: 'source',
+            default: 'auto',
+            description: 'Browser locale or "auto" to let generator decide',
+            placeholder: 'auto',
           },
           {
             displayName: 'Fingerprint Timezone',
             name: 'timezoneId',
             type: 'string',
-            default: 'source',
-            description: 'Browser timezone or "source" to randomize',
-            placeholder: 'source',
+            default: 'UTC',
+            description: 'Browser timezone ("auto" is not supported, omit to use default)',
+            placeholder: 'UTC',
           },
           {
             displayName: 'Rotate On Anti-Bot',
@@ -303,6 +274,14 @@ export class PageScraper implements INodeType {
                 ],
                 default: 'extractor',
                 description: 'Scraper mode (optional, uses common settings if empty)',
+              },
+              {
+                displayName: 'Raw Body',
+                name: 'rawBody',
+                type: 'boolean',
+                default: false,
+                description:
+                  'Whether to return body as provided by extractor (overrides common settings if set)',
               },
             ],
           },
@@ -641,6 +620,9 @@ export class PageScraper implements INodeType {
               const batchItem: Record<string, any> = { url: item.url }
               if (item.mode) {
                 batchItem.mode = item.mode
+              }
+              if (item.rawBody !== undefined) {
+                batchItem.rawBody = item.rawBody
               }
               return batchItem
             })

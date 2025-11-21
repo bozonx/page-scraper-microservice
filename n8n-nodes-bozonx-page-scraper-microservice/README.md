@@ -50,9 +50,6 @@ Extracts structured article content from a single web page.
 - **Raw Body**: Return body without Markdown conversion
 - **Additional Options**:
   - Task Timeout (seconds)
-  - Locale
-  - Date Locale
-  - Timezone ID
   - Block Trackers
   - Block Heavy Resources
 - **Fingerprint Options**:
@@ -86,7 +83,10 @@ Retrieves raw HTML content from a web page using Playwright browser automation.
 
 **Parameters:**
 - **URL** (required): Target page URL
-- **Additional Options**: Same as Scrape Page (except Date Locale)
+- **Additional Options**:
+  - Task Timeout (seconds)
+  - Block Trackers
+  - Block Heavy Resources
 - **Fingerprint Options**: Same as Scrape Page
 
 **Output:**
@@ -107,8 +107,9 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
   - Mode
   - Task Timeout (seconds)
   - Raw Body
-  - Locale
-  - Timezone ID
+  - Block Trackers
+  - Block Heavy Resources
+  - Fingerprint (same shape as Scrape Page fingerprint options)
 - **Schedule Options**: Control request pacing
   - Min Delay (ms): 500-3600000, default 1500
   - Max Delay (ms): 1000-3600000, default 4000
@@ -192,6 +193,10 @@ docker run -d \
   -p 8080:8080 \
   -e MAX_CONCURRENCY=3 \
   -e DEFAULT_TASK_TIMEOUT_SECS=30 \
+  -e DEFAULT_BATCH_MIN_DELAY_MS=1500 \
+  -e DEFAULT_BATCH_MAX_DELAY_MS=4000 \
+  -e DEFAULT_WEBHOOK_BACKOFF_MS=1000 \
+  -e DEFAULT_WEBHOOK_MAX_ATTEMPTS=3 \
   bozonx/page-scraper-microservice:latest
 ```
 
