@@ -137,66 +137,6 @@ export class ScraperController {
    * @returns ScraperException
    */
   private handleScraperError(error: unknown): ScraperException {
-    const errorMessage = error instanceof Error ? error.message : String(error)
-
-    // Check if it's already a ScraperException
-    if (error instanceof ScraperException) {
-      return error
-    }
-
-    // Convert to appropriate ScraperException based on error message
-    const errorCode = this.getErrorCode(errorMessage)
-
-    switch (errorCode) {
-      case 504:
-        return new ScraperTimeoutException(errorMessage)
-      case 502:
-        return new ScraperBrowserException(errorMessage)
-      case 400:
-        return new ScraperValidationException(errorMessage)
-      default:
-        return new ScraperContentExtractionException(errorMessage)
-    }
-  }
-
-  /**
-   * Determines appropriate HTTP status code based on error message content
-   * @param errorMessage The error message to analyze
-   * @returns HTTP status code
-   */
-  private getErrorCode(errorMessage: string): number {
-    const lowerError = errorMessage.toLowerCase()
-
-    // Check for browser/engine errors
-    if (
-      lowerError.includes('browser') ||
-      lowerError.includes('playwright') ||
-      lowerError.includes('navigation') ||
-      lowerError.includes('launch') ||
-      lowerError.includes('page crashed') ||
-      lowerError.includes('crashed') ||
-      lowerError.includes('crash') ||
-      lowerError.includes('engine')
-    ) {
-      return 502
-    }
-
-    // Check for timeout errors
-    if (lowerError.includes('timeout') || lowerError.includes('timed out')) {
-      return 504
-    }
-
-    // Check for validation errors
-    if (
-      lowerError.includes('validation') ||
-      lowerError.includes('invalid') ||
-      lowerError.includes('malformed') ||
-      lowerError.includes('not valid')
-    ) {
-      return 400
-    }
-
-    // Default to content extraction error
-    return 422
+    return ScraperException.fromUnknown(error)
   }
 }

@@ -23,6 +23,52 @@ export class ScraperException extends HttpException {
       code
     )
   }
+  /**
+   * Converts any error into a ScraperException
+   * @param error The error to convert
+   * @returns ScraperException
+   */
+  static fromUnknown(error: unknown): ScraperException {
+    // Check if it's already a ScraperException
+    if (error instanceof ScraperException) {
+      return error
+    }
+
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    const lowerError = errorMessage.toLowerCase()
+
+    // Check for browser/engine errors
+    if (
+      lowerError.includes('browser') ||
+      lowerError.includes('playwright') ||
+      lowerError.includes('navigation') ||
+      lowerError.includes('launch') ||
+      lowerError.includes('page crashed') ||
+      lowerError.includes('crashed') ||
+      lowerError.includes('crash') ||
+      lowerError.includes('engine')
+    ) {
+      return new ScraperBrowserException(errorMessage)
+    }
+
+    // Check for timeout errors
+    if (lowerError.includes('timeout') || lowerError.includes('timed out')) {
+      return new ScraperTimeoutException(errorMessage)
+    }
+
+    // Check for validation errors
+    if (
+      lowerError.includes('validation') ||
+      lowerError.includes('invalid') ||
+      lowerError.includes('malformed') ||
+      lowerError.includes('not valid')
+    ) {
+      return new ScraperValidationException(errorMessage)
+    }
+
+    // Default to content extraction error
+    return new ScraperContentExtractionException(errorMessage)
+  }
 }
 
 /**

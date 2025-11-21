@@ -17,6 +17,7 @@ import {
 } from '../dto/batch.dto.js'
 import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
 import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
+import { ScraperException } from '../../../common/exceptions/scraper.exception.js'
 
 /**
  * Internal batch job interface
@@ -301,23 +302,25 @@ export class BatchService implements OnApplicationShutdown {
         this.addJobResult(jobId, itemResult, true)
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error)
-
-      const errorObj = {
-        code: 422,
-        message: 'Failed to extract content from page',
-        details: errorMessage,
-      }
+      // Convert to ScraperException to get structured error info
+      const scraperException = ScraperException.fromUnknown(error)
+      const errorResponse = scraperException.getResponse() as any
+      const errorDetails = errorResponse.error
 
       const itemResult: BatchItemResultDto = {
         url: item.url,
         status: 'failed',
-        error: errorObj,
+        error: {
+          code: scraperException.getStatus(),
+          message: errorDetails.message || scraperException.message,
+          details: errorDetails.details,
+        },
       }
 
       // Capture first error for message if not set yet
       if (!job.statusMeta?.message) {
-        const msg = `Task ${index} error: ${errorMessage}`
+        const errorMsg = itemResult.error?.details || itemResult.error?.message
+        const msg = `Task ${index} error: ${errorMsg}`
         job.statusMeta = {
           succeeded: job.succeeded,
           failed: job.failed + 1,
