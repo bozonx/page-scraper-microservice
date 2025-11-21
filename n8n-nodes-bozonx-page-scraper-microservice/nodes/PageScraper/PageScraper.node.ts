@@ -454,7 +454,7 @@ export class PageScraper implements INodeType {
             displayName: 'Timeout (Seconds)',
             name: 'timeoutSecs',
             type: 'number',
-            default: 10,
+            default: 30,
             description:
               'Timeout in seconds for webhook HTTP requests (1-600). Defaults to DEFAULT_WEBHOOK_TIMEOUT_SECS when omitted',
           },
