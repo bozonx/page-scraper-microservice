@@ -192,7 +192,7 @@ This node requires a running instance of the Page Scraper microservice. See the 
 docker run -d \
   -p 8080:8080 \
   -e MAX_CONCURRENCY=3 \
-  -e DEFAULT_TASK_TIMEOUT_SECS=30 \
+  -e DEFAULT_TASK_TIMEOUT_SECS=60 \
   -e DEFAULT_BATCH_MIN_DELAY_MS=1500 \
   -e DEFAULT_BATCH_MAX_DELAY_MS=4000 \
   -e DEFAULT_WEBHOOK_BACKOFF_MS=1000 \

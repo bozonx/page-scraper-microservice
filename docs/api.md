@@ -38,8 +38,8 @@ Scrapes a single web page and extracts structured article content.
   "mode": "extractor",
   // If true returns body as provided by extractor (no Markdown conversion). Default: false.
   "rawBody": false,
-  // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30). No enforced maximum.
-  "taskTimeoutSecs": 30,
+  // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (60). No enforced maximum.
+  "taskTimeoutSecs": 60,
 
   // Default Playwright behavior blocks analytics/tracking scripts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS (true).
   "blockTrackers": true,
@@ -142,8 +142,8 @@ Retrieves raw HTML content from a web page using Playwright browser automation. 
 {
   // Target page to retrieve HTML from (required)
   "url": "https://example.com/page",
-  // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30). No enforced maximum.
-  "taskTimeoutSecs": 30,
+  // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (60). No enforced maximum.
+  "taskTimeoutSecs": 60,
 
   // Default Playwright behavior blocks analytics/tracking scripts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS (true).
   "blockTrackers": true,
@@ -483,7 +483,7 @@ Validation failures emitted by Nest's `ValidationPipe` are normalized to:
 
 - **Task timeout:** `taskTimeoutSecs` defines the total time budget for a single scraping task with no enforced upper limit
 - **Scope:** This timeout caps the entire operation including HTTP requests, browser navigation, and content extraction
-- **Defaults:** 30 seconds per task (configurable via `DEFAULT_TASK_TIMEOUT_SECS`)
+- **Defaults:** 60 seconds per task (configurable via `DEFAULT_TASK_TIMEOUT_SECS`)
 
 ### Anti-Bot Features
 
