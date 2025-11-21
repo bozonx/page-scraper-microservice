@@ -1,11 +1,13 @@
 {
   "name": "n8n-nodes-bozonx-page-scraper-microservice",
   "version": "1.0.0",
-  "description": "n8n nodes for BozonX Page Scraper microservice (params and start batch)",
+  "description": "n8n node for Page Scraper microservice - extract structured content, retrieve HTML, and process URLs in batches",
   "license": "MIT",
   "keywords": [
     "n8n-community-node-package",
     "page-scraper",
+    "web-scraping",
+    "content-extraction",
     "bozonx"
   ],
   "author": {
@@ -13,7 +15,7 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/bozonx/page-scraper-microservice"
   },
   "scripts": {
     "build": "n8n-node build",

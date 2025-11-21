@@ -4,7 +4,7 @@ export class BozonxMicroservicesApi implements ICredentialType {
   name = 'bozonxMicroservicesApi'
   displayName = 'Bozonx Microservices API'
   documentationUrl =
-    'https://github.com/bozonx/news-crawler-microservice/tree/main/n8n-nodes-bozonx-news-crawler-microservice#readme'
+    'https://github.com/bozonx/page-scraper-microservice/tree/main/n8n-nodes-bozonx-page-scraper-microservice#readme'
   icon: Icon = {
     light: 'file:bozonxMicroservicesApi.svg',
     dark: 'file:bozonxMicroservicesApi.dark.svg',
