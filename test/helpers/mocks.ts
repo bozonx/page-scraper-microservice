@@ -95,7 +95,7 @@ export const createMockArticleExtractor = (overrides: Partial<IArticleExtractor>
         url,
       })
     ),
-    extractFromHtml: jest.fn((html: string, _options?: any) =>
+    extractFromHtml: jest.fn((html: string, _url?: string | null, _options?: any) =>
       Promise.resolve({
         title: 'Mock Article Title',
         content: html || '<p>Mock article content</p>',

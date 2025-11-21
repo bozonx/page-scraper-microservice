@@ -18,8 +18,9 @@ export interface IArticleExtractor {
   /**
    * Extract article content from HTML
    * @param html HTML content to extract article from
+   * @param url Optional URL of the page (helps with relative links and metadata)
    * @param options Optional extraction options
    * @returns Promise with extracted article data
    */
-  extractFromHtml(html: string, options?: IArticleExtractorOptions): Promise<any>
+  extractFromHtml(html: string, url?: string | null, options?: IArticleExtractorOptions): Promise<any>
 }

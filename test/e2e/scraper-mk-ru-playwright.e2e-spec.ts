@@ -5,10 +5,10 @@ import { startTestServer } from '../helpers/test-server.js'
 describe('Scraper Playwright (e2e)', () => {
   let app: NestFastifyApplication
   let testServer: ReturnType<typeof startTestServer>
-  const targetUrl = 'http://localhost:8080/test-page'
+  const targetUrl = 'http://localhost:8081/test-page'
 
   beforeAll(async () => {
-    testServer = startTestServer()
+    testServer = startTestServer(8081)
     // Даем серверу время запуститься
     await new Promise((resolve) => setTimeout(resolve, 500))
     app = await createTestApp()

@@ -43,14 +43,15 @@ export class ArticleExtractorService implements IArticleExtractor {
 
   /**
    * Extract article content from HTML
-   * @param html HTML content to extract article from
+   * @param url Optional URL of the page
+   * @param options Optional extraction options
    * @returns Promise with extracted article data
    */
-  async extractFromHtml(html: string, options?: IArticleExtractorOptions): Promise<any> {
+  async extractFromHtml(html: string, url?: string | null, options?: IArticleExtractorOptions): Promise<any> {
     try {
       this.logger.debug('Extracting article from HTML content')
       const mod = await this.getModule()
-      return await mod.extractFromHtml(html, options)
+      return await mod.extractFromHtml(html, url, options)
     } catch (error) {
       this.logger.error('Failed to extract article from HTML:', error)
       throw error

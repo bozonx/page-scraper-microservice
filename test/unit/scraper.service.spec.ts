@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from '@/modules/scraper/services/scraper.service.js'
+import { BrowserService } from '@/modules/scraper/services/browser.service.js'
 import { FingerprintService } from '@/modules/scraper/services/fingerprint.service.js'
 import { TurndownConverterService } from '@/modules/scraper/services/turndown.service.js'
 import type { ScraperRequestDto } from '@/modules/scraper/dto/scraper-request.dto.js'
@@ -37,6 +38,18 @@ describe('ScraperService (unit)', () => {
       timezone: 'UTC',
     } as any)),
     shouldRotateFingerprint: jest.fn(() => false),
+  }
+
+  const browserService = {
+    withPage: jest.fn(async (callback) => {
+      const page = {
+        route: jest.fn(),
+        goto: jest.fn(),
+        content: jest.fn().mockResolvedValue('<html><body><h1>Hello</h1></body></html>'),
+        close: jest.fn(),
+      }
+      return callback(page)
+    }),
   }
 
   const scraperConfig: ScraperConfig = {
@@ -85,6 +98,7 @@ describe('ScraperService (unit)', () => {
             run: <T>(fn: () => Promise<T>) => fn(),
           },
         },
+        { provide: BrowserService, useValue: browserService },
       ],
     }).compile()
 

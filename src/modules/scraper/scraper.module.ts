@@ -9,6 +9,7 @@ import { ArticleExtractorService } from './services/article-extractor.service.js
 import { CleanupService } from './services/cleanup.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
 import { ConcurrencyService } from './services/concurrency.service.js'
+import { BrowserService } from './services/browser.service.js'
 
 /**
  * Scraper module
@@ -26,6 +27,7 @@ import { ConcurrencyService } from './services/concurrency.service.js'
     CleanupService,
     MemoryStoreService,
     ConcurrencyService,
+    BrowserService,
     {
       // Provide article extractor as an interface for better testability
       provide: 'IArticleExtractor',
@@ -41,7 +43,8 @@ import { ConcurrencyService } from './services/concurrency.service.js'
     CleanupService,
     MemoryStoreService,
     ConcurrencyService,
+    BrowserService,
     'IArticleExtractor',
   ],
 })
-export class ScraperModule {}
+export class ScraperModule { }

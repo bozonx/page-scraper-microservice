@@ -1,9 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
-import { PlaywrightCrawler, Configuration } from 'crawlee'
-import type { PlaywrightCrawlerOptions } from 'crawlee'
-import { FingerprintInjector } from 'fingerprint-injector'
+import { BrowserService } from './browser.service.js'
 import { ScraperConfig } from '../../../config/scraper.config.js'
 import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
 import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
@@ -21,7 +19,6 @@ import { ConcurrencyService } from './concurrency.service.js'
 @Injectable()
 export class ScraperService {
   private readonly maxRetries = 3
-  private readonly fingerprintInjector = new FingerprintInjector()
 
   constructor(
     private readonly configService: ConfigService,
@@ -29,7 +26,8 @@ export class ScraperService {
     private readonly logger: PinoLogger,
     private readonly turndownConverterService: TurndownConverterService,
     @Inject('IArticleExtractor') private readonly articleExtractor: IArticleExtractor,
-    private readonly concurrencyService: ConcurrencyService
+    private readonly concurrencyService: ConcurrencyService,
+    private readonly browserService: BrowserService
   ) {
     this.logger.setContext(ScraperService.name)
   }
@@ -169,98 +167,53 @@ export class ScraperService {
     fingerprint: any
   ): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-    const articleExtractor = this.articleExtractor // Store reference to use inside callback
-    const fingerprintInjector = this.fingerprintInjector
+    const articleExtractor = this.articleExtractor
 
-    let extracted: any | undefined
-    let runError: Error | null = null
+    return this.browserService.withPage(async (page) => {
+      // Determine effective blocking flags
+      const effectiveBlockTrackers =
+        request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+      const effectiveBlockHeavy =
+        request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
 
-    // Configure Playwright crawler
-    const launchContext = {
-      launchOptions: {
+      // Block trackers and heavy resources
+      if (effectiveBlockTrackers) {
+        await page.route(
+          '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
+          (route) => route.abort()
+        )
+      }
+
+      if (effectiveBlockHeavy) {
+        await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
+          route.abort()
+        )
+      }
+
+      // Navigate to page
+      await page.goto(request.url, {
+        waitUntil: 'networkidle',
         timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
-        headless: scraperConfig.playwrightHeadless,
-      },
-    } satisfies PlaywrightCrawlerOptions['launchContext']
+      })
 
-    const crawler = new PlaywrightCrawler(
-      {
-        launchContext,
-        requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
-        navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+      // Get HTML content
+      const html = await page.content()
 
-        preNavigationHooks: [
-          async ({ page }) => {
-            // Attach fingerprint using injector
-            if (fingerprint && fingerprint.fingerprint) {
-              try {
-                await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
-              } catch (fpError) {
-                // Log but don't fail - continue without fingerprint
-                this.logger.warn('Failed to attach fingerprint:', fpError)
-              }
-            }
-          },
-        ],
+      // Extract content using article extractor with same header hints
+      const headers: Record<string, string> = {}
+      if (fingerprint.headers?.['Accept-Language'])
+        headers['Accept-Language'] = fingerprint.headers['Accept-Language']
+      if (fingerprint.headers?.['User-Agent'])
+        headers['User-Agent'] = fingerprint.headers['User-Agent']
 
-        async requestHandler({ page }) {
-          try {
-            // Determine effective blocking flags: request overrides default config when provided
-            const effectiveBlockTrackers =
-              request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
-            const effectiveBlockHeavy =
-              request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
+      const extracted = await articleExtractor.extractFromHtml(html, request.url, { headers })
 
-            // Block trackers and heavy resources based on effective flags
-            if (effectiveBlockTrackers) {
-              await page.route(
-                '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
-                (route) => route.abort()
-              )
-            }
+      if (!extracted) {
+        throw new Error('Content extraction resulted in empty response')
+      }
 
-            if (effectiveBlockHeavy) {
-              await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
-                route.abort()
-              )
-            }
-
-            // Navigate to page
-            await page.goto(request.url, {
-              waitUntil: 'networkidle',
-            })
-
-            // Get HTML content
-            const html = await page.content()
-
-            // Extract content using article extractor with same header hints
-            const headers: Record<string, string> = {}
-            if (fingerprint.headers?.['Accept-Language'])
-              headers['Accept-Language'] = fingerprint.headers['Accept-Language']
-            if (fingerprint.headers?.['User-Agent'])
-              headers['User-Agent'] = fingerprint.headers['User-Agent']
-            extracted = await articleExtractor.extractFromHtml(html, { headers })
-          } catch (error) {
-            runError = error instanceof Error ? error : new Error(String(error))
-          }
-        },
-
-        failedRequestHandler({ request: req, error }) {
-          const errorMessage = error instanceof Error ? error.message : String(error)
-          runError = new Error(`Failed to load ${req.url}: ${errorMessage}`)
-        },
-      },
-      new Configuration({ persistStorage: false })
-    )
-
-    // Run with a single URL without persisting storage
-    await crawler.run([request.url])
-
-    if (runError) throw runError
-    if (typeof extracted === 'undefined') {
-      throw new Error('Content extraction resulted in empty response')
-    }
-    return extracted
+      return extracted
+    }, fingerprint)
   }
 
   /**
@@ -324,88 +277,42 @@ export class ScraperService {
    */
   private async getHtmlWithPlaywright(request: HtmlRequestDto, fingerprint: any): Promise<string> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-    const fingerprintInjector = this.fingerprintInjector
 
-    let htmlContent: string | undefined
-    let runError: Error | null = null
+    return this.browserService.withPage(async (page) => {
+      // Determine effective blocking flags
+      const effectiveBlockTrackers =
+        request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+      const effectiveBlockHeavy =
+        request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
 
-    // Configure Playwright crawler
-    const launchContext = {
-      launchOptions: {
+      // Block trackers and heavy resources
+      if (effectiveBlockTrackers) {
+        await page.route(
+          '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
+          (route) => route.abort()
+        )
+      }
+
+      if (effectiveBlockHeavy) {
+        await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
+          route.abort()
+        )
+      }
+
+      // Navigate to page
+      await page.goto(request.url, {
+        waitUntil: 'networkidle',
         timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
-        headless: scraperConfig.playwrightHeadless,
-      },
-    } satisfies PlaywrightCrawlerOptions['launchContext']
+      })
 
-    const crawler = new PlaywrightCrawler(
-      {
-        launchContext,
-        requestHandlerTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
-        navigationTimeoutSecs: request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs,
+      // Get raw HTML content
+      const htmlContent = await page.content()
 
-        preNavigationHooks: [
-          async ({ page }) => {
-            // Attach fingerprint using injector
-            if (fingerprint && fingerprint.fingerprint) {
-              try {
-                await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
-              } catch (fpError) {
-                // Log but don't fail - continue without fingerprint
-                console.warn('Failed to attach fingerprint:', fpError)
-              }
-            }
-          },
-        ],
+      if (!htmlContent) {
+        throw new Error('HTML retrieval resulted in empty response')
+      }
 
-        async requestHandler({ page }) {
-          try {
-            // Determine effective blocking flags: request overrides default config when provided
-            const effectiveBlockTrackers =
-              request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
-            const effectiveBlockHeavy =
-              request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
-
-            // Block trackers and heavy resources based on effective flags
-            if (effectiveBlockTrackers) {
-              await page.route(
-                '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
-                (route) => route.abort()
-              )
-            }
-
-            if (effectiveBlockHeavy) {
-              await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
-                route.abort()
-              )
-            }
-
-            // Navigate to page
-            await page.goto(request.url, {
-              waitUntil: 'networkidle',
-            })
-
-            // Get raw HTML content
-            htmlContent = await page.content()
-          } catch (error) {
-            runError = error instanceof Error ? error : new Error(String(error))
-          }
-        },
-
-        failedRequestHandler({ request: req, error }) {
-          const errorMessage = error instanceof Error ? error.message : String(error)
-          runError = new Error(`Failed to load ${req.url}: ${errorMessage}`)
-        },
-      },
-      new Configuration({ persistStorage: false })
-    )
-
-    // Run with a single URL without persisting storage
-    await crawler.run([request.url])
-
-    if (runError) throw runError
-    if (typeof htmlContent === 'undefined') {
-      throw new Error('HTML retrieval resulted in empty response')
-    }
-    return htmlContent
+      return htmlContent
+    }, fingerprint)
   }
 }
