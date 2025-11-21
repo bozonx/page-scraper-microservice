@@ -64,7 +64,7 @@ export class FingerprintService {
       browsers: fingerprintConfig.generator?.browsers?.map(b => ({ name: b })) || [{ name: 'chrome' }],
       operatingSystems: fingerprintConfig.generator?.operatingSystems || ['windows'],
       devices: fingerprintConfig.generator?.devices || ['desktop'],
-      locales: fingerprintConfig.generator?.locales || ['en-US'],
+      locales: fingerprintConfig.generator?.locales || [scraperConfig.defaultLocale],
     }
 
     // If specific user agent is requested, we can't easily force it in fingerprint-generator 

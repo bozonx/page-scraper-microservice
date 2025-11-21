@@ -110,10 +110,6 @@ export class ScraperService {
     if (fp.headers?.['User-Agent']) {
       headers['User-Agent'] = fp.headers['User-Agent']
     }
-    // Provide timezone hint for downstream parsing/heuristics
-    if (fp.timezone) {
-      headers['X-Timezone-Id'] = fp.timezone
-    }
 
     return await this.articleExtractor.extract(request.url, { headers })
   }
@@ -235,7 +231,6 @@ export class ScraperService {
             const headers: Record<string, string> = {}
             if (fingerprint.headers?.['Accept-Language']) headers['Accept-Language'] = fingerprint.headers['Accept-Language']
             if (fingerprint.headers?.['User-Agent']) headers['User-Agent'] = fingerprint.headers['User-Agent']
-            if (fingerprint.timezone) headers['X-Timezone-Id'] = fingerprint.timezone
             extracted = await articleExtractor.extractFromHtml(html, { headers })
           } catch (error) {
             runError = error instanceof Error ? error : new Error(String(error))
@@ -347,7 +342,12 @@ export class ScraperService {
           async ({ page }) => {
             // Attach fingerprint using injector
             if (fingerprint && fingerprint.fingerprint) {
-              await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
+              try {
+                await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
+              } catch (fpError) {
+                // Log but don't fail - continue without fingerprint
+                console.warn('Failed to attach fingerprint:', fpError)
+              }
             }
           },
         ],

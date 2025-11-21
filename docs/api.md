@@ -51,9 +51,9 @@ Scrapes a single web page and extracts structured article content.
     "generate": true,
     // Custom or auto-generated user agent string. Use "auto" to let the service decide.
     "userAgent": "auto",
-    // Browser locale; "source" randomizes from a curated list.
+    // Browser locale; "source" randomizes from a curated list. Defaults to DEFAULT_LOCALE env var if not specified.
     "locale": "source",
-    // Browser timezone; "source" randomizes common zones.
+    // Browser timezone; "source" randomizes common zones. Defaults to DEFAULT_TIMEZONE_ID env var if not specified.
     "timezoneId": "source",
     // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
     "rotateOnAntiBot": true,
@@ -155,9 +155,9 @@ Retrieves raw HTML content from a web page using Playwright browser automation. 
     "generate": true,
     // Custom or auto-generated user agent string. Use "auto" to let the service decide.
     "userAgent": "auto",
-    // Browser locale; "source" randomizes from a curated list.
+    // Browser locale; "source" randomizes from a curated list. Defaults to DEFAULT_LOCALE env var if not specified.
     "locale": "source",
-    // Browser timezone; "source" randomizes common zones.
+    // Browser timezone; "source" randomizes common zones. Defaults to DEFAULT_TIMEZONE_ID env var if not specified.
     "timezoneId": "source",
     // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
     "rotateOnAntiBot": true,

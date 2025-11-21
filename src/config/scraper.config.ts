@@ -28,22 +28,18 @@ export class ScraperConfig {
   public defaultUserAgent!: string
 
   /**
-   * Default locale for content extraction (affects language detection and formatting)
+   * Default locale for browser fingerprint generation (e.g. "en-US", "ru-RU")
    */
   @IsString()
   public defaultLocale!: string
 
   /**
-   * Default timezone ID for date parsing and formatting
+   * Default timezone ID for browser fingerprint (e.g. "UTC", "Europe/Moscow")
    */
   @IsString()
   public defaultTimezoneId!: string
 
-  /**
-   * Default locale for date parsing specifically (used for recognizing date formats)
-   */
-  @IsString()
-  public defaultDateLocale!: string
+
 
   // Playwright settings
   /**
@@ -158,9 +154,7 @@ export class ScraperConfig {
  * Validates and provides scraper configuration from environment variables
  */
 export default registerAs('scraper', (): ScraperConfig => {
-  // Derive locale values with proper fallbacks
   const derivedDefaultLocale = process.env.DEFAULT_LOCALE ?? 'en-US'
-  const derivedDefaultDateLocale = process.env.DEFAULT_DATE_LOCALE ?? derivedDefaultLocale
 
   const config = plainToClass(ScraperConfig, {
     // Default scraper settings
@@ -169,7 +163,6 @@ export default registerAs('scraper', (): ScraperConfig => {
     defaultUserAgent: process.env.DEFAULT_USER_AGENT ?? 'auto',
     defaultLocale: derivedDefaultLocale,
     defaultTimezoneId: process.env.DEFAULT_TIMEZONE_ID ?? 'UTC',
-    defaultDateLocale: derivedDefaultDateLocale,
 
     // Playwright settings - default to true unless explicitly set to 'false'
     playwrightHeadless: process.env.PLAYWRIGHT_HEADLESS !== 'false',

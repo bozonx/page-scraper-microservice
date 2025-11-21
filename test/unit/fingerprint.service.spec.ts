@@ -16,7 +16,7 @@ describe('FingerprintService (unit)', () => {
     defaultUserAgent: 'auto',
     defaultLocale: 'en-US',
     defaultTimezoneId: 'UTC',
-    defaultDateLocale: 'en',
+
     playwrightHeadless: true,
     playwrightNavigationTimeoutSecs: 30,
     playwrightBlockTrackers: true,
