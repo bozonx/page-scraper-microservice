@@ -3,12 +3,12 @@ FROM node:${NODE_MAJOR}-bookworm-slim
 
 WORKDIR /app
 
+ENV PLAYWRIGHT_BROWSERS_PATH=/playwright
 ENV NODE_ENV=production
 ENV LISTEN_HOST=0.0.0.0
 ENV LISTEN_PORT=8080
 ENV TZ=UTC
 ENV LOG_LEVEL=warn
-ENV PLAYWRIGHT_BROWSERS_PATH=/playwright
 
 # pnpm
 RUN corepack enable
