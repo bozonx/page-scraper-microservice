@@ -77,6 +77,12 @@ export class ScraperService {
           description: content?.description,
           date: (content as any)?.published ?? (content as any)?.publishedTime,
           author: content?.author,
+          image: (content as any)?.image,
+          favicon: (content as any)?.favicon,
+          type: (content as any)?.type,
+          source: (content as any)?.source,
+          links: (content as any)?.links,
+          ttr: (content as any)?.ttr,
           body,
           meta: {
             lang: content?.lang,
@@ -229,8 +235,10 @@ export class ScraperService {
 
             // Extract content using article extractor with same header hints
             const headers: Record<string, string> = {}
-            if (fingerprint.headers?.['Accept-Language']) headers['Accept-Language'] = fingerprint.headers['Accept-Language']
-            if (fingerprint.headers?.['User-Agent']) headers['User-Agent'] = fingerprint.headers['User-Agent']
+            if (fingerprint.headers?.['Accept-Language'])
+              headers['Accept-Language'] = fingerprint.headers['Accept-Language']
+            if (fingerprint.headers?.['User-Agent'])
+              headers['User-Agent'] = fingerprint.headers['User-Agent']
             extracted = await articleExtractor.extractFromHtml(html, { headers })
           } catch (error) {
             runError = error instanceof Error ? error : new Error(String(error))
@@ -314,10 +322,7 @@ export class ScraperService {
    * @param fingerprint Browser fingerprint to use
    * @returns Raw HTML content
    */
-  private async getHtmlWithPlaywright(
-    request: HtmlRequestDto,
-    fingerprint: any
-  ): Promise<string> {
+  private async getHtmlWithPlaywright(request: HtmlRequestDto, fingerprint: any): Promise<string> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const fingerprintInjector = this.fingerprintInjector
 

@@ -7,7 +7,7 @@ export interface ScraperMetaDto {
    * Language code of the extracted content
    */
   lang?: string
-  
+
   /**
    * Estimated reading time in minutes (calculated at 200 words per minute)
    */
@@ -28,32 +28,62 @@ export interface ScraperResponseDto {
    * Original URL that was scraped
    */
   url: string
-  
+
   /**
    * Extracted page title
    */
   title?: string
-  
+
   /**
    * Extracted page description (meta description)
    */
   description?: string
-  
+
   /**
    * Publication date of the content
    */
   date?: string
-  
+
   /**
    * Author of the content
    */
   author?: string
-  
+
+  /**
+   * Main image URL associated with the article (when available)
+   */
+  image?: string
+
+  /**
+   * Favicon URL of the page (when available)
+   */
+  favicon?: string
+
+  /**
+   * High-level content type detected by extractor (e.g., article, video)
+   */
+  type?: string
+
+  /**
+   * Source or publisher name when provided by extractor
+   */
+  source?: string
+
+  /**
+   * Outgoing links detected in the article body
+   */
+  links?: { href: string; text?: string }[]
+
+  /**
+   * Time-to-read estimate (seconds) reported by extractor
+   */
+  ttr?: number
+
   /**
    * Main content body converted to Markdown format
    */
   body?: string
-  
+
   /**
    * Additional metadata about the scraped content
    */
@@ -69,12 +99,12 @@ export interface ScraperErrorDto {
    * HTTP status code
    */
   code: number
-  
+
   /**
    * Error message
    */
   message: string
-  
+
   /**
    * Optional detailed error information
    */

@@ -103,7 +103,24 @@ curl -X POST "http://localhost:8080/api/v1/page" \
   "date": "string | null",
   // Author name when detected.
   "author": "string | null",
-  // Main article content converted to Markdown format.
+  // Main image URL associated with the article (when available).
+  "image": "string | null",
+  // Favicon URL of the page (when available).
+  "favicon": "string | null",
+  // High-level content type detected by extractor (e.g., article, video).
+  "type": "string | null",
+  // Source or publisher name when provided by extractor.
+  "source": "string | null",
+  // Outgoing links detected in the article body (when available).
+  "links": [
+    {
+      "href": "string",
+      "text": "string | null"
+    }
+  ],
+  // Time-to-read estimate (seconds) reported by extractor (if available).
+  "ttr": "number | null",
+  // Main article content converted to Markdown format (or raw HTML when rawBody=true).
   "body": "string",
   // Additional metadata collected during extraction.
   "meta": {

@@ -5,7 +5,7 @@ A production-ready NestJS microservice for extracting structured article data fr
 ## Features
 
 - **Dual scraping modes:** Extractor (@extractus/article-extractor) for fast static HTML parsing or Playwright for JavaScript-rendered content
-- **Rich article extraction:** Title, description, author, publication date, language, body (Markdown by default or raw HTML via `rawBody`), and estimated reading time
+- **Rich article extraction:** Title, description, author, publication date, language, main image, favicon, content type, source, outgoing links, body (Markdown by default or raw HTML via `rawBody`), estimated reading time, and extractor `ttr` when available
 - **Batch processing:** Asynchronous job orchestration with delays and jitter
 - **Anti-bot protection:** Rotating browser fingerprints and selective resource blocking to minimize detection
 - **Webhook notifications:** Reliable delivery with exponential backoff, retries, and authentication support
