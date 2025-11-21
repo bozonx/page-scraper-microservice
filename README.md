@@ -160,7 +160,7 @@ docker-compose up -d
 docker build -t page-scraper-microservice -f docker/Dockerfile .
 docker run --rm -p 8080:8080 \
   -e NODE_ENV=production \
-  -e LOG_LEVEL=info \
+  -e LOG_LEVEL=warn \
   page-scraper-microservice
 ```
 
