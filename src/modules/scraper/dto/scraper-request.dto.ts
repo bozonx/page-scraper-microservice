@@ -132,8 +132,6 @@ export class ScraperRequestDto {
   @IsBoolean()
   public rawBody?: boolean
 
-
-
   /**
    * Block common tracking scripts and analytics for faster page loading
    */

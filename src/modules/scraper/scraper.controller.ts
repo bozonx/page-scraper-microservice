@@ -54,27 +54,7 @@ export class ScraperController {
       return result
     } catch (error) {
       this.logger.error(`Failed to scrape ${request.url}:`, error)
-
-      const errorMessage = error instanceof Error ? error.message : String(error)
-
-      // Check if it's already a ScraperException
-      if (error instanceof ScraperException) {
-        throw error
-      }
-
-      // Convert to appropriate ScraperException based on error message
-      const errorCode = this.getErrorCode(errorMessage)
-
-      switch (errorCode) {
-        case 504:
-          throw new ScraperTimeoutException(errorMessage)
-        case 502:
-          throw new ScraperBrowserException(errorMessage)
-        case 400:
-          throw new ScraperValidationException(errorMessage)
-        default:
-          throw new ScraperContentExtractionException(errorMessage)
-      }
+      throw this.handleScraperError(error)
     }
   }
 
@@ -93,27 +73,7 @@ export class ScraperController {
       return result
     } catch (error) {
       this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
-
-      const errorMessage = error instanceof Error ? error.message : String(error)
-
-      // Check if it's already a ScraperException
-      if (error instanceof ScraperException) {
-        throw error
-      }
-
-      // Convert to appropriate ScraperException based on error message
-      const errorCode = this.getErrorCode(errorMessage)
-
-      switch (errorCode) {
-        case 504:
-          throw new ScraperTimeoutException(errorMessage)
-        case 502:
-          throw new ScraperBrowserException(errorMessage)
-        case 400:
-          throw new ScraperValidationException(errorMessage)
-        default:
-          throw new ScraperContentExtractionException(errorMessage)
-      }
+      throw this.handleScraperError(error)
     }
   }
 
@@ -168,6 +128,34 @@ export class ScraperController {
 
       const errorMessage = error instanceof Error ? error.message : String(error)
       throw new BatchJobStatusException(errorMessage)
+    }
+  }
+
+  /**
+   * Handles errors from scraper service and converts them to appropriate exceptions
+   * @param error Error to handle
+   * @returns ScraperException
+   */
+  private handleScraperError(error: unknown): ScraperException {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+
+    // Check if it's already a ScraperException
+    if (error instanceof ScraperException) {
+      return error
+    }
+
+    // Convert to appropriate ScraperException based on error message
+    const errorCode = this.getErrorCode(errorMessage)
+
+    switch (errorCode) {
+      case 504:
+        return new ScraperTimeoutException(errorMessage)
+      case 502:
+        return new ScraperBrowserException(errorMessage)
+      case 400:
+        return new ScraperValidationException(errorMessage)
+      default:
+        return new ScraperContentExtractionException(errorMessage)
     }
   }
 

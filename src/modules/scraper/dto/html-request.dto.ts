@@ -19,7 +19,7 @@ export class HtmlRequestDto {
   /**
    * URL to retrieve HTML from
    */
-  @IsUrl()
+  @IsUrl({ require_tld: false })
   public url!: string
 
   /**
@@ -29,8 +29,6 @@ export class HtmlRequestDto {
   @IsInt()
   @Min(1)
   public taskTimeoutSecs?: number
-
-
 
   /**
    * Block common tracking scripts and analytics for faster page loading

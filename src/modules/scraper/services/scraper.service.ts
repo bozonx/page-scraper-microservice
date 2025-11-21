@@ -197,7 +197,7 @@ export class ScraperService {
                 await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
               } catch (fpError) {
                 // Log but don't fail - continue without fingerprint
-                console.warn('Failed to attach fingerprint:', fpError)
+                this.logger.warn('Failed to attach fingerprint:', fpError)
               }
             }
           },
