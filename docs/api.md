@@ -49,12 +49,12 @@ Scrapes a single web page and extracts structured article content.
   "fingerprint": {
     // Default toggle for automatic fingerprint generation. Per-request value overrides. Default: DEFAULT_FINGERPRINT_GENERATE (true).
     "generate": true,
-    // Custom or auto-generated user agent string. Use "auto" to let the service decide.
+    // Custom or auto-generated user agent string. Omit to use DEFAULT_USER_AGENT env var, "auto" to let fingerprint-generator decide, or specify custom value.
     "userAgent": "auto",
-    // Browser locale; "source" randomizes from a curated list. Defaults to DEFAULT_LOCALE env var if not specified.
-    "locale": "source",
-    // Browser timezone; "source" randomizes common zones. Defaults to DEFAULT_TIMEZONE_ID env var if not specified.
-    "timezoneId": "source",
+    // Browser locale. Omit to use DEFAULT_LOCALE env var, "auto" to let fingerprint-generator decide, or specify custom value (e.g. "ru-RU").
+    "locale": "auto",
+    // Browser timezone. Omit to use DEFAULT_TIMEZONE_ID env var, or specify custom value (e.g. "Europe/Moscow"). Note: "auto" is not supported.
+    "timezoneId": "UTC",
     // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
     "rotateOnAntiBot": true,
     // Additional generator hints.
@@ -153,12 +153,12 @@ Retrieves raw HTML content from a web page using Playwright browser automation. 
   "fingerprint": {
     // Default toggle for automatic fingerprint generation. Per-request value overrides. Default: DEFAULT_FINGERPRINT_GENERATE (true).
     "generate": true,
-    // Custom or auto-generated user agent string. Use "auto" to let the service decide.
+    // Custom or auto-generated user agent string. Omit to use DEFAULT_USER_AGENT env var, "auto" to let fingerprint-generator decide, or specify custom value.
     "userAgent": "auto",
-    // Browser locale; "source" randomizes from a curated list. Defaults to DEFAULT_LOCALE env var if not specified.
-    "locale": "source",
-    // Browser timezone; "source" randomizes common zones. Defaults to DEFAULT_TIMEZONE_ID env var if not specified.
-    "timezoneId": "source",
+    // Browser locale. Omit to use DEFAULT_LOCALE env var, "auto" to let fingerprint-generator decide, or specify custom value (e.g. "ru-RU").
+    "locale": "auto",
+    // Browser timezone. Omit to use DEFAULT_TIMEZONE_ID env var, or specify custom value (e.g. "Europe/Moscow"). Note: "auto" is not supported.
+    "timezoneId": "UTC",
     // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
     "rotateOnAntiBot": true,
     // Additional generator hints.

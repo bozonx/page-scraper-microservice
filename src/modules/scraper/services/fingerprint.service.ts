@@ -75,23 +75,39 @@ export class FingerprintService {
     try {
       const fingerprint = this.generator.getFingerprint(generatorOptions)
 
-      // Override User-Agent if specified manually
-      if (fingerprintConfig.userAgent && fingerprintConfig.userAgent !== 'auto') {
+      // Handle User-Agent
+      if (!fingerprintConfig.userAgent) {
+        // undefined → use default from env
+        fingerprint.fingerprint.navigator.userAgent = scraperConfig.defaultUserAgent === 'auto'
+          ? fingerprint.fingerprint.navigator.userAgent
+          : scraperConfig.defaultUserAgent
+        fingerprint.headers['User-Agent'] = fingerprint.fingerprint.navigator.userAgent
+      } else if (fingerprintConfig.userAgent === 'auto') {
+        // 'auto' → use what fingerprint-generator created (already set)
+        // No action needed
+      } else {
+        // custom value → override
         fingerprint.fingerprint.navigator.userAgent = fingerprintConfig.userAgent
         fingerprint.headers['User-Agent'] = fingerprintConfig.userAgent
       }
 
-      // Override locale if specified manually (top level locale)
-      if (fingerprintConfig.locale && fingerprintConfig.locale !== 'source') {
-        // This is a bit hacky as we should generate with the correct locale
-        // But if we want to force it:
+      // Handle locale
+      if (!fingerprintConfig.locale) {
+        // undefined → use default from env
+        fingerprint.fingerprint.navigator.language = scraperConfig.defaultLocale
+        fingerprint.headers['Accept-Language'] = scraperConfig.defaultLocale
+      } else if (fingerprintConfig.locale === 'auto') {
+        // 'auto' → use what fingerprint-generator created (already set)
+        // No action needed
+      } else {
+        // custom value → override
         fingerprint.fingerprint.navigator.language = fingerprintConfig.locale
         fingerprint.headers['Accept-Language'] = fingerprintConfig.locale
       }
 
       this.logger.info(`Generated fingerprint: ${fingerprint.fingerprint.navigator.userAgent}`)
 
-      // Add timezone if specified
+      // Handle timezone (no 'auto' support since library doesn't generate it)
       const timezone = fingerprintConfig.timezoneId || scraperConfig.defaultTimezoneId
       if (timezone) {
         return { ...fingerprint, timezone }
