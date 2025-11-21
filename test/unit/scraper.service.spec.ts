@@ -23,20 +23,17 @@ describe('ScraperService (unit)', () => {
   const articleExtractor = createMockArticleExtractor()
   const fingerprintService: Partial<FingerprintService> = {
     generateFingerprint: jest.fn(() => ({
-      userAgent: 'UA',
-      viewport: { width: 1280, height: 720 },
-      browserName: 'chrome',
-      platform: 'Linux x86_64',
-      language: 'en-US',
-      timezone: 'UTC',
-      webgl: { vendor: 'Google Inc.', renderer: 'WebKit WebGL', version: 'WebGL 2.0' },
-      canvas: { fingerprint: 'abc123', hacked: false },
-      audio: { contextId: 1 },
-      plugins: [],
-      fonts: ['Arial'],
-      screen: { width: 1920, height: 1080, colorDepth: 24, pixelDepth: 24 },
-      hardware: { cores: 4, memory: 8, deviceMemory: 8 },
-    })),
+      fingerprint: {
+        navigator: {
+          userAgent: 'UA',
+        },
+        screen: { width: 1920, height: 1080 },
+      },
+      headers: {
+        'User-Agent': 'UA',
+        'Accept-Language': 'en-US',
+      },
+    } as any)),
     shouldRotateFingerprint: jest.fn(() => false),
   }
 

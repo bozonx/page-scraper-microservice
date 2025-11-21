@@ -13,6 +13,43 @@ import {
 import { Type } from 'class-transformer'
 
 /**
+ * Configuration for the fingerprint generator
+ */
+export class FingerprintGeneratorConfigDto {
+  /**
+   * List of browsers to simulate (e.g., ['chrome', 'firefox'])
+   */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  public browsers?: string[]
+
+  /**
+   * List of operating systems to simulate (e.g., ['windows', 'macos', 'linux'])
+   */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  public operatingSystems?: string[]
+
+  /**
+   * List of device types to simulate (e.g., ['desktop', 'mobile'])
+   */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  public devices?: string[]
+
+  /**
+   * List of locales to simulate (e.g., ['en-US', 'de-DE'])
+   */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  public locales?: string[]
+}
+
+/**
  * Fingerprint configuration for browser simulation
  * Defines parameters for generating realistic browser fingerprints
  */
@@ -57,12 +94,9 @@ export class FingerprintConfigDto {
    */
   @IsOptional()
   @IsObject()
-  public generator?: {
-    /**
-     * List of browsers to simulate (e.g., ['chrome', 'firefox'])
-     */
-    browsers: string[]
-  }
+  @ValidateNested()
+  @Type(() => FingerprintGeneratorConfigDto)
+  public generator?: FingerprintGeneratorConfigDto
 }
 
 /**

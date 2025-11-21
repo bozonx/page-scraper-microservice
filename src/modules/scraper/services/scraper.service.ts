@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { PlaywrightCrawler, Configuration } from 'crawlee'
 import type { PlaywrightCrawlerOptions } from 'crawlee'
+import { FingerprintInjector } from 'fingerprint-injector'
 import { ScraperConfig } from '../../../config/scraper.config.js'
 import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
 import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
@@ -20,6 +21,7 @@ import { ConcurrencyService } from './concurrency.service.js'
 @Injectable()
 export class ScraperService {
   private readonly maxRetries = 3
+  private readonly fingerprintInjector = new FingerprintInjector()
 
   constructor(
     private readonly configService: ConfigService,
@@ -39,53 +41,53 @@ export class ScraperService {
    */
   async scrapePage(request: ScraperRequestDto): Promise<ScraperResponseDto> {
     return this.concurrencyService.run(async () => {
-    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-    const mode = request.mode || scraperConfig.defaultMode
+      const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+      const mode = request.mode || scraperConfig.defaultMode
 
-    this.logger.info(`Scraping page: ${request.url} using mode: ${mode}`)
+      this.logger.info(`Scraping page: ${request.url} using mode: ${mode}`)
 
-    try {
-      let content: any
+      try {
+        let content: any
 
-      // Use appropriate scraping method based on mode
-      if (mode === 'playwright') {
-        content = await this.scrapeWithPlaywright(request)
-      } else {
-        // 'extractor' mode (default)
-        content = await this.scrapeWithExtractor(request)
+        // Use appropriate scraping method based on mode
+        if (mode === 'playwright') {
+          content = await this.scrapeWithPlaywright(request)
+        } else {
+          // 'extractor' mode (default)
+          content = await this.scrapeWithExtractor(request)
+        }
+
+        // Prepare body based on rawBody flag: either raw extractor output or Markdown
+        const rawHtml = content?.content ?? ''
+        const shouldReturnRaw = request.rawBody === true
+        const body = shouldReturnRaw
+          ? rawHtml
+          : rawHtml
+            ? this.turndownConverterService.convertToMarkdown(rawHtml)
+            : ''
+
+        // Calculate read time (200 wpm). Empty body => 0
+        const trimmed = body.trim()
+        const wordCount = trimmed.length ? trimmed.split(/\s+/).length : 0
+        const readTimeMin = wordCount === 0 ? 0 : Math.ceil(wordCount / 200)
+
+        return {
+          url: request.url,
+          title: content?.title,
+          description: content?.description,
+          date: (content as any)?.published ?? (content as any)?.publishedTime,
+          author: content?.author,
+          body,
+          meta: {
+            lang: content?.lang,
+            readTimeMin,
+            rawBody: shouldReturnRaw,
+          },
+        }
+      } catch (error) {
+        this.logger.error(`Failed to scrape page ${request.url}:`, error)
+        throw error
       }
-
-      // Prepare body based on rawBody flag: either raw extractor output or Markdown
-      const rawHtml = content?.content ?? ''
-      const shouldReturnRaw = request.rawBody === true
-      const body = shouldReturnRaw
-        ? rawHtml
-        : rawHtml
-        ? this.turndownConverterService.convertToMarkdown(rawHtml)
-        : ''
-
-      // Calculate read time (200 wpm). Empty body => 0
-      const trimmed = body.trim()
-      const wordCount = trimmed.length ? trimmed.split(/\s+/).length : 0
-      const readTimeMin = wordCount === 0 ? 0 : Math.ceil(wordCount / 200)
-
-      return {
-        url: request.url,
-        title: content?.title,
-        description: content?.description,
-        date: (content as any)?.published ?? (content as any)?.publishedTime,
-        author: content?.author,
-        body,
-        meta: {
-          lang: content?.lang,
-          readTimeMin,
-          rawBody: shouldReturnRaw,
-        },
-      }
-    } catch (error) {
-      this.logger.error(`Failed to scrape page ${request.url}:`, error)
-      throw error
-    }
     })
   }
 
@@ -101,13 +103,17 @@ export class ScraperService {
     const fp = this.fingerprintService.generateFingerprint(request.fingerprint)
     const headers: Record<string, string> = {}
 
-    if (request.locale || scraperConfig.defaultLocale) {
-      headers['Accept-Language'] = (request.locale || scraperConfig.defaultLocale) as string
+    // Apply generated headers (User-Agent, Accept-Language, etc.)
+    if (fp.headers) {
+      Object.assign(headers, fp.headers)
     }
-    if (fp.userAgent) {
-      headers['User-Agent'] = fp.userAgent
+
+    // Override with explicit request locale if provided
+    if (request.locale) {
+      headers['Accept-Language'] = request.locale
     }
-    // Provide timezone hint for downstream parsing/heuristics
+
+    // Provide timezone hint for downstream date parsing heuristics
     if (request.timezoneId || scraperConfig.defaultTimezoneId) {
       headers['X-Timezone-Id'] = (request.timezoneId || scraperConfig.defaultTimezoneId) as string
     }
@@ -121,8 +127,6 @@ export class ScraperService {
    * @returns Extracted content
    */
   private async scrapeWithPlaywright(request: ScraperRequestDto): Promise<any> {
-    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-
     // Generate fingerprint if enabled
     const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint)
 
@@ -138,8 +142,6 @@ export class ScraperService {
         const result = await this.scrapeWithPlaywrightInternal(request, currentFingerprint)
         return result
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-
         // Check if we should rotate fingerprint and retry
         if (
           this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint) &&
@@ -169,6 +171,7 @@ export class ScraperService {
   ): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const articleExtractor = this.articleExtractor // Store reference to use inside callback
+    const fingerprintInjector = this.fingerprintInjector
 
     let extracted: any | undefined
     let runError: Error | null = null
@@ -192,34 +195,29 @@ export class ScraperService {
 
         preNavigationHooks: [
           async ({ page }) => {
-            // Set timezone and locale via browser context
+            // Attach fingerprint using injector
+            if (fingerprint && fingerprint.fingerprint) {
+              await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
+            }
+
+            // Set timezone and locale via browser context if not already handled by fingerprint
+            // Note: fingerprint-injector handles locale and timezone if they are in the fingerprint
+            // But we might want to force the requested timezone/locale if specified
             if (tzForContext || localeForContext) {
-              await page.context().addInitScript(() => {
-                // Timezone and locale are set at context creation time
-              })
+              // We rely on Playwright's context options or fingerprint. 
+              // If fingerprint is used, it sets these. 
+              // If we want to override, we might need to do it explicitly, 
+              // but attaching fingerprint might override it back.
+              // For now, let's assume fingerprint takes precedence if generated, 
+              // but if we passed explicit params, we might want to ensure they are respected.
+              // However, changing context options after creation is tricky.
+              // Crawlee creates context with default options.
             }
           },
         ],
 
         async requestHandler({ page }) {
           try {
-            // Apply fingerprint to page context
-            if (fingerprint.userAgent) {
-              await page.addInitScript((ua) => {
-                Object.defineProperty(navigator, 'userAgent', {
-                  value: ua,
-                  writable: false,
-                })
-              }, fingerprint.userAgent)
-            }
-
-            if (fingerprint.viewport) {
-              await page.setViewportSize({
-                width: fingerprint.viewport.width,
-                height: fingerprint.viewport.height,
-              })
-            }
-
             // Determine effective blocking flags: request overrides default config when provided
             const effectiveBlockTrackers =
               request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
@@ -250,9 +248,11 @@ export class ScraperService {
 
             // Extract content using article extractor with same header hints
             const headers: Record<string, string> = {}
-            if (fingerprint.language) headers['Accept-Language'] = fingerprint.language
-            if (fingerprint.userAgent) headers['User-Agent'] = fingerprint.userAgent
+            if (fingerprint.headers) {
+              Object.assign(headers, fingerprint.headers)
+            }
             if (tzForContext) headers['X-Timezone-Id'] = tzForContext as string
+
             extracted = await articleExtractor.extractFromHtml(html, { headers })
           } catch (error) {
             runError = error instanceof Error ? error : new Error(String(error))
@@ -284,51 +284,49 @@ export class ScraperService {
    */
   async getHtml(request: HtmlRequestDto): Promise<HtmlResponseDto> {
     return this.concurrencyService.run(async () => {
-    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+      this.logger.info(`Retrieving HTML from: ${request.url}`)
 
-    this.logger.info(`Retrieving HTML from: ${request.url}`)
+      try {
+        // Generate fingerprint if enabled
+        const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint)
 
-    try {
-      // Generate fingerprint if enabled
-      const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint)
+        // Retry mechanism with fingerprint rotation
+        for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+          try {
+            // Generate new fingerprint for retry attempts
+            const currentFingerprint =
+              attempt > 0
+                ? this.fingerprintService.generateFingerprint(request.fingerprint)
+                : fingerprint
 
-      // Retry mechanism with fingerprint rotation
-      for (let attempt = 0; attempt < this.maxRetries; attempt++) {
-        try {
-          // Generate new fingerprint for retry attempts
-          const currentFingerprint =
-            attempt > 0
-              ? this.fingerprintService.generateFingerprint(request.fingerprint)
-              : fingerprint
+            const html = await this.getHtmlWithPlaywright(request, currentFingerprint)
+            return {
+              url: request.url,
+              html,
+            }
+          } catch (error) {
+            // Check if we should rotate fingerprint and retry
+            if (
+              this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint) &&
+              attempt < this.maxRetries - 1
+            ) {
+              this.logger.warn(
+                `Anti-bot detected for ${request.url}, rotating fingerprint and retrying (attempt ${attempt + 1}/${this.maxRetries})`
+              )
+              continue
+            }
 
-          const html = await this.getHtmlWithPlaywright(request, currentFingerprint)
-          return {
-            url: request.url,
-            html,
+            // If it's last attempt or no anti-bot detected, throw error
+            throw error
           }
-        } catch (error) {
-          // Check if we should rotate fingerprint and retry
-          if (
-            this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint) &&
-            attempt < this.maxRetries - 1
-          ) {
-            this.logger.warn(
-              `Anti-bot detected for ${request.url}, rotating fingerprint and retrying (attempt ${attempt + 1}/${this.maxRetries})`
-            )
-            continue
-          }
-
-          // If it's last attempt or no anti-bot detected, throw error
-          throw error
         }
-      }
 
-      // This should never be reached due to throw in loop, but TypeScript needs it
-      throw new Error('Failed to retrieve HTML after all retry attempts')
-    } catch (error) {
-      this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
-      throw error
-    }
+        // This should never be reached due to throw in loop, but TypeScript needs it
+        throw new Error('Failed to retrieve HTML after all retry attempts')
+      } catch (error) {
+        this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
+        throw error
+      }
     })
   }
 
@@ -343,6 +341,7 @@ export class ScraperService {
     fingerprint: any
   ): Promise<string> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+    const fingerprintInjector = this.fingerprintInjector
 
     let htmlContent: string | undefined
     let runError: Error | null = null
@@ -366,34 +365,15 @@ export class ScraperService {
 
         preNavigationHooks: [
           async ({ page }) => {
-            // Set timezone and locale via browser context
-            if (tzForContext || localeForContext) {
-              await page.context().addInitScript(() => {
-                // Timezone and locale are set at context creation time
-              })
+            // Attach fingerprint using injector
+            if (fingerprint && fingerprint.fingerprint) {
+              await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
             }
           },
         ],
 
         async requestHandler({ page }) {
           try {
-            // Apply fingerprint to page context
-            if (fingerprint.userAgent) {
-              await page.addInitScript((ua) => {
-                Object.defineProperty(navigator, 'userAgent', {
-                  value: ua,
-                  writable: false,
-                })
-              }, fingerprint.userAgent)
-            }
-
-            if (fingerprint.viewport) {
-              await page.setViewportSize({
-                width: fingerprint.viewport.width,
-                height: fingerprint.viewport.height,
-              })
-            }
-
             // Determine effective blocking flags: request overrides default config when provided
             const effectiveBlockTrackers =
               request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
