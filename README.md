@@ -129,7 +129,7 @@ Refer to [`docs/api.md`](docs/api.md) for the full REST contract, response schem
 1. **Install dependencies:**
    ```bash
    pnpm install
-   pnpm dlx playwright install chromium
+   pnpm dlx playwright install chromium firefox
    ```
 
 2. **Start development server:**

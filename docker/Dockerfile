@@ -29,7 +29,7 @@ RUN pnpm install --prod --frozen-lockfile --prefer-offline || pnpm install --pro
 
 # Установка Playwright deps + Chromium (без devDeps в образе)
 # Скрипт сам подтянет системные зависимости (apt) и браузер
-RUN pnpm dlx playwright install --with-deps chromium
+RUN pnpm dlx playwright install --with-deps chromium firefox
 
 # Копия предсобранного приложения
 COPY dist ./dist
