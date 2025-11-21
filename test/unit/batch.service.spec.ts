@@ -106,9 +106,7 @@ describe('BatchService (unit)', () => {
       processed: 1,
       succeeded: 1,
       failed: 0,
-      results: [
-        { url: 'https://a', status: 'succeeded', data: { url: 'https://a' } },
-      ],
+      results: [{ url: 'https://a', status: 'succeeded', data: { url: 'https://a' } }],
       request: mockRequest,
       cancelRequested: false,
       acceptResults: true,
@@ -165,16 +163,12 @@ describe('BatchService (unit)', () => {
     expect((args[1].statusMeta.succeeded ?? 0) + (args[1].statusMeta.failed ?? 0)).toBe(0)
   })
 
-
   it('failed batch sets statusMeta.message from first failed task', async () => {
     // Arrange scraper to always throw
     scraperService.scrapePage.mockRejectedValue(new Error('Boom'))
 
     const request: BatchRequestDto = {
-      items: [
-        { url: 'https://a' },
-        { url: 'https://b' },
-      ],
+      items: [{ url: 'https://a' }, { url: 'https://b' }],
       // No webhook needed here
       schedule: { minDelayMs: 0, maxDelayMs: 0 } as any,
     } as any
@@ -199,5 +193,35 @@ describe('BatchService (unit)', () => {
     const status = await batchService.getBatchJobStatus(jobId)
     expect(status?.status).toBe('failed')
     expect(status?.statusMeta.message).toBe('Task 0 error: Boom')
+  })
+
+  it('includes results array in batch status response', async () => {
+    const jobsMap = (batchService as any).jobs as Map<string, any>
+
+    const jobId = 'job-with-results'
+    const mockRequest: BatchRequestDto = {
+      items: [{ url: 'https://example.com' }],
+    }
+
+    const resultPayload = { url: 'https://example.com', status: 'succeeded', data: { foo: 'bar' } }
+
+    jobsMap.set(jobId, {
+      id: jobId,
+      status: 'succeeded' as BatchJobStatus,
+      createdAt: new Date(),
+      completedAt: new Date(),
+      total: 1,
+      processed: 1,
+      succeeded: 1,
+      failed: 0,
+      results: [resultPayload],
+      request: mockRequest,
+      statusMeta: { succeeded: 1, failed: 0 },
+    })
+
+    const status = await batchService.getBatchJobStatus(jobId)
+    expect(status).not.toBeNull()
+    expect(status?.results).toHaveLength(1)
+    expect(status?.results[0]).toMatchObject(resultPayload)
   })
 })

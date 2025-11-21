@@ -106,11 +106,8 @@ curl -X POST "http://localhost:8080/api/v1/batch" \
 curl "http://localhost:8080/api/v1/batch/<jobId>"
 ```
 
-The response lists job status (`queued`, `running`, `succeeded`, `failed`, `partial`) and progress counters.
-When a batch is in a terminal state, the response can include a `meta` object:
-
-- For `partial`: `meta.completedCount` shows how many items finished before finalization (e.g., shutdown)
-- For `failed` with zero successes: `meta.error` describes the failure origin with `kind` = `pre_start` or `first_item`
+The response lists job status (`queued`, `running`, `succeeded`, `failed`, `partial`), progress counters, and a `results` array with per-item outcomes (same structure as the webhook payload).
+For implementation details and full schema, see `GET /batch/:jobId` in [`docs/api.md`](docs/api.md).
 
 ### 5. Health check
 

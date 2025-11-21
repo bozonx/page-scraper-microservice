@@ -327,6 +327,23 @@ Retrieves the current status and progress of a batch scraping job.
   "succeeded": "number",
   // Failed item count.
   "failed": "number",
+  // Array of individual item results (present when at least one item has completed).
+  "results": [
+    {
+      "url": "https://site-a.example/article",
+      "status": "succeeded",
+      "data": { "url": "...", "title": "...", "body": "...", "meta": { "lang": "en", "readTimeMin": 6, "rawBody": false } }
+    },
+    {
+      "url": "https://site-b.example/article",
+      "status": "failed",
+      "error": {
+        "code": 422,
+        "message": "Failed to extract content from page",
+        "details": "Page structure is not recognizable as an article"
+      }
+    }
+  ],
   // Status metadata with counters and first error message (if any)
   // message is either a pre-start error or the first failed task message in format: "Task <index> error: <reason>"
   "statusMeta": {

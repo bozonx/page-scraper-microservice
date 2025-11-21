@@ -284,6 +284,11 @@ export interface BatchJobStatusDto {
    * Status metadata including counters and first error message if present
    */
   statusMeta: StatusMetaDto
+
+  /**
+   * Array of individual item results for this batch job
+   */
+  results: BatchItemResultDto[]
 }
 
 /**

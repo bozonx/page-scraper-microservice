@@ -27,52 +27,52 @@ interface BatchJob {
    * Unique identifier for batch job
    */
   id: string
-  
+
   /**
    * Current status of batch job
    */
   status: BatchJobStatus
-  
+
   /**
    * Timestamp when job was created
    */
   createdAt: Date
-  
+
   /**
    * Timestamp when job completed (if completed)
    */
   completedAt?: Date
-  
+
   /**
    * Total number of items in the batch
    */
   total: number
-  
+
   /**
    * Number of items that have been processed
    */
   processed: number
-  
+
   /**
    * Number of items that were successfully processed
    */
   succeeded: number
-  
+
   /**
    * Number of items that failed to process
    */
   failed: number
-  
+
   /**
    * Array of individual item results
    */
   results: BatchItemResultDto[]
-  
+
   /**
    * Original batch request
    */
   request: BatchRequestDto
-  
+
   /**
    * Cancellation was requested (e.g., service shutdown)
    */
@@ -121,8 +121,6 @@ export class BatchService implements OnApplicationShutdown {
     this.logger.setContext(BatchService.name)
   }
 
-  
-
   /**
    * Creates a new batch job and starts processing
    * @param request Batch job parameters
@@ -130,7 +128,6 @@ export class BatchService implements OnApplicationShutdown {
    */
   async createBatchJob(request: BatchRequestDto): Promise<BatchResponseDto> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-
 
     // Generate unique job ID
     const { v4: uuidv4 } = await import('uuid')
@@ -198,6 +195,7 @@ export class BatchService implements OnApplicationShutdown {
       succeeded: job.succeeded,
       failed: job.failed,
       statusMeta,
+      results: job.results,
     }
   }
 
