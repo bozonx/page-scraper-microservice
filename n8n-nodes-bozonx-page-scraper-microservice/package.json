@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-bozonx-page-scraper-microservice",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "n8n nodes for BozonX Page Scraper microservice (params and start batch)",
   "license": "MIT",
   "keywords": [
