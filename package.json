@@ -1,6 +1,6 @@
 {
   "name": "page-scraper-microservice",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Page scraper microservice",
   "main": "dist/src/main.js",
   "type": "module",
