@@ -39,7 +39,7 @@ Configuration is provided through environment variables and validated on startup
 | `DEFAULT_BATCH_MAX_DELAY_MS` | Maximum delay between requests | `4000` |
 | `DATA_LIFETIME_MINS` | Retention of in-memory data (single page results and batch jobs) | `60` |
 | `CLEANUP_INTERVAL_MINS` | Minimum interval between cleanup runs | `10` |
-| `WEBHOOK_TIMEOUT_SECS` | Webhook request timeout in seconds | `10` |
+| `DEFAULT_WEBHOOK_TIMEOUT_SECS` | Default webhook request timeout in seconds (can be overridden per batch webhook via `timeoutSecs`) | `30` |
 | `DEFAULT_WEBHOOK_BACKOFF_MS` | Default backoff for retries (can be overridden per request) | `1000` |
 | `DEFAULT_WEBHOOK_MAX_ATTEMPTS` | Default max webhook attempts (can be overridden per request) | `3` |
 

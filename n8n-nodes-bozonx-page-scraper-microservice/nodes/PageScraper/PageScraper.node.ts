@@ -450,6 +450,14 @@ export class PageScraper implements INodeType {
             default: 3,
             description: 'Maximum number of retry attempts (1-100). Defaults to 3 if omitted',
           },
+          {
+            displayName: 'Timeout (Seconds)',
+            name: 'timeoutSecs',
+            type: 'number',
+            default: 10,
+            description:
+              'Timeout in seconds for webhook HTTP requests (1-600). Defaults to DEFAULT_WEBHOOK_TIMEOUT_SECS when omitted',
+          },
         ],
       },
     ],
@@ -667,6 +675,9 @@ export class PageScraper implements INodeType {
             }
             if (webhookOptions.maxAttempts !== undefined) {
               webhook.maxAttempts = webhookOptions.maxAttempts
+            }
+            if (webhookOptions.timeoutSecs !== undefined) {
+              webhook.timeoutSecs = webhookOptions.timeoutSecs
             }
 
             body.webhook = webhook

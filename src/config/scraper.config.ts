@@ -120,13 +120,13 @@ export class ScraperConfig {
 
   // Webhook settings
   /**
-   * Timeout in seconds for webhook HTTP requests (1-600)
-   * This is a global setting that cannot be overridden per webhook request
+   * Default timeout in seconds for webhook HTTP requests (1-600)
+   * This is a default value that can be overridden per webhook request
    */
   @IsInt()
   @Min(1)
   @Max(600)
-  public webhookTimeoutSecs!: number
+  public defaultWebhookTimeoutSecs!: number
 
   /**
    * Default backoff delay in milliseconds between webhook retry attempts (100-600000)
@@ -181,7 +181,7 @@ export default registerAs('scraper', (): ScraperConfig => {
     cleanupIntervalMins: parseInt(process.env.CLEANUP_INTERVAL_MINS ?? '10', 10),
 
     // Webhook settings
-    webhookTimeoutSecs: parseInt(process.env.WEBHOOK_TIMEOUT_SECS ?? '10', 10),
+    defaultWebhookTimeoutSecs: parseInt(process.env.DEFAULT_WEBHOOK_TIMEOUT_SECS ?? '30', 10),
     defaultWebhookBackoffMs: parseInt(process.env.DEFAULT_WEBHOOK_BACKOFF_MS ?? '1000', 10),
     defaultWebhookMaxAttempts: parseInt(process.env.DEFAULT_WEBHOOK_MAX_ATTEMPTS ?? '3', 10),
   })

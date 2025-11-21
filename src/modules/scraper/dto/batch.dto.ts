@@ -106,6 +106,16 @@ export class BatchWebhookDto {
   @Min(1)
   @Max(100)
   public maxAttempts?: number
+
+  /**
+   * Timeout in seconds for webhook HTTP requests (1-600)
+   * Overrides defaultWebhookTimeoutSecs when provided
+   */
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(600)
+  public timeoutSecs?: number
 }
 
 /**

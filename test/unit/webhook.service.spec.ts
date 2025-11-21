@@ -28,7 +28,7 @@ describe('WebhookService (unit)', () => {
     globalMaxConcurrency: 3,
     dataLifetimeMins: 60,
     cleanupIntervalMins: 5,
-    webhookTimeoutSecs: 5,
+    defaultWebhookTimeoutSecs: 5,
     defaultWebhookBackoffMs: 100,
     defaultWebhookMaxAttempts: 3,
   } as ScraperConfig
@@ -224,6 +224,24 @@ describe('WebhookService (unit)', () => {
 
       // Should have at least one delay between retries (with some tolerance for timing)
       expect(duration).toBeGreaterThanOrEqual(40)
+    })
+
+    it('should use custom timeoutSecs when provided', async () => {
+      const fetchSpy = jest.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+      })
+
+      ;(global.fetch as jest.Mock) = fetchSpy
+
+      const configWithTimeout: BatchWebhookDto = {
+        ...mockWebhookConfig,
+        timeoutSecs: 2,
+      }
+
+      await service.sendWebhook(configWithTimeout, mockPayload)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
     })
 
     it('should log info message on successful send', async () => {

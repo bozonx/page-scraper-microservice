@@ -292,7 +292,9 @@ Creates an asynchronous batch scraping job for processing multiple URLs.
     // Base delay for exponential backoff (ms). Default: DEFAULT_WEBHOOK_BACKOFF_MS (1000). Range: 100–600000 (up to 10 minutes).
     "backoffMs": 1000,
     // Retry limit. Default: DEFAULT_WEBHOOK_MAX_ATTEMPTS (3). Range: 1–100.
-    "maxAttempts": 3
+    "maxAttempts": 3,
+    // Timeout for webhook HTTP requests in seconds. Default: DEFAULT_WEBHOOK_TIMEOUT_SECS (30). Range: 1–600.
+    "timeoutSecs": 30
   }
 }
 ```
@@ -442,13 +444,12 @@ When a webhook is configured, the service POSTs the following JSON after the job
 **Delivery Behavior:**
 - **Retry logic:** Exponential backoff with formula `backoffMs * 2^(attempt-1)` plus 10% jitter
 - **Max attempts:** Controlled by `maxAttempts` configuration (default: `DEFAULT_WEBHOOK_MAX_ATTEMPTS` = 3)
-- **Timeout:** Each webhook request times out after `WEBHOOK_TIMEOUT_SECS` seconds (default: 10, global setting that cannot be overridden per request)
+- **Timeout:** Each webhook request times out after `timeoutSecs` seconds when provided in the batch request; otherwise `DEFAULT_WEBHOOK_TIMEOUT_SECS` (default: 30) is used
 - **Trigger:** Webhook is sent when batch reaches a terminal state (`succeeded`, `failed`, or `partial`)
 - **One-shot on shutdown:** If service shutdown cancels remaining work, the batch is finalized as `partial` and a one-shot webhook is awaited. If delivery fails, batch remains `partial` and no further action is taken
-- **Default values:** `DEFAULT_WEBHOOK_BACKOFF_MS` and `DEFAULT_WEBHOOK_MAX_ATTEMPTS` are used as fallbacks when per-request values are not provided
+- **Default values:** `DEFAULT_WEBHOOK_TIMEOUT_SECS`, `DEFAULT_WEBHOOK_BACKOFF_MS` and `DEFAULT_WEBHOOK_MAX_ATTEMPTS` are used as fallbacks when per-request values are not provided
 
 ---
-
 
 ## Error Handling
 
