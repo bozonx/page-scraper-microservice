@@ -30,19 +30,7 @@ export class HtmlRequestDto {
   @Min(1)
   public taskTimeoutSecs?: number
 
-  /**
-   * Locale for content extraction (affects language detection and formatting)
-   */
-  @IsOptional()
-  @IsString()
-  public locale?: string
 
-  /**
-   * Timezone ID for date parsing and formatting
-   */
-  @IsOptional()
-  @IsString()
-  public timezoneId?: string
 
   /**
    * Block common tracking scripts and analytics for faster page loading

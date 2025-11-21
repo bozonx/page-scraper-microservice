@@ -40,13 +40,7 @@ Scrapes a single web page and extracts structured article content.
   "rawBody": false,
   // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30). No enforced maximum.
   "taskTimeoutSecs": 30,
-  // Preferred locale for extraction heuristics. Default: DEFAULT_LOCALE ("en-US").
-  "locale": "en-US",
-  // Locale used for date parsing. Falls back to locale when omitted. Default constant: DEFAULT_DATE_LOCALE.
-  "dateLocale": "en-US",
-  // Target timezone for date normalization. Applied via Playwright context or X-Timezone-Id header in extractor mode. Default: DEFAULT_TIMEZONE_ID ("UTC").
-  // Examples: "Europe/Moscow" (UTC+3), "Europe/London" (UTC+0/UTC+1), "America/New_York" (UTC-5/UTC-4), "Europe/Berlin" (UTC+1/UTC+2), "America/Argentina/Buenos_Aires" (UTC-3).
-  "timezoneId": "UTC",
+
   // Default Playwright behavior blocks analytics/tracking scripts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS (true).
   "blockTrackers": true,
   // Default Playwright behavior blocks heavy media and fonts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES (true).
@@ -63,9 +57,12 @@ Scrapes a single web page and extracts structured article content.
     "timezoneId": "source",
     // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
     "rotateOnAntiBot": true,
-    // Additional generator hints such as allowed browsers list.
+    // Additional generator hints.
     "generator": {
-      "browsers": ["chrome", "firefox"]
+      "browsers": ["chrome", "firefox"],
+      "operatingSystems": ["windows", "macos", "linux"],
+      "devices": ["desktop", "mobile"],
+      "locales": ["en-US", "de-DE"]
     }
   }
 }
@@ -73,8 +70,8 @@ Scrapes a single web page and extracts structured article content.
 
 Note:
 
-- In Playwright mode, fingerprint is applied to page context (e.g., user agent and viewport). Timezone and locale are set via Playwright browser context options.
-- In extractor mode, fingerprint affects outbound request headers only (`User-Agent`, `Accept-Language`). Timezone is passed as `X-Timezone-Id` for downstream date parsing heuristics.
+- In Playwright mode, fingerprint is applied to page context (e.g., user agent, viewport, locale, timezone).
+- In extractor mode, fingerprint affects outbound request headers only (`User-Agent`, `Accept-Language`, `X-Timezone-Id`).
 
 #### Example Request
 
@@ -147,11 +144,7 @@ Retrieves raw HTML content from a web page using Playwright browser automation. 
   "url": "https://example.com/page",
   // Per-request timeout in seconds. Caps overall execution regardless of internal timeouts. Default: DEFAULT_TASK_TIMEOUT_SECS (30). No enforced maximum.
   "taskTimeoutSecs": 30,
-  // Preferred locale for browser context. Default: DEFAULT_LOCALE ("en-US").
-  "locale": "en-US",
-  // Target timezone for browser context. Default: DEFAULT_TIMEZONE_ID ("UTC").
-  // Examples: "Europe/Moscow" (UTC+3), "Europe/London" (UTC+0/UTC+1), "America/New_York" (UTC-5/UTC-4), "Europe/Berlin" (UTC+1/UTC+2), "America/Argentina/Buenos_Aires" (UTC-3).
-  "timezoneId": "UTC",
+
   // Default Playwright behavior blocks analytics/tracking scripts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS (true).
   "blockTrackers": true,
   // Default Playwright behavior blocks heavy media and fonts. Per-request value overrides. Default: DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES (true).
@@ -168,9 +161,12 @@ Retrieves raw HTML content from a web page using Playwright browser automation. 
     "timezoneId": "source",
     // Rotate fingerprint when anti-bot behaviour is detected. Default: DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT (true).
     "rotateOnAntiBot": true,
-    // Additional generator hints such as allowed browsers list.
+    // Additional generator hints.
     "generator": {
-      "browsers": ["chrome", "firefox"]
+      "browsers": ["chrome", "firefox"],
+      "operatingSystems": ["windows", "macos", "linux"],
+      "devices": ["desktop", "mobile"],
+      "locales": ["en-US", "de-DE"]
     }
   }
 }
@@ -178,8 +174,7 @@ Retrieves raw HTML content from a web page using Playwright browser automation. 
 
 Note:
 - This endpoint **always uses Playwright** for browser automation
-- Fingerprint is applied to page context (e.g., user agent and viewport)
-- Timezone and locale are set via Playwright browser context options
+- Fingerprint is applied to page context (e.g., user agent, viewport, locale, timezone)
 - Returns the complete rendered HTML after JavaScript execution
 
 #### Example Request

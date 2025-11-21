@@ -23,20 +23,19 @@ describe('ScraperService - getHtml (unit)', () => {
   const articleExtractor = createMockArticleExtractor()
   const fingerprintService: Partial<FingerprintService> = {
     generateFingerprint: jest.fn(() => ({
-      userAgent: 'UA',
-      viewport: { width: 1280, height: 720 },
-      browserName: 'chrome',
-      platform: 'Linux x86_64',
-      language: 'en-US',
+      fingerprint: {
+        navigator: {
+          userAgent: 'UA',
+          language: 'en-US',
+        },
+        screen: { width: 1920, height: 1080, colorDepth: 24, pixelDepth: 24 },
+      },
+      headers: {
+        'User-Agent': 'UA',
+        'Accept-Language': 'en-US',
+      },
       timezone: 'UTC',
-      webgl: { vendor: 'Google Inc.', renderer: 'WebKit WebGL', version: 'WebGL 2.0' },
-      canvas: { fingerprint: 'abc123', hacked: false },
-      audio: { contextId: 1 },
-      plugins: [],
-      fonts: ['Arial'],
-      screen: { width: 1920, height: 1080, colorDepth: 24, pixelDepth: 24 },
-      hardware: { cores: 4, memory: 8, deviceMemory: 8 },
-    })),
+    } as any)),
     shouldRotateFingerprint: jest.fn(() => false),
   }
 
@@ -47,7 +46,6 @@ describe('ScraperService - getHtml (unit)', () => {
     defaultUserAgent: 'auto',
     defaultLocale: 'en-US',
     defaultTimezoneId: 'UTC',
-    defaultDateLocale: 'en',
 
     // Playwright settings
     playwrightHeadless: true,
@@ -139,8 +137,10 @@ describe('ScraperService - getHtml (unit)', () => {
   it('applies locale and timezone settings', async () => {
     const dto: HtmlRequestDto = {
       url: 'https://example.com/locale',
-      locale: 'ru-RU',
-      timezoneId: 'Europe/Moscow',
+      fingerprint: {
+        locale: 'ru-RU',
+        timezoneId: 'Europe/Moscow',
+      },
     } as any
 
     const res = await service.getHtml(dto)

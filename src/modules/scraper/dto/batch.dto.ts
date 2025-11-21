@@ -134,26 +134,7 @@ export class BatchCommonSettingsDto {
   @IsBoolean()
   public rawBody?: boolean
 
-  /**
-   * Default locale for content extraction
-   */
-  @IsOptional()
-  @IsString()
-  public locale?: string
 
-  /**
-   * Default locale for date parsing specifically
-   */
-  @IsOptional()
-  @IsString()
-  public dateLocale?: string
-
-  /**
-   * Default timezone ID for date parsing and formatting
-   */
-  @IsOptional()
-  @IsString()
-  public timezoneId?: string
 
   /**
    * Whether to block trackers for all items

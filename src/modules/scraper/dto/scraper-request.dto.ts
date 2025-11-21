@@ -132,26 +132,7 @@ export class ScraperRequestDto {
   @IsBoolean()
   public rawBody?: boolean
 
-  /**
-   * Locale for content extraction (affects language detection and formatting)
-   */
-  @IsOptional()
-  @IsString()
-  public locale?: string
 
-  /**
-   * Locale for date parsing specifically (used for recognizing date formats)
-   */
-  @IsOptional()
-  @IsString()
-  public dateLocale?: string
-
-  /**
-   * Timezone ID for date parsing and formatting
-   */
-  @IsOptional()
-  @IsString()
-  public timezoneId?: string
 
   /**
    * Block common tracking scripts and analytics for faster page loading

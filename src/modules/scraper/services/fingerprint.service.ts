@@ -27,7 +27,7 @@ export class FingerprintService {
    * @param config Optional fingerprint configuration overrides
    * @returns Generated browser fingerprint with headers
    */
-  generateFingerprint(config?: FingerprintConfigDto): BrowserFingerprintWithHeaders {
+  generateFingerprint(config?: FingerprintConfigDto): BrowserFingerprintWithHeaders & { timezone?: string } {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
     // Use provided config or defaults
@@ -90,6 +90,13 @@ export class FingerprintService {
       }
 
       this.logger.info(`Generated fingerprint: ${fingerprint.fingerprint.navigator.userAgent}`)
+
+      // Add timezone if specified
+      const timezone = fingerprintConfig.timezoneId || scraperConfig.defaultTimezoneId
+      if (timezone) {
+        return { ...fingerprint, timezone }
+      }
+
       return fingerprint
     } catch (error) {
       this.logger.error('Failed to generate fingerprint', error)

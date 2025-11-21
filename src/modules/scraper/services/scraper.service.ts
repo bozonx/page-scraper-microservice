@@ -104,18 +104,15 @@ export class ScraperService {
     const headers: Record<string, string> = {}
 
     // Apply generated headers (User-Agent, Accept-Language, etc.)
-    if (fp.headers) {
-      Object.assign(headers, fp.headers)
+    if (fp.headers?.['Accept-Language']) {
+      headers['Accept-Language'] = fp.headers['Accept-Language']
     }
-
-    // Override with explicit request locale if provided
-    if (request.locale) {
-      headers['Accept-Language'] = request.locale
+    if (fp.headers?.['User-Agent']) {
+      headers['User-Agent'] = fp.headers['User-Agent']
     }
-
-    // Provide timezone hint for downstream date parsing heuristics
-    if (request.timezoneId || scraperConfig.defaultTimezoneId) {
-      headers['X-Timezone-Id'] = (request.timezoneId || scraperConfig.defaultTimezoneId) as string
+    // Provide timezone hint for downstream parsing/heuristics
+    if (fp.timezone) {
+      headers['X-Timezone-Id'] = fp.timezone
     }
 
     return await this.articleExtractor.extract(request.url, { headers })
@@ -177,9 +174,6 @@ export class ScraperService {
     let runError: Error | null = null
 
     // Configure Playwright crawler
-    const tzForContext = request.timezoneId || scraperConfig.defaultTimezoneId
-    const localeForContext = request.locale || scraperConfig.defaultLocale
-
     const launchContext = {
       launchOptions: {
         timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
@@ -197,21 +191,12 @@ export class ScraperService {
           async ({ page }) => {
             // Attach fingerprint using injector
             if (fingerprint && fingerprint.fingerprint) {
-              await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
-            }
-
-            // Set timezone and locale via browser context if not already handled by fingerprint
-            // Note: fingerprint-injector handles locale and timezone if they are in the fingerprint
-            // But we might want to force the requested timezone/locale if specified
-            if (tzForContext || localeForContext) {
-              // We rely on Playwright's context options or fingerprint. 
-              // If fingerprint is used, it sets these. 
-              // If we want to override, we might need to do it explicitly, 
-              // but attaching fingerprint might override it back.
-              // For now, let's assume fingerprint takes precedence if generated, 
-              // but if we passed explicit params, we might want to ensure they are respected.
-              // However, changing context options after creation is tricky.
-              // Crawlee creates context with default options.
+              try {
+                await fingerprintInjector.attachFingerprintToPlaywright(page.context(), fingerprint)
+              } catch (fpError) {
+                // Log but don't fail - continue without fingerprint
+                console.warn('Failed to attach fingerprint:', fpError)
+              }
             }
           },
         ],
@@ -248,11 +233,9 @@ export class ScraperService {
 
             // Extract content using article extractor with same header hints
             const headers: Record<string, string> = {}
-            if (fingerprint.headers) {
-              Object.assign(headers, fingerprint.headers)
-            }
-            if (tzForContext) headers['X-Timezone-Id'] = tzForContext as string
-
+            if (fingerprint.headers?.['Accept-Language']) headers['Accept-Language'] = fingerprint.headers['Accept-Language']
+            if (fingerprint.headers?.['User-Agent']) headers['User-Agent'] = fingerprint.headers['User-Agent']
+            if (fingerprint.timezone) headers['X-Timezone-Id'] = fingerprint.timezone
             extracted = await articleExtractor.extractFromHtml(html, { headers })
           } catch (error) {
             runError = error instanceof Error ? error : new Error(String(error))
@@ -347,9 +330,6 @@ export class ScraperService {
     let runError: Error | null = null
 
     // Configure Playwright crawler
-    const tzForContext = request.timezoneId || scraperConfig.defaultTimezoneId
-    const localeForContext = request.locale || scraperConfig.defaultLocale
-
     const launchContext = {
       launchOptions: {
         timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,

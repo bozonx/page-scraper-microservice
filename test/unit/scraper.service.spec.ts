@@ -26,6 +26,7 @@ describe('ScraperService (unit)', () => {
       fingerprint: {
         navigator: {
           userAgent: 'UA',
+          language: 'en-US',
         },
         screen: { width: 1920, height: 1080 },
       },
@@ -33,6 +34,7 @@ describe('ScraperService (unit)', () => {
         'User-Agent': 'UA',
         'Accept-Language': 'en-US',
       },
+      timezone: 'UTC',
     } as any)),
     shouldRotateFingerprint: jest.fn(() => false),
   }
@@ -44,7 +46,6 @@ describe('ScraperService (unit)', () => {
     defaultUserAgent: 'auto',
     defaultLocale: 'en-US',
     defaultTimezoneId: 'UTC',
-    defaultDateLocale: 'en',
 
     // Playwright settings
     playwrightHeadless: true,
