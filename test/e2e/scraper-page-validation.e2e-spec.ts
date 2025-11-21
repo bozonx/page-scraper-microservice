@@ -31,6 +31,6 @@ describe('Scraper /page validation (e2e)', () => {
       payload: { url: 'not-a-url' },
     })
 
-    expect(response.statusCode).toBe(400)
+    expect(response.statusCode).toBe(422)
   })
 })
