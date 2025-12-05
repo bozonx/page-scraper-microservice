@@ -21,7 +21,7 @@ export class PageScraper implements INodeType {
     outputs: ['main'],
     credentials: [
       {
-        name: 'bozonxMicroservicesApi',
+        name: 'pageScraperApi',
         required: true,
       },
     ],
@@ -461,7 +461,7 @@ export class PageScraper implements INodeType {
     const returnData: INodeExecutionData[] = []
     const operation = this.getNodeParameter('operation', 0) as string
 
-    const credentials = await this.getCredentials('bozonxMicroservicesApi')
+    const credentials = await this.getCredentials('pageScraperApi')
     const apiUrl = (credentials.baseUrl as string).replace(/\/$/, '')
 
     for (let i = 0; i < items.length; i++) {
@@ -518,7 +518,7 @@ export class PageScraper implements INodeType {
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
             this,
-            'bozonxMicroservicesApi',
+            'pageScraperApi',
             {
               method: 'POST',
               url: `${apiUrl}/page`,
@@ -579,7 +579,7 @@ export class PageScraper implements INodeType {
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
             this,
-            'bozonxMicroservicesApi',
+            'pageScraperApi',
             {
               method: 'POST',
               url: `${apiUrl}/html`,
@@ -674,7 +674,7 @@ export class PageScraper implements INodeType {
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
             this,
-            'bozonxMicroservicesApi',
+            'pageScraperApi',
             {
               method: 'POST',
               url: `${apiUrl}/batch`,
@@ -692,7 +692,7 @@ export class PageScraper implements INodeType {
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
             this,
-            'bozonxMicroservicesApi',
+            'pageScraperApi',
             {
               method: 'GET',
               url: `${apiUrl}/batch/${jobId}`,

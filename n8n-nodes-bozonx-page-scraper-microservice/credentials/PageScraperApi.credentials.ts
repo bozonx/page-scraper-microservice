@@ -1,7 +1,7 @@
 import type { ICredentialType, INodeProperties, Icon } from 'n8n-workflow'
 
-export class BozonxMicroservicesApi implements ICredentialType {
-  name = 'bozonxMicroservicesApi'
+export class PageScraperApi implements ICredentialType {
+  name = 'pageScraperApi'
   displayName = 'Page Scraper API'
   documentationUrl =
     'https://github.com/bozonx/page-scraper-microservice/tree/main/n8n-nodes-bozonx-page-scraper-microservice#readme'
@@ -11,7 +11,7 @@ export class BozonxMicroservicesApi implements ICredentialType {
       displayName: 'Base URL',
       name: 'baseUrl',
       type: 'string',
-      default: 'https://page-scraper.example.com/api/v1',
+      default: 'https://page-scraper-microservice:8080/api/v1',
       placeholder: 'https://page-scraper.example.com/api/v1',
       required: true,
       description:
