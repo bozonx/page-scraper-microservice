@@ -27,14 +27,6 @@ export class PageScraper implements INodeType {
     ],
     properties: [
       {
-        displayName: 'Base Path',
-        name: 'basePath',
-        type: 'string',
-        default: 'page/api/v1',
-        description:
-          'API base path appended to the Gateway URL (leading/trailing slashes are ignored)',
-      },
-      {
         displayName: 'Operation',
         name: 'operation',
         type: 'options',
@@ -470,10 +462,7 @@ export class PageScraper implements INodeType {
     const operation = this.getNodeParameter('operation', 0) as string
 
     const credentials = await this.getCredentials('bozonxMicroservicesApi')
-    const baseUrl = (credentials.gatewayUrl as string).replace(/\/$/, '')
-    const rawBasePath = this.getNodeParameter('basePath', 0, 'page/api/v1') as string
-    const normalizedBasePath = rawBasePath.replace(/^\/+|\/+$/g, '')
-    const apiUrl = normalizedBasePath ? `${baseUrl}/${normalizedBasePath}` : baseUrl
+    const apiUrl = (credentials.baseUrl as string).replace(/\/$/, '')
 
     for (let i = 0; i < items.length; i++) {
       try {
