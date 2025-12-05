@@ -7,7 +7,6 @@
 
 - Node.js: version 22
 - Package manager: `pnpm`
-- Imports: prefer path aliases
 - Tests:
   - Unit tests: `test/unit/`
   - E2E tests: `test/e2e/`
