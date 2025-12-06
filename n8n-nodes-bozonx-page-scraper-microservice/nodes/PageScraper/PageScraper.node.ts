@@ -131,25 +131,25 @@ export class PageScraper implements INodeType {
             description: 'Maximum time for the entire operation',
           },
           {
-            displayName: 'Block Trackers',
-            name: 'blockTrackers',
-            type: 'boolean',
-            default: true,
-            description: 'Whether to block analytics and tracking scripts',
-          },
-          {
-            displayName: 'Block Heavy Resources',
-            name: 'blockHeavyResources',
-            type: 'boolean',
-            default: true,
-            description: 'Whether to block heavy media and fonts',
-          },
-          {
             displayName: 'Fingerprint: Generate',
             name: 'fingerprintGenerate',
             type: 'boolean',
             default: true,
             description: 'Whether to automatically generate browser fingerprint',
+          },
+          {
+            displayName: 'Fingerprint: Block Trackers',
+            name: 'fingerprintBlockTrackers',
+            type: 'boolean',
+            default: true,
+            description: 'Whether to block analytics and tracking scripts (Playwright only)',
+          },
+          {
+            displayName: 'Fingerprint: Block Heavy Resources',
+            name: 'fingerprintBlockHeavyResources',
+            type: 'boolean',
+            default: true,
+            description: 'Whether to block heavy media and fonts (Playwright only)',
           },
           {
             displayName: 'Fingerprint: User Agent',
@@ -495,18 +495,18 @@ export class PageScraper implements INodeType {
           if (additionalOptions.taskTimeoutSecs !== undefined) {
             body.taskTimeoutSecs = additionalOptions.taskTimeoutSecs
           }
-          if (additionalOptions.blockTrackers !== undefined) {
-            body.blockTrackers = additionalOptions.blockTrackers
-          }
-          if (additionalOptions.blockHeavyResources !== undefined) {
-            body.blockHeavyResources = additionalOptions.blockHeavyResources
-          }
 
           // Build fingerprint object from additionalOptions
           const fingerprint: Record<string, any> = {}
 
           if (additionalOptions.fingerprintGenerate !== undefined) {
             fingerprint.generate = additionalOptions.fingerprintGenerate
+          }
+          if (additionalOptions.fingerprintBlockTrackers !== undefined) {
+            fingerprint.blockTrackers = additionalOptions.fingerprintBlockTrackers
+          }
+          if (additionalOptions.fingerprintBlockHeavyResources !== undefined) {
+            fingerprint.blockHeavyResources = additionalOptions.fingerprintBlockHeavyResources
           }
           if (additionalOptions.fingerprintUserAgent) {
             fingerprint.userAgent = additionalOptions.fingerprintUserAgent
@@ -567,18 +567,18 @@ export class PageScraper implements INodeType {
           if (additionalOptions.taskTimeoutSecs !== undefined) {
             body.taskTimeoutSecs = additionalOptions.taskTimeoutSecs
           }
-          if (additionalOptions.blockTrackers !== undefined) {
-            body.blockTrackers = additionalOptions.blockTrackers
-          }
-          if (additionalOptions.blockHeavyResources !== undefined) {
-            body.blockHeavyResources = additionalOptions.blockHeavyResources
-          }
 
           // Build fingerprint object from additionalOptions
           const fingerprint: Record<string, any> = {}
 
           if (additionalOptions.fingerprintGenerate !== undefined) {
             fingerprint.generate = additionalOptions.fingerprintGenerate
+          }
+          if (additionalOptions.fingerprintBlockTrackers !== undefined) {
+            fingerprint.blockTrackers = additionalOptions.fingerprintBlockTrackers
+          }
+          if (additionalOptions.fingerprintBlockHeavyResources !== undefined) {
+            fingerprint.blockHeavyResources = additionalOptions.fingerprintBlockHeavyResources
           }
           if (additionalOptions.fingerprintUserAgent) {
             fingerprint.userAgent = additionalOptions.fingerprintUserAgent

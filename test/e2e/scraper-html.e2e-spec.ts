@@ -28,9 +28,11 @@ describe('Scraper /html (e2e)', () => {
       url: '/api/v1/html',
       payload: {
         url: targetUrl,
-        blockTrackers: true,
-        blockHeavyResources: true,
         taskTimeoutSecs: 60,
+        fingerprint: {
+          blockTrackers: true,
+          blockHeavyResources: true,
+        },
       },
     })
 

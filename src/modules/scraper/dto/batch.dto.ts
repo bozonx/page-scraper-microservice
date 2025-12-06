@@ -145,20 +145,6 @@ export class BatchCommonSettingsDto {
   public rawBody?: boolean
 
   /**
-   * Whether to block trackers for all items
-   */
-  @IsOptional()
-  @IsBoolean()
-  public blockTrackers?: boolean
-
-  /**
-   * Whether to block heavy resources for all items
-   */
-  @IsOptional()
-  @IsBoolean()
-  public blockHeavyResources?: boolean
-
-  /**
    * Default fingerprint configuration for all items
    */
   @IsOptional()

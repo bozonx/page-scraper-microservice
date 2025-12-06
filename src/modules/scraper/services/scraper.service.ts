@@ -170,11 +170,11 @@ export class ScraperService {
     const articleExtractor = this.articleExtractor
 
     return this.browserService.withPage(async (page) => {
-      // Determine effective blocking flags
+      // Determine effective blocking flags from fingerprint configuration
       const effectiveBlockTrackers =
-        request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+        request.fingerprint?.blockTrackers ?? scraperConfig.playwrightBlockTrackers
       const effectiveBlockHeavy =
-        request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
+        request.fingerprint?.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
 
       // Block trackers and heavy resources
       if (effectiveBlockTrackers) {
@@ -279,11 +279,11 @@ export class ScraperService {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
     return this.browserService.withPage(async (page) => {
-      // Determine effective blocking flags
+      // Determine effective blocking flags from fingerprint configuration
       const effectiveBlockTrackers =
-        request.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+        request.fingerprint?.blockTrackers ?? scraperConfig.playwrightBlockTrackers
       const effectiveBlockHeavy =
-        request.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
+        request.fingerprint?.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
 
       // Block trackers and heavy resources
       if (effectiveBlockTrackers) {

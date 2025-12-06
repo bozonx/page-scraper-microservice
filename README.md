@@ -203,14 +203,14 @@ POST /api/v1/page
   "mode": "playwright",          // "extractor" (default) or "playwright"
   "rawBody": false,              // If true, returns HTML body instead of Markdown
   "taskTimeoutSecs": 60,         // Override default timeout (≥1)
-  "blockTrackers": true,         // Block analytics (Playwright only)
-  "blockHeavyResources": false,  // Block images, videos, fonts (Playwright only)
   "fingerprint": {               // Browser fingerprint settings (Playwright only)
     "generate": true,            // Enable fingerprint generation
     "userAgent": "auto",         // Custom user agent or "auto"
     "locale": "en-US",           // Browser locale (e.g., "en-US", "ru-RU")
     "timezoneId": "UTC",         // Timezone ID (e.g., "UTC", "Europe/Moscow")
     "rotateOnAntiBot": true,     // Rotate fingerprint on bot detection
+    "blockTrackers": true,       // Block analytics (Playwright only)
+    "blockHeavyResources": false,// Block images, videos, fonts (Playwright only)
     "browsers": ["chrome", "firefox"], // Browser types to simulate
     "operatingSystems": ["windows", "macos", "linux"], // OS types to simulate
     "devices": ["desktop", "mobile"], // Device types to simulate
@@ -254,14 +254,14 @@ POST /api/v1/html
 {
   "url": "https://example.com/dynamic-page",
   "taskTimeoutSecs": 60,         // Override default timeout (≥1)
-  "blockTrackers": true,         // Block analytics scripts
-  "blockHeavyResources": false,  // Block images, videos, fonts
   "fingerprint": {               // Browser fingerprint settings (same as /page)
     "generate": true,
     "userAgent": "auto",
     "locale": "en-US",
     "timezoneId": "UTC",
     "rotateOnAntiBot": true,
+    "blockTrackers": true,       // Block analytics scripts
+    "blockHeavyResources": false,// Block images, videos, fonts
     "browsers": ["chrome"]
   }
 }
@@ -291,17 +291,17 @@ POST /api/v1/batch
     "mode": "extractor",         // Default mode for all items
     "taskTimeoutSecs": 60,       // Default timeout (≥1)
     "rawBody": false,            // Return raw HTML instead of Markdown
-    "blockTrackers": true,       // Block analytics (Playwright only)
-    "blockHeavyResources": false,// Block images, videos, fonts (Playwright only)
     "fingerprint": {             // Default fingerprint for all items
       "generate": true,
       "userAgent": "auto",
       "locale": "en-US",
       "timezoneId": "UTC",
       "rotateOnAntiBot": true,
+      "blockTrackers": true,     // Block analytics (Playwright only)
+      "blockHeavyResources": false,// Block images, videos, fonts (Playwright only)
       "browsers": ["chrome", "firefox"],
-    "operatingSystems": ["windows", "macos"],
-    "devices": ["desktop"]
+      "operatingSystems": ["windows", "macos"],
+      "devices": ["desktop"]
     }
   },
   "schedule": {                  // Batch processing timing
@@ -465,11 +465,11 @@ curl -X POST http://localhost:8080/api/v1/page \
   -d '{
     "url": "https://dynamic-site.com/page",
     "mode": "playwright",
-    "blockTrackers": true,
-    "blockHeavyResources": true,
     "fingerprint": {
       "locale": "ru-RU",
       "timezoneId": "Europe/Moscow",
+      "blockTrackers": true,
+      "blockHeavyResources": true,
       "browsers": ["firefox"],
       "operatingSystems": ["linux"]
     }
@@ -511,7 +511,9 @@ curl -X POST http://localhost:8080/api/v1/html \
   -d '{
     "url": "https://spa-app.com",
     "taskTimeoutSecs": 60,
-    "blockTrackers": true
+    "fingerprint": {
+      "blockTrackers": true
+    }
   }'
 ```
 
@@ -547,7 +549,7 @@ curl -X POST http://localhost:8080/api/v1/page \
 - **Set Appropriate Timeouts:** Adjust `taskTimeoutSecs` based on target site complexity. Longer timeouts for slow sites.
 - **Configure Delays:** Use `minDelayMs` and `maxDelayMs` in batch jobs to avoid overwhelming target servers and triggering rate limits.
 - **Enable Jitter:** Set `schedule.jitter: true` in batch jobs to randomize delays and appear more human-like.
-- **Block Resources:** Enable `blockTrackers` and `blockHeavyResources` for faster scraping when images/videos aren't needed.
+- **Block Resources:** Enable `fingerprint.blockTrackers` and `fingerprint.blockHeavyResources` for faster scraping when images/videos aren't needed.
 - **Monitor Webhooks:** Implement proper webhook endpoint with idempotency handling. The same webhook may be delivered multiple times on retries.
 - **Poll Batch Status:** For critical jobs, poll `GET /batch/:jobId` periodically as a backup to webhooks.
 - **Adjust Concurrency:** Increase `MAX_CONCURRENCY` for higher throughput, but monitor CPU and memory usage.

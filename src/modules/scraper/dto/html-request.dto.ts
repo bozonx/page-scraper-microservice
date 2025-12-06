@@ -31,20 +31,6 @@ export class HtmlRequestDto {
   public taskTimeoutSecs?: number
 
   /**
-   * Block common tracking scripts and analytics for faster page loading
-   */
-  @IsOptional()
-  @IsBoolean()
-  public blockTrackers?: boolean
-
-  /**
-   * Block heavy resources like images, videos, and fonts for faster scraping
-   */
-  @IsOptional()
-  @IsBoolean()
-  public blockHeavyResources?: boolean
-
-  /**
    * Browser fingerprint configuration for avoiding detection
    */
   @IsOptional()

@@ -166,8 +166,10 @@ describe('ScraperService - getHtml (unit)', () => {
   it('applies blocking settings', async () => {
     const dto: HtmlRequestDto = {
       url: 'https://example.com/blocking',
-      blockTrackers: true,
-      blockHeavyResources: true,
+      fingerprint: {
+        blockTrackers: true,
+        blockHeavyResources: true,
+      },
     } as any
 
     const res = await service.getHtml(dto)

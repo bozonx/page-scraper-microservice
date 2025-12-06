@@ -86,6 +86,20 @@ export class FingerprintConfigDto {
   @IsArray()
   @IsString({ each: true })
   public locales?: string[]
+
+  /**
+   * Block common tracking scripts and analytics for faster page loading (Playwright only)
+   */
+  @IsOptional()
+  @IsBoolean()
+  public blockTrackers?: boolean
+
+  /**
+   * Block heavy resources like images, videos, and fonts for faster scraping (Playwright only)
+   */
+  @IsOptional()
+  @IsBoolean()
+  public blockHeavyResources?: boolean
 }
 
 /**
@@ -120,20 +134,6 @@ export class ScraperRequestDto {
   @IsOptional()
   @IsBoolean()
   public rawBody?: boolean
-
-  /**
-   * Block common tracking scripts and analytics for faster page loading
-   */
-  @IsOptional()
-  @IsBoolean()
-  public blockTrackers?: boolean
-
-  /**
-   * Block heavy resources like images, videos, and fonts for faster scraping
-   */
-  @IsOptional()
-  @IsBoolean()
-  public blockHeavyResources?: boolean
 
   /**
    * Browser fingerprint configuration for avoiding detection

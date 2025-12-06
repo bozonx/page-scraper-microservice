@@ -26,9 +26,11 @@ describe('Scraper Playwright (e2e)', () => {
       payload: {
         url: targetUrl,
         mode: 'playwright',
-        blockTrackers: true,
-        blockHeavyResources: true,
         taskTimeoutSecs: 60,
+        fingerprint: {
+          blockTrackers: true,
+          blockHeavyResources: true,
+        },
       },
     })
 
