@@ -28,7 +28,7 @@ describe('Scraper Playwright (e2e)', () => {
         mode: 'playwright',
         blockTrackers: true,
         blockHeavyResources: true,
-        taskTimeoutSecs: 30,
+        taskTimeoutSecs: 60,
       },
     })
 

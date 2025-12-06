@@ -36,7 +36,7 @@ describe('Scraper /batch (e2e)', () => {
           },
         ],
         commonSettings: {
-          taskTimeoutSecs: 30,
+          taskTimeoutSecs: 60,
           blockTrackers: true,
           blockHeavyResources: true,
         },

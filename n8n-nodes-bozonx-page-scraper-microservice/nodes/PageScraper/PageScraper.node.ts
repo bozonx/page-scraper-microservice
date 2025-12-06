@@ -127,7 +127,7 @@ export class PageScraper implements INodeType {
             displayName: 'Task Timeout (Seconds)',
             name: 'taskTimeoutSecs',
             type: 'number',
-            default: 30,
+            default: 60,
             description: 'Maximum time for the entire operation',
           },
           {

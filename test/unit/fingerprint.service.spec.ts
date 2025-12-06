@@ -12,7 +12,7 @@ describe('FingerprintService (unit)', () => {
 
   const scraperConfig: ScraperConfig = {
     defaultMode: 'extractor',
-    defaultTaskTimeoutSecs: 30,
+    defaultTaskTimeoutSecs: 60,
     defaultUserAgent: 'auto',
     defaultLocale: 'en-US',
     defaultTimezoneId: 'UTC',

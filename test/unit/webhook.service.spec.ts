@@ -13,7 +13,7 @@ describe('WebhookService (unit)', () => {
 
   const scraperConfig: ScraperConfig = {
     defaultMode: 'extractor',
-    defaultTaskTimeoutSecs: 30,
+    defaultTaskTimeoutSecs: 60,
     defaultUserAgent: 'auto',
     defaultLocale: 'en-US',
     defaultTimezoneId: 'UTC',
@@ -77,7 +77,7 @@ describe('WebhookService (unit)', () => {
 
   describe('sendWebhook', () => {
     it('should send webhook successfully on first attempt', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
       })
@@ -99,7 +99,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should include custom headers when provided', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
       })
@@ -122,7 +122,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should include Authorization header when provided via headers', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
       })
@@ -145,7 +145,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should retry on failure and succeed on second attempt', async () => {
-      ;(global.fetch as jest.Mock) = jest
+      ; (global.fetch as jest.Mock) = jest
         .fn()
         .mockResolvedValueOnce({
           ok: false,
@@ -163,7 +163,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should throw error after all retry attempts fail', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: false,
         status: 500,
         text: async () => 'Internal Server Error',
@@ -175,7 +175,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should handle network errors with retry', async () => {
-      ;(global.fetch as jest.Mock) = jest
+      ; (global.fetch as jest.Mock) = jest
         .fn()
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce({
@@ -189,7 +189,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should use custom maxAttempts when provided', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: false,
         status: 500,
         text: async () => 'Error',
@@ -206,7 +206,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should use custom backoffMs when provided', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: false,
         status: 500,
         text: async () => 'Error',
@@ -232,7 +232,7 @@ describe('WebhookService (unit)', () => {
         status: 200,
       })
 
-      ;(global.fetch as jest.Mock) = fetchSpy
+        ; (global.fetch as jest.Mock) = fetchSpy
 
       const configWithTimeout: BatchWebhookDto = {
         ...mockWebhookConfig,
@@ -245,7 +245,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should log info message on successful send', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: true,
         status: 200,
       })
@@ -256,7 +256,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should log warning on failed attempts', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: false,
         status: 500,
         text: async () => 'Error',
@@ -268,7 +268,7 @@ describe('WebhookService (unit)', () => {
     })
 
     it('should log error when all attempts fail', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: false,
         status: 500,
         text: async () => 'Error',
@@ -282,7 +282,7 @@ describe('WebhookService (unit)', () => {
 
   describe('Backoff calculation', () => {
     it('should calculate exponential backoff with jitter', async () => {
-      ;(global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
+      ; (global.fetch as jest.Mock) = jest.fn().mockResolvedValue({
         ok: false,
         status: 500,
         text: async () => 'Error',

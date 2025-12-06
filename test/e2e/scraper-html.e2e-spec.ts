@@ -30,7 +30,7 @@ describe('Scraper /html (e2e)', () => {
         url: targetUrl,
         blockTrackers: true,
         blockHeavyResources: true,
-        taskTimeoutSecs: 30,
+        taskTimeoutSecs: 60,
       },
     })
 

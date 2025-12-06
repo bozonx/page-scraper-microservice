@@ -73,7 +73,7 @@ describe('Scraper /batch webhook (e2e)', () => {
           },
         ],
         commonSettings: {
-          taskTimeoutSecs: 30,
+          taskTimeoutSecs: 60,
         },
         webhook: {
           url: webhookUrl,

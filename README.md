@@ -253,7 +253,7 @@ Returns the fully rendered HTML of a page using Playwright. Useful for debug or 
 POST /api/v1/html
 {
   "url": "https://example.com/dynamic-page",
-  "taskTimeoutSecs": 45,         // Override default timeout (≥1)
+  "taskTimeoutSecs": 60,         // Override default timeout (≥1)
   "blockTrackers": true,         // Block analytics scripts
   "blockHeavyResources": false,  // Block images, videos, fonts
   "fingerprint": {               // Browser fingerprint settings (same as /page)
@@ -289,7 +289,7 @@ POST /api/v1/batch
   ],
   "commonSettings": {            // Settings applied to all items
     "mode": "extractor",         // Default mode for all items
-    "taskTimeoutSecs": 30,       // Default timeout (≥1)
+    "taskTimeoutSecs": 60,       // Default timeout (≥1)
     "rawBody": false,            // Return raw HTML instead of Markdown
     "blockTrackers": true,       // Block analytics (Playwright only)
     "blockHeavyResources": false,// Block images, videos, fonts (Playwright only)
@@ -488,7 +488,7 @@ curl -X POST http://localhost:8080/api/v1/batch \
     ],
     "commonSettings": {
       "mode": "extractor",
-      "taskTimeoutSecs": 30
+      "taskTimeoutSecs": 60
     },
     "schedule": {
       "minDelayMs": 2000,

@@ -55,7 +55,7 @@ describe('ScraperService (unit)', () => {
   const scraperConfig: ScraperConfig = {
     // Default scraper settings
     defaultMode: 'extractor',
-    defaultTaskTimeoutSecs: 30,
+    defaultTaskTimeoutSecs: 60,
     defaultUserAgent: 'auto',
     defaultLocale: 'en-US',
     defaultTimezoneId: 'UTC',
