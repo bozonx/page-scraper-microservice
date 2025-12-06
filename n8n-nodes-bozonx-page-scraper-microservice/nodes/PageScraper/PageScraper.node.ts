@@ -144,61 +144,47 @@ export class PageScraper implements INodeType {
             default: true,
             description: 'Whether to block heavy media and fonts',
           },
-        ],
-      },
-      {
-        displayName: 'Fingerprint Options',
-        name: 'fingerprintOptions',
-        type: 'collection',
-        displayOptions: {
-          show: {
-            operation: ['page', 'html'],
-          },
-        },
-        default: {},
-        placeholder: 'Add Fingerprint Option',
-        options: [
           {
-            displayName: 'Generate Fingerprint',
-            name: 'generate',
+            displayName: 'Fingerprint: Generate',
+            name: 'fingerprintGenerate',
             type: 'boolean',
             default: true,
             description: 'Whether to automatically generate browser fingerprint',
           },
           {
-            displayName: 'User Agent',
-            name: 'userAgent',
+            displayName: 'Fingerprint: User Agent',
+            name: 'fingerprintUserAgent',
             type: 'string',
             default: 'auto',
             description: 'Custom user agent string or "auto"',
             placeholder: 'auto',
           },
           {
-            displayName: 'Fingerprint Locale',
-            name: 'locale',
+            displayName: 'Fingerprint: Locale',
+            name: 'fingerprintLocale',
             type: 'string',
             default: 'auto',
             description: 'Browser locale or "auto" to let generator decide',
             placeholder: 'auto',
           },
           {
-            displayName: 'Fingerprint Timezone',
-            name: 'timezoneId',
+            displayName: 'Fingerprint: Timezone',
+            name: 'fingerprintTimezoneId',
             type: 'string',
             default: 'UTC',
             description: 'Browser timezone ("auto" is not supported, omit to use default)',
             placeholder: 'UTC',
           },
           {
-            displayName: 'Rotate On Anti-Bot',
-            name: 'rotateOnAntiBot',
+            displayName: 'Fingerprint: Rotate On Anti-Bot',
+            name: 'fingerprintRotateOnAntiBot',
             type: 'boolean',
             default: true,
             description: 'Whether to rotate fingerprint when anti-bot behavior is detected',
           },
           {
-            displayName: 'Allowed Browsers',
-            name: 'browsers',
+            displayName: 'Fingerprint: Allowed Browsers',
+            name: 'fingerprintBrowsers',
             type: 'string',
             default: 'chrome,firefox',
             description: 'Comma-separated list of allowed browsers',
@@ -474,46 +460,50 @@ export class PageScraper implements INodeType {
             string,
             any
           >
-          const fingerprintOptions = this.getNodeParameter('fingerprintOptions', i, {}) as Record<
-            string,
-            any
-          >
 
           const body: Record<string, any> = {
             url,
             mode,
             rawBody,
-            ...additionalOptions,
           }
 
-          // Build fingerprint object if any options are set
-          if (Object.keys(fingerprintOptions).length > 0) {
-            const fingerprint: Record<string, any> = {}
+          // Add non-fingerprint additional options
+          if (additionalOptions.taskTimeoutSecs !== undefined) {
+            body.taskTimeoutSecs = additionalOptions.taskTimeoutSecs
+          }
+          if (additionalOptions.blockTrackers !== undefined) {
+            body.blockTrackers = additionalOptions.blockTrackers
+          }
+          if (additionalOptions.blockHeavyResources !== undefined) {
+            body.blockHeavyResources = additionalOptions.blockHeavyResources
+          }
 
-            if (fingerprintOptions.generate !== undefined) {
-              fingerprint.generate = fingerprintOptions.generate
-            }
-            if (fingerprintOptions.userAgent) {
-              fingerprint.userAgent = fingerprintOptions.userAgent
-            }
-            if (fingerprintOptions.locale) {
-              fingerprint.locale = fingerprintOptions.locale
-            }
-            if (fingerprintOptions.timezoneId) {
-              fingerprint.timezoneId = fingerprintOptions.timezoneId
-            }
-            if (fingerprintOptions.rotateOnAntiBot !== undefined) {
-              fingerprint.rotateOnAntiBot = fingerprintOptions.rotateOnAntiBot
-            }
-            if (fingerprintOptions.browsers) {
-              fingerprint.generator = {
-                browsers: fingerprintOptions.browsers.split(',').map((b: string) => b.trim()),
-              }
-            }
+          // Build fingerprint object from additionalOptions
+          const fingerprint: Record<string, any> = {}
 
-            if (Object.keys(fingerprint).length > 0) {
-              body.fingerprint = fingerprint
+          if (additionalOptions.fingerprintGenerate !== undefined) {
+            fingerprint.generate = additionalOptions.fingerprintGenerate
+          }
+          if (additionalOptions.fingerprintUserAgent) {
+            fingerprint.userAgent = additionalOptions.fingerprintUserAgent
+          }
+          if (additionalOptions.fingerprintLocale) {
+            fingerprint.locale = additionalOptions.fingerprintLocale
+          }
+          if (additionalOptions.fingerprintTimezoneId) {
+            fingerprint.timezoneId = additionalOptions.fingerprintTimezoneId
+          }
+          if (additionalOptions.fingerprintRotateOnAntiBot !== undefined) {
+            fingerprint.rotateOnAntiBot = additionalOptions.fingerprintRotateOnAntiBot
+          }
+          if (additionalOptions.fingerprintBrowsers) {
+            fingerprint.generator = {
+              browsers: additionalOptions.fingerprintBrowsers.split(',').map((b: string) => b.trim()),
             }
+          }
+
+          if (Object.keys(fingerprint).length > 0) {
+            body.fingerprint = fingerprint
           }
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
@@ -537,44 +527,48 @@ export class PageScraper implements INodeType {
             string,
             any
           >
-          const fingerprintOptions = this.getNodeParameter('fingerprintOptions', i, {}) as Record<
-            string,
-            any
-          >
 
           const body: Record<string, any> = {
             url,
-            ...additionalOptions,
           }
 
-          // Build fingerprint object
-          if (Object.keys(fingerprintOptions).length > 0) {
-            const fingerprint: Record<string, any> = {}
+          // Add non-fingerprint additional options
+          if (additionalOptions.taskTimeoutSecs !== undefined) {
+            body.taskTimeoutSecs = additionalOptions.taskTimeoutSecs
+          }
+          if (additionalOptions.blockTrackers !== undefined) {
+            body.blockTrackers = additionalOptions.blockTrackers
+          }
+          if (additionalOptions.blockHeavyResources !== undefined) {
+            body.blockHeavyResources = additionalOptions.blockHeavyResources
+          }
 
-            if (fingerprintOptions.generate !== undefined) {
-              fingerprint.generate = fingerprintOptions.generate
-            }
-            if (fingerprintOptions.userAgent) {
-              fingerprint.userAgent = fingerprintOptions.userAgent
-            }
-            if (fingerprintOptions.locale) {
-              fingerprint.locale = fingerprintOptions.locale
-            }
-            if (fingerprintOptions.timezoneId) {
-              fingerprint.timezoneId = fingerprintOptions.timezoneId
-            }
-            if (fingerprintOptions.rotateOnAntiBot !== undefined) {
-              fingerprint.rotateOnAntiBot = fingerprintOptions.rotateOnAntiBot
-            }
-            if (fingerprintOptions.browsers) {
-              fingerprint.generator = {
-                browsers: fingerprintOptions.browsers.split(',').map((b: string) => b.trim()),
-              }
-            }
+          // Build fingerprint object from additionalOptions
+          const fingerprint: Record<string, any> = {}
 
-            if (Object.keys(fingerprint).length > 0) {
-              body.fingerprint = fingerprint
+          if (additionalOptions.fingerprintGenerate !== undefined) {
+            fingerprint.generate = additionalOptions.fingerprintGenerate
+          }
+          if (additionalOptions.fingerprintUserAgent) {
+            fingerprint.userAgent = additionalOptions.fingerprintUserAgent
+          }
+          if (additionalOptions.fingerprintLocale) {
+            fingerprint.locale = additionalOptions.fingerprintLocale
+          }
+          if (additionalOptions.fingerprintTimezoneId) {
+            fingerprint.timezoneId = additionalOptions.fingerprintTimezoneId
+          }
+          if (additionalOptions.fingerprintRotateOnAntiBot !== undefined) {
+            fingerprint.rotateOnAntiBot = additionalOptions.fingerprintRotateOnAntiBot
+          }
+          if (additionalOptions.fingerprintBrowsers) {
+            fingerprint.generator = {
+              browsers: additionalOptions.fingerprintBrowsers.split(',').map((b: string) => b.trim()),
             }
+          }
+
+          if (Object.keys(fingerprint).length > 0) {
+            body.fingerprint = fingerprint
           }
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
