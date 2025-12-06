@@ -54,6 +54,7 @@ export class FingerprintConfigDto {
 
   /**
    * List of browsers to simulate (e.g., ['chrome', 'firefox'])
+   * Available options: chrome, firefox
    */
   @IsOptional()
   @IsArray()
@@ -62,6 +63,7 @@ export class FingerprintConfigDto {
 
   /**
    * List of operating systems to simulate (e.g., ['windows', 'macos', 'linux'])
+   * Available options: windows, macos, linux, android, ios
    */
   @IsOptional()
   @IsArray()
@@ -70,6 +72,7 @@ export class FingerprintConfigDto {
 
   /**
    * List of device types to simulate (e.g., ['desktop', 'mobile'])
+   * Available options: desktop, mobile
    */
   @IsOptional()
   @IsArray()

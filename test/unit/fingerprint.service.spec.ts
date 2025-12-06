@@ -124,6 +124,60 @@ describe('FingerprintService (unit)', () => {
       expect(result).toBeDefined()
     })
 
+    it('should support firefox browser', () => {
+      const result = service.generateFingerprint({
+        browsers: ['firefox'],
+      })
+      expect(result.fingerprint.navigator.userAgent).toContain('Firefox')
+    })
+
+    it('should support multiple browsers', () => {
+      const result = service.generateFingerprint({
+        browsers: ['chrome', 'firefox'],
+      })
+      // Should generate without error - the library picks one randomly
+      expect(result).toBeDefined()
+      expect(result.fingerprint.navigator.userAgent).toBeDefined()
+    })
+
+    it('should support linux operating system', () => {
+      const result = service.generateFingerprint({
+        operatingSystems: ['linux'],
+      })
+      expect(result.fingerprint.navigator.userAgent).toContain('Linux')
+    })
+
+    it('should support macos operating system', () => {
+      const result = service.generateFingerprint({
+        operatingSystems: ['macos'],
+      })
+      expect(result.fingerprint.navigator.userAgent).toContain('Mac')
+    })
+
+    it('should support multiple operating systems', () => {
+      const result = service.generateFingerprint({
+        operatingSystems: ['windows', 'macos', 'linux'],
+      })
+      expect(result).toBeDefined()
+      expect(result.fingerprint.navigator.userAgent).toBeDefined()
+    })
+
+    it('should support desktop device', () => {
+      const result = service.generateFingerprint({
+        devices: ['desktop'],
+      })
+      expect(result).toBeDefined()
+      expect(result.fingerprint.navigator.userAgent).toBeDefined()
+    })
+
+    it('should support multiple devices', () => {
+      const result = service.generateFingerprint({
+        devices: ['desktop', 'mobile'],
+      })
+      expect(result).toBeDefined()
+      expect(result.fingerprint.navigator.userAgent).toBeDefined()
+    })
+
     it('should log info message after generating fingerprint', () => {
       service.generateFingerprint()
 

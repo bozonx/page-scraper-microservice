@@ -123,6 +123,7 @@ Configure the service using environment variables.
 | `DEFAULT_MODE` | Default scraper mode (`extractor` or `playwright`) | `extractor` |
 | `DEFAULT_TASK_TIMEOUT_SECS` | Default timeout per page scrape in seconds (≥1) | `60` |
 
+
 ### Fingerprint Settings
 
 | Variable | Description | Default |
@@ -132,6 +133,29 @@ Configure the service using environment variables.
 | `DEFAULT_FINGERPRINT_LOCALE` | Default locale for browser fingerprint (e.g., `en-US`, `ru-RU`) | `en-US` |
 | `DEFAULT_FINGERPRINT_TIMEZONE_ID` | Default timezone ID for browser (e.g., `UTC`, `Europe/Moscow`) | `UTC` |
 | `DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT` | Rotate fingerprint when anti-bot protection is detected | `true` |
+
+#### Available Fingerprint Options
+
+When using the `fingerprint` parameter in API requests, you can specify the following options:
+
+**Browsers** (`browsers` array):
+- `chrome` - Google Chrome browser
+- `firefox` - Mozilla Firefox browser
+
+**Operating Systems** (`operatingSystems` array):
+- `windows` - Microsoft Windows
+- `macos` - Apple macOS
+- `linux` - Linux distributions
+- `android` - Android mobile OS
+- `ios` - Apple iOS
+
+**Devices** (`devices` array):
+- `desktop` - Desktop computers
+- `mobile` - Mobile devices (phones and tablets)
+
+**Locales** (`locales` array):
+- Any valid locale string (e.g., `en-US`, `ru-RU`, `de-DE`, `fr-FR`, `es-ES`, `ja-JP`, `zh-CN`)
+
 
 ### Playwright Settings
 
@@ -187,9 +211,9 @@ POST /api/v1/page
     "locale": "en-US",           // Browser locale (e.g., "en-US", "ru-RU")
     "timezoneId": "UTC",         // Timezone ID (e.g., "UTC", "Europe/Moscow")
     "rotateOnAntiBot": true,     // Rotate fingerprint on bot detection
-    "browsers": ["chrome"],      // Browser types to simulate
-    "operatingSystems": ["windows", "macos"], // OS types to simulate
-    "devices": ["desktop"],      // Device types to simulate
+    "browsers": ["chrome", "firefox"], // Browser types to simulate
+    "operatingSystems": ["windows", "macos", "linux"], // OS types to simulate
+    "devices": ["desktop", "mobile"], // Device types to simulate
     "locales": ["en-US"]         // Locales to simulate
   }
 }
@@ -275,7 +299,9 @@ POST /api/v1/batch
       "locale": "en-US",
       "timezoneId": "UTC",
       "rotateOnAntiBot": true,
-      "browsers": ["chrome", "firefox"]
+      "browsers": ["chrome", "firefox"],
+    "operatingSystems": ["windows", "macos"],
+    "devices": ["desktop"]
     }
   },
   "schedule": {                  // Batch processing timing
@@ -489,7 +515,24 @@ curl -X POST http://localhost:8080/api/v1/html \
   }'
 ```
 
+### Example 5: Mobile Device Simulation
+```bash
+curl -X POST http://localhost:8080/api/v1/page \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://mobile-site.com",
+    "mode": "playwright",
+    "fingerprint": {
+      "browsers": ["chrome"],
+      "operatingSystems": ["android"],
+      "devices": ["mobile"],
+      "locale": "en-US"
+    }
+  }'
+```
+
 ---
+
 
 ## Limitations and Best Practices
 
