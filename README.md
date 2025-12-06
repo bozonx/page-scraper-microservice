@@ -187,12 +187,10 @@ POST /api/v1/page
     "locale": "en-US",           // Browser locale (e.g., "en-US", "ru-RU")
     "timezoneId": "UTC",         // Timezone ID (e.g., "UTC", "Europe/Moscow")
     "rotateOnAntiBot": true,     // Rotate fingerprint on bot detection
-    "generator": {               // Fingerprint generator configuration
-      "browsers": ["chrome"],    // Browser types to simulate
-      "operatingSystems": ["windows", "macos"], // OS types to simulate
-      "devices": ["desktop"],    // Device types to simulate
-      "locales": ["en-US"]       // Locales to simulate
-    }
+    "browsers": ["chrome"],      // Browser types to simulate
+    "operatingSystems": ["windows", "macos"], // OS types to simulate
+    "devices": ["desktop"],      // Device types to simulate
+    "locales": ["en-US"]         // Locales to simulate
   }
 }
 ```
@@ -240,9 +238,7 @@ POST /api/v1/html
     "locale": "en-US",
     "timezoneId": "UTC",
     "rotateOnAntiBot": true,
-    "generator": {
-      "browsers": ["chrome"]
-    }
+    "browsers": ["chrome"]
   }
 }
 ```
@@ -279,9 +275,7 @@ POST /api/v1/batch
       "locale": "en-US",
       "timezoneId": "UTC",
       "rotateOnAntiBot": true,
-      "generator": {
-        "browsers": ["chrome", "firefox"]
-      }
+      "browsers": ["chrome", "firefox"]
     }
   },
   "schedule": {                  // Batch processing timing
@@ -413,7 +407,7 @@ When a batch job completes (or fails), the service sends a POST request to your 
 - **Browser Fingerprints:** 
   - Generates realistic browser profiles (User-Agent, screen size, locale, timezone) to mimic real devices.
   - Supports multiple browsers (Chrome, Firefox), operating systems, and device types.
-  - Customizable via `fingerprint.generator` settings per request.
+  - Customizable via `fingerprint` settings per request (browsers, operatingSystems, devices, locales).
 - **Resource Blocking:** 
   - **Trackers:** Blocks analytics scripts (Google Analytics, Facebook Pixel, etc.) to speed up loading and reduce detection.
   - **Heavy Resources:** Optionally blocks images, videos, and fonts to minimize bandwidth and improve performance.
@@ -450,10 +444,8 @@ curl -X POST http://localhost:8080/api/v1/page \
     "fingerprint": {
       "locale": "ru-RU",
       "timezoneId": "Europe/Moscow",
-      "generator": {
-        "browsers": ["firefox"],
-        "operatingSystems": ["linux"]
-      }
+      "browsers": ["firefox"],
+      "operatingSystems": ["linux"]
     }
   }'
 ```

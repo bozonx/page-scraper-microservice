@@ -187,8 +187,32 @@ export class PageScraper implements INodeType {
             name: 'fingerprintBrowsers',
             type: 'string',
             default: 'chrome,firefox',
-            description: 'Comma-separated list of allowed browsers',
+            description: 'Comma-separated list of allowed browsers (e.g., chrome,firefox)',
             placeholder: 'chrome,firefox',
+          },
+          {
+            displayName: 'Fingerprint: Operating Systems',
+            name: 'fingerprintOperatingSystems',
+            type: 'string',
+            default: 'windows,macos',
+            description: 'Comma-separated list of operating systems to simulate (e.g., windows,macos,linux)',
+            placeholder: 'windows,macos',
+          },
+          {
+            displayName: 'Fingerprint: Devices',
+            name: 'fingerprintDevices',
+            type: 'string',
+            default: 'desktop',
+            description: 'Comma-separated list of device types to simulate (e.g., desktop,mobile)',
+            placeholder: 'desktop',
+          },
+          {
+            displayName: 'Fingerprint: Locales',
+            name: 'fingerprintLocales',
+            type: 'string',
+            default: 'en-US',
+            description: 'Comma-separated list of locales to simulate (e.g., en-US,de-DE)',
+            placeholder: 'en-US',
           },
         ],
       },
@@ -497,9 +521,16 @@ export class PageScraper implements INodeType {
             fingerprint.rotateOnAntiBot = additionalOptions.fingerprintRotateOnAntiBot
           }
           if (additionalOptions.fingerprintBrowsers) {
-            fingerprint.generator = {
-              browsers: additionalOptions.fingerprintBrowsers.split(',').map((b: string) => b.trim()),
-            }
+            fingerprint.browsers = additionalOptions.fingerprintBrowsers.split(',').map((b: string) => b.trim())
+          }
+          if (additionalOptions.fingerprintOperatingSystems) {
+            fingerprint.operatingSystems = additionalOptions.fingerprintOperatingSystems.split(',').map((os: string) => os.trim())
+          }
+          if (additionalOptions.fingerprintDevices) {
+            fingerprint.devices = additionalOptions.fingerprintDevices.split(',').map((d: string) => d.trim())
+          }
+          if (additionalOptions.fingerprintLocales) {
+            fingerprint.locales = additionalOptions.fingerprintLocales.split(',').map((l: string) => l.trim())
           }
 
           if (Object.keys(fingerprint).length > 0) {
@@ -562,9 +593,16 @@ export class PageScraper implements INodeType {
             fingerprint.rotateOnAntiBot = additionalOptions.fingerprintRotateOnAntiBot
           }
           if (additionalOptions.fingerprintBrowsers) {
-            fingerprint.generator = {
-              browsers: additionalOptions.fingerprintBrowsers.split(',').map((b: string) => b.trim()),
-            }
+            fingerprint.browsers = additionalOptions.fingerprintBrowsers.split(',').map((b: string) => b.trim())
+          }
+          if (additionalOptions.fingerprintOperatingSystems) {
+            fingerprint.operatingSystems = additionalOptions.fingerprintOperatingSystems.split(',').map((os: string) => os.trim())
+          }
+          if (additionalOptions.fingerprintDevices) {
+            fingerprint.devices = additionalOptions.fingerprintDevices.split(',').map((d: string) => d.trim())
+          }
+          if (additionalOptions.fingerprintLocales) {
+            fingerprint.locales = additionalOptions.fingerprintLocales.split(',').map((l: string) => l.trim())
           }
 
           if (Object.keys(fingerprint).length > 0) {
