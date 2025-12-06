@@ -11,7 +11,7 @@ export class PageScraperApi implements ICredentialType {
       displayName: 'Base URL',
       name: 'baseUrl',
       type: 'string',
-      default: 'https://page-scraper-microservice:8080/api/v1',
+      default: 'http://page-scraper-microservice:8080/api/v1',
       placeholder: 'https://page-scraper.example.com/api/v1',
       required: true,
       description:
