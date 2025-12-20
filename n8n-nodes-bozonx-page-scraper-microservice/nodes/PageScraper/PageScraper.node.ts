@@ -235,9 +235,12 @@ export class PageScraper implements INodeType {
         placeholder: '0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a',
       },
       {
-        displayName: 'Options',
+        displayName: 'Options (YAML/JSON)',
         name: 'options',
-        type: 'json',
+        type: 'string',
+        typeOptions: {
+          rows: 12,
+        },
         displayOptions: {
           show: {
             operation: ['batch'],
