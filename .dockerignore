@@ -19,8 +19,8 @@ tsconfig.spec.json
 .env.local
 .env.development
 .env.*.local
-env.development.example
-env.production.example
+.env.development.example
+.env.production.example
 *.log
 npm-debug.log*
 pnpm-debug.log*

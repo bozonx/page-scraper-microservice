@@ -7,7 +7,7 @@
 2. **src/config/scraper.config.ts** - конфигурация сервиса
 3. **src/modules/scraper/dto/** - DTO с валидацией
 4. **n8n-nodes-bozonx-page-scraper-microservice/nodes/PageScraper/PageScraper.node.ts** - N8N нода
-5. **env.production.example** - пример конфигурации
+5. **.env.production.example** - пример конфигурации
 
 ---
 
@@ -23,7 +23,7 @@
 | README.md (строка 124) | `60` | ✅ |
 | README.md (строка 205) | `60` | ✅ |
 | scraper.config.ts (строка 158) | `60` | ✅ |
-| env.production.example (строка 19) | `60` | ✅ |
+| .env.production.example (строка 19) | `60` | ✅ |
 | N8N node (строка 130) | `60` | ✅ |
 | N8N node (строка 326) | `60` | ✅ |
 | DTO Min validation | `1` | ✅ |
@@ -38,7 +38,7 @@
 | README.md (строка 173) | `1500` | ✅ |
 | README.md (строка 308) | `1000` (пример) | ⚠️ Пример |
 | scraper.config.ts (строка 177) | `1500` | ✅ |
-| env.production.example (строка 53) | `1500` | ✅ |
+| .env.production.example (строка 53) | `1500` | ✅ |
 | N8N node (строка 368) | `1500` | ✅ |
 | DTO Min/Max validation | `500-3600000` | ✅ |
 
@@ -52,7 +52,7 @@
 | README.md (строка 174) | `4000` | ✅ |
 | README.md (строка 309) | `3000` (пример) | ⚠️ Пример |
 | scraper.config.ts (строка 178) | `4000` | ✅ |
-| env.production.example (строка 56) | `4000` | ✅ |
+| .env.production.example (строка 56) | `4000` | ✅ |
 | N8N node (строка 376) | `4000` | ✅ |
 | DTO Min/Max validation | `1000-3600000` | ✅ |
 
@@ -66,7 +66,7 @@
 | README.md (строка 182) | `30` | ✅ |
 | README.md (строка 315) | `30` (пример) | ✅ |
 | scraper.config.ts (строка 184) | `30` | ✅ |
-| env.production.example (строка 66) | `30` | ✅ |
+| .env.production.example (строка 66) | `30` | ✅ |
 | N8N node (строка 459) | `30` | ✅ |
 | DTO Min/Max validation | `1-600` | ✅ |
 
@@ -80,7 +80,7 @@
 | README.md (строка 183) | `1000` | ✅ |
 | README.md (строка 316) | `1000` (пример) | ✅ |
 | scraper.config.ts (строка 185) | `1000` | ✅ |
-| env.production.example (строка 69) | `1000` | ✅ |
+| .env.production.example (строка 69) | `1000` | ✅ |
 | N8N node (строка 444) | `1000` | ✅ |
 | DTO Min/Max validation | `100-600000` | ✅ |
 
@@ -95,7 +95,7 @@
 | README.md (строка 317) | `3` (пример) | ✅ |
 | README.md (строка 502) | `5` (пример) | ⚠️ Пример |
 | scraper.config.ts (строка 186) | `3` | ✅ |
-| env.production.example (строка 72) | `3` | ✅ |
+| .env.production.example (строка 72) | `3` | ✅ |
 | N8N node (строка 452) | `3` | ✅ |
 | DTO Min/Max validation | `1-100` | ✅ |
 
@@ -108,7 +108,7 @@
 |----------|----------|--------|
 | README.md (строка 117) | `3` | ✅ |
 | scraper.config.ts (строка 179) | `3` | ✅ |
-| env.production.example (строка 12) | `3` | ✅ |
+| .env.production.example (строка 12) | `3` | ✅ |
 
 ### 8. Data Lifetime (dataLifetimeMins)
 - **Значение по умолчанию:** `60` минут
@@ -119,7 +119,7 @@
 |----------|----------|--------|
 | README.md (строка 175) | `60` | ✅ |
 | scraper.config.ts (строка 180) | `60` | ✅ |
-| env.production.example (строка 59) | `60` | ✅ |
+| .env.production.example (строка 59) | `60` | ✅ |
 | Config Min/Max validation | `1-44640` | ✅ |
 
 ### 9. Cleanup Interval (cleanupIntervalMins)
@@ -131,7 +131,7 @@
 |----------|----------|--------|
 | README.md (строка 176) | `10` | ✅ |
 | scraper.config.ts (строка 181) | `10` | ✅ |
-| env.production.example (строка 62) | `10` | ✅ |
+| .env.production.example (строка 62) | `10` | ✅ |
 | Config Min/Max validation | `1-10080` | ✅ |
 
 ### 10. Playwright Navigation Timeout
@@ -143,7 +143,7 @@
 |----------|----------|--------|
 | README.md (строка 165) | `30` | ✅ |
 | scraper.config.ts (строка 166) | `30` | ✅ |
-| env.production.example (строка 43) | `30` | ✅ |
+| .env.production.example (строка 43) | `30` | ✅ |
 
 ### 11. Fingerprint Settings
 
@@ -155,7 +155,7 @@
 | README.md (строка 131) | `true` | ✅ |
 | README.md (строка 209) | `true` (пример) | ✅ |
 | scraper.config.ts (строка 173) | `true` | ✅ |
-| env.production.example (строка 33) | `true` | ✅ |
+| .env.production.example (строка 33) | `true` | ✅ |
 | N8N node (строка 151) | `true` | ✅ |
 
 #### User Agent
@@ -166,7 +166,7 @@
 | README.md (строка 132) | `auto` | ✅ |
 | README.md (строка 210) | `auto` (пример) | ✅ |
 | scraper.config.ts (строка 159) | `auto` | ✅ |
-| env.production.example (строка 23) | `auto` | ✅ |
+| .env.production.example (строка 23) | `auto` | ✅ |
 | N8N node (строка 158) | `auto` | ✅ |
 
 #### Locale
@@ -177,7 +177,7 @@
 | README.md (строка 133) | `en-US` | ✅ |
 | README.md (строка 211) | `en-US` (пример) | ✅ |
 | scraper.config.ts (строка 160) | `en-US` | ✅ |
-| env.production.example (строка 26) | `en-US` | ✅ |
+| .env.production.example (строка 26) | `en-US` | ✅ |
 | N8N node (строка 166) | `auto` | ❌ НЕСООТВЕТСТВИЕ |
 
 #### Timezone ID
@@ -188,7 +188,7 @@
 | README.md (строка 134) | `UTC` | ✅ |
 | README.md (строка 212) | `UTC` (пример) | ✅ |
 | scraper.config.ts (строка 161) | `UTC` | ✅ |
-| env.production.example (строка 30) | `UTC` | ✅ |
+| .env.production.example (строка 30) | `UTC` | ✅ |
 | N8N node (строка 174) | `UTC` | ✅ |
 
 #### Rotate On Anti-Bot
@@ -199,7 +199,7 @@
 | README.md (строка 135) | `true` | ✅ |
 | README.md (строка 213) | `true` (пример) | ✅ |
 | scraper.config.ts (строка 174) | `true` | ✅ |
-| env.production.example (строка 36) | `true` | ✅ |
+| .env.production.example (строка 36) | `true` | ✅ |
 | N8N node (строка 182) | `true` | ✅ |
 
 #### Browsers
@@ -242,7 +242,7 @@
 | README.md (строка 166) | `true` | ✅ |
 | README.md (строка 206) | `true` (пример) | ✅ |
 | scraper.config.ts (строка 169) | `true` | ✅ |
-| env.production.example (строка 46) | `true` | ✅ |
+| .env.production.example (строка 46) | `true` | ✅ |
 | N8N node (строка 137) | `true` | ✅ |
 
 ### 13. Block Heavy Resources
@@ -253,7 +253,7 @@
 | README.md (строка 167) | `true` | ✅ |
 | README.md (строка 207) | `false` (пример) | ⚠️ Пример |
 | scraper.config.ts (строка 170) | `true` | ✅ |
-| env.production.example (строка 49) | `true` | ✅ |
+| .env.production.example (строка 49) | `true` | ✅ |
 | N8N node (строка 144) | `true` | ✅ |
 
 ### 14. Default Mode
@@ -264,7 +264,7 @@
 | README.md (строка 123) | `extractor` | ✅ |
 | README.md (строка 203) | `extractor` (комментарий) | ✅ |
 | scraper.config.ts (строка 157) | `extractor` | ✅ |
-| env.production.example (строка 16) | `extractor` | ✅ |
+| .env.production.example (строка 16) | `extractor` | ✅ |
 | N8N node (строка 99) | `extractor` | ✅ |
 
 ---
