@@ -10,7 +10,6 @@ services:
       - '8080:8080'
     environment:
       - TZ=UTC
-      - API_BASE_PATH=api
       - LOG_LEVEL=warn
       - MAX_CONCURRENCY=3
       - DEFAULT_MODE=extractor

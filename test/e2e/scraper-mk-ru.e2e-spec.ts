@@ -24,7 +24,7 @@ describe('Scraper MK.ru Article (e2e)', () => {
 
   beforeEach(async () => {
     // Ensure defaults the same as in main.ts
-    process.env.API_BASE_PATH = process.env.API_BASE_PATH ?? 'api'
+    process.env.BASE_PATH = process.env.BASE_PATH ?? ''
 
     // Stub external HTTP request to mk.ru while keeping real library invocation
     nock('https://www.mk.ru').get(new URL(targetUrl).pathname).reply(200, fixtureHtml, {
@@ -45,8 +45,9 @@ describe('Scraper MK.ru Article (e2e)', () => {
       new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })
     )
 
-    const apiBasePath = (process.env.API_BASE_PATH || 'api').replace(/^\/+|\/+$/g, '')
-    app.setGlobalPrefix(`${apiBasePath}/v1`)
+    const basePath = (process.env.BASE_PATH || '').replace(/^\/+|\/+$/g, '')
+    const globalPrefix = [basePath, 'api/v1'].filter(Boolean).join('/')
+    app.setGlobalPrefix(globalPrefix)
 
     await app.init()
     await app.getHttpAdapter().getInstance().ready()

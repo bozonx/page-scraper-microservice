@@ -5,7 +5,8 @@ import { AppModule } from '@/app.module.js';
 
 export async function createTestApp(): Promise<NestFastifyApplication> {
   // Ensure defaults the same as in main.ts
-  process.env.API_BASE_PATH = process.env.API_BASE_PATH ?? 'api';
+  // Ensure defaults the same as in main.ts
+  process.env.BASE_PATH = process.env.BASE_PATH ?? '';
 
   const moduleRef = await Test.createTestingModule({
     imports: [AppModule],
@@ -21,8 +22,9 @@ export async function createTestApp(): Promise<NestFastifyApplication> {
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
 
-  const apiBasePath = (process.env.API_BASE_PATH || 'api').replace(/^\/+|\/+$/g, '');
-  app.setGlobalPrefix(`${apiBasePath}/v1`);
+  const basePath = (process.env.BASE_PATH || '').replace(/^\/+|\/+$/g, '');
+  const globalPrefix = [basePath, 'api/v1'].filter(Boolean).join('/');
+  app.setGlobalPrefix(globalPrefix);
 
   await app.init();
   // Ensure Fastify has completed plugin registration and routing before tests

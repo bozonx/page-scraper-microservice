@@ -106,7 +106,7 @@ Configure the service using environment variables.
 | `NODE_ENV` | Node.js environment mode (`development`, `production`, `test`) | `production` |
 | `LISTEN_HOST` | Server bind address | `0.0.0.0` |
 | `LISTEN_PORT` | Server port (1-65535) | `8080` |
-| `API_BASE_PATH` | Base path for API endpoints (e.g., `api` → `/api/v1/...`) | `api` |
+| `BASE_PATH` | Base path for application. API will be at `{BASE_PATH}/api/v1/...` | `(empty)` |
 | `LOG_LEVEL` | Logging level (`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`) | `warn` |
 | `TZ` | Application timezone (affects logs and date handling) | `UTC` |
 

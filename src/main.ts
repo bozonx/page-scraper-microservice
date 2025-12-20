@@ -37,7 +37,7 @@ async function bootstrap() {
   )
 
   // Configure global API prefix from configuration
-  const globalPrefix = `${appConfig.apiBasePath}/v1`
+  const globalPrefix = [appConfig.basePath, 'api/v1'].filter(Boolean).join('/')
   app.setGlobalPrefix(globalPrefix)
 
   // Enable graceful shutdown hooks for proper cleanup

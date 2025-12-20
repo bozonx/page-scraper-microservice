@@ -22,10 +22,12 @@ export class AppConfig {
   public host!: string;
 
   /**
-   * Base path for API endpoints (e.g., 'api' will make endpoints available at /api/v1/...)
+   * Base path for the application (optional)
+   * If set, all routes (including API) will be prefixed with this path.
+   * API routes will be at {basePath}/api/v1/...
    */
   @IsString()
-  public apiBasePath!: string;
+  public basePath!: string;
 
   /**
    * Node.js environment mode
@@ -46,13 +48,13 @@ export class AppConfig {
  * Validates and provides application configuration from environment variables
  */
 export default registerAs('app', (): AppConfig => {
-const config = plainToClass(AppConfig, {
-  port: parseInt(process.env.LISTEN_PORT ?? '8080', 10),
-  host: process.env.LISTEN_HOST ?? '0.0.0.0',
-  apiBasePath: (process.env.API_BASE_PATH ?? 'api').replace(/^\/+|\/+$/g, ''),
-  nodeEnv: process.env.NODE_ENV ?? 'production',
-  logLevel: process.env.LOG_LEVEL ?? 'warn',
-});
+  const config = plainToClass(AppConfig, {
+    port: parseInt(process.env.LISTEN_PORT ?? '8080', 10),
+    host: process.env.LISTEN_HOST ?? '0.0.0.0',
+    basePath: (process.env.BASE_PATH ?? '').replace(/^\/+|\/+$/g, ''),
+    nodeEnv: process.env.NODE_ENV ?? 'production',
+    logLevel: process.env.LOG_LEVEL ?? 'warn',
+  });
 
   // Validate configuration and throw error if invalid
   const errors = validateSync(config, {
