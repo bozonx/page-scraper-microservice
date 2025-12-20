@@ -4,6 +4,7 @@ import type {
   INodeType,
   INodeTypeDescription,
 } from 'n8n-workflow'
+import * as yaml from 'js-yaml'
 
 export class PageScraper implements INodeType {
   description: INodeTypeDescription = {
@@ -195,7 +196,8 @@ export class PageScraper implements INodeType {
             name: 'fingerprintOperatingSystems',
             type: 'string',
             default: 'windows,macos,linux',
-            description: 'Comma-separated list of operating systems to simulate (e.g., windows,macos,linux,android,ios)',
+            description:
+              'Comma-separated list of operating systems to simulate (e.g., windows,macos,linux,android,ios)',
             placeholder: 'windows,macos',
           },
           {
@@ -233,234 +235,20 @@ export class PageScraper implements INodeType {
         placeholder: '0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a',
       },
       {
-        displayName: 'Items',
-        name: 'items',
-        type: 'fixedCollection',
-        typeOptions: {
-          multipleValues: true,
-        },
+        displayName: 'Options',
+        name: 'options',
+        type: 'json',
         displayOptions: {
           show: {
             operation: ['batch'],
           },
         },
-        default: {},
-        placeholder: 'Add Item',
-        options: [
-          {
-            name: 'item',
-            displayName: 'Item',
-            values: [
-              {
-                displayName: 'URL',
-                name: 'url',
-                type: 'string',
-                default: '',
-                required: true,
-                description: 'URL to scrape',
-                placeholder: 'https://example.com/article',
-              },
-              {
-                displayName: 'Mode',
-                name: 'mode',
-                type: 'options',
-                options: [
-                  {
-                    name: 'Extractor',
-                    value: 'extractor',
-                  },
-                  {
-                    name: 'Playwright',
-                    value: 'playwright',
-                  },
-                ],
-                default: 'extractor',
-                description: 'Scraper mode (optional, uses common settings if empty)',
-              },
-              {
-                displayName: 'Raw Body',
-                name: 'rawBody',
-                type: 'boolean',
-                default: false,
-                description:
-                  'Whether to return body as provided by extractor (overrides common settings if set)',
-              },
-            ],
-          },
-        ],
-        description: 'URLs to scrape in batch',
-      },
-      {
-        displayName: 'Common Settings',
-        name: 'commonSettings',
-        type: 'collection',
-        displayOptions: {
-          show: {
-            operation: ['batch'],
-          },
-        },
-        default: {},
-        placeholder: 'Add Common Setting',
-        options: [
-          {
-            displayName: 'Mode',
-            name: 'mode',
-            type: 'options',
-            options: [
-              {
-                name: 'Extractor',
-                value: 'extractor',
-              },
-              {
-                name: 'Playwright',
-                value: 'playwright',
-              },
-            ],
-            default: 'extractor',
-            description: 'Default scraper mode for all items',
-          },
-          {
-            displayName: 'Task Timeout (Seconds)',
-            name: 'taskTimeoutSecs',
-            type: 'number',
-            default: 60,
-            description: 'Default timeout for each item',
-          },
-          {
-            displayName: 'Raw Body',
-            name: 'rawBody',
-            type: 'boolean',
-            default: false,
-            description: 'Whether to return body without Markdown conversion',
-          },
-          {
-            displayName: 'Locale',
-            name: 'locale',
-            type: 'string',
-            default: 'en-US',
-            description: 'Preferred locale',
-          },
-          {
-            displayName: 'Timezone ID',
-            name: 'timezoneId',
-            type: 'string',
-            default: 'UTC',
-            description: 'Target timezone',
-          },
-        ],
-      },
-      {
-        displayName: 'Schedule Options',
-        name: 'scheduleOptions',
-        type: 'collection',
-        displayOptions: {
-          show: {
-            operation: ['batch'],
-          },
-        },
-        default: {},
-        placeholder: 'Add Schedule Option',
-        options: [
-          {
-            displayName: 'Min Delay (Ms)',
-            name: 'minDelayMs',
-            type: 'number',
-            default: 1500,
-            description:
-              'Minimum delay between requests in milliseconds (500-3600000, up to 1 hour). Defaults to 1500 if omitted',
-          },
-          {
-            displayName: 'Max Delay (Ms)',
-            name: 'maxDelayMs',
-            type: 'number',
-            default: 4000,
-            description:
-              'Maximum delay between requests in milliseconds (1000-3600000, up to 1 hour). Defaults to 4000 if omitted',
-          },
-          {
-            displayName: 'Jitter',
-            name: 'jitter',
-            type: 'boolean',
-            default: true,
-          },
-        ],
-      },
-      {
-        displayName: 'Webhook Options',
-        name: 'webhookOptions',
-        type: 'collection',
-        displayOptions: {
-          show: {
-            operation: ['batch'],
-          },
-        },
-        default: {},
-        placeholder: 'Add Webhook Option',
-        options: [
-          {
-            displayName: 'Webhook URL',
-            name: 'url',
-            type: 'string',
-            default: '',
-            description: 'Destination endpoint for webhook notification',
-            placeholder: 'https://example.com/webhook',
-          },
-          {
-            displayName: 'Headers',
-            name: 'headers',
-            type: 'fixedCollection',
-            typeOptions: {
-              multipleValues: true,
-            },
-            default: {},
-            placeholder: 'Add Header',
-            options: [
-              {
-                name: 'header',
-                displayName: 'Header',
-                values: [
-                  {
-                    displayName: 'Name',
-                    name: 'name',
-                    type: 'string',
-                    default: '',
-                    description: 'Header name',
-                  },
-                  {
-                    displayName: 'Value',
-                    name: 'value',
-                    type: 'string',
-                    default: '',
-                    description: 'Header value',
-                  },
-                ],
-              },
-            ],
-          },
-          {
-            displayName: 'Backoff (Ms)',
-            name: 'backoffMs',
-            type: 'number',
-            default: 1000,
-            description:
-              'Base delay for exponential backoff between retries in milliseconds (100-600000, up to 10 minutes). Defaults to 1000 if omitted',
-          },
-          {
-            displayName: 'Max Attempts',
-            name: 'maxAttempts',
-            type: 'number',
-            default: 3,
-            description: 'Maximum number of retry attempts (1-100). Defaults to 3 if omitted',
-          },
-          {
-            displayName: 'Timeout (Seconds)',
-            name: 'timeoutSecs',
-            type: 'number',
-            default: 30,
-            description:
-              'Timeout in seconds for webhook HTTP requests (1-600). Defaults to DEFAULT_WEBHOOK_TIMEOUT_SECS when omitted',
-          },
-        ],
+        default: '',
+        required: true,
+        description:
+          'Batch request configuration in YAML or JSON format. All fields will be sent to the server as-is',
+        placeholder:
+          'items:\n  - url: https://example.com/page1\n    mode: extractor\n  - url: https://example.com/page2\ncommonSettings:\n  rawBody: false\nschedule:\n  minDelayMs: 1500\n  maxDelayMs: 4000',
       },
     ],
     usableAsTool: true,
@@ -521,16 +309,24 @@ export class PageScraper implements INodeType {
             fingerprint.rotateOnAntiBot = additionalOptions.fingerprintRotateOnAntiBot
           }
           if (additionalOptions.fingerprintBrowsers) {
-            fingerprint.browsers = additionalOptions.fingerprintBrowsers.split(',').map((b: string) => b.trim())
+            fingerprint.browsers = additionalOptions.fingerprintBrowsers
+              .split(',')
+              .map((b: string) => b.trim())
           }
           if (additionalOptions.fingerprintOperatingSystems) {
-            fingerprint.operatingSystems = additionalOptions.fingerprintOperatingSystems.split(',').map((os: string) => os.trim())
+            fingerprint.operatingSystems = additionalOptions.fingerprintOperatingSystems
+              .split(',')
+              .map((os: string) => os.trim())
           }
           if (additionalOptions.fingerprintDevices) {
-            fingerprint.devices = additionalOptions.fingerprintDevices.split(',').map((d: string) => d.trim())
+            fingerprint.devices = additionalOptions.fingerprintDevices
+              .split(',')
+              .map((d: string) => d.trim())
           }
           if (additionalOptions.fingerprintLocales) {
-            fingerprint.locales = additionalOptions.fingerprintLocales.split(',').map((l: string) => l.trim())
+            fingerprint.locales = additionalOptions.fingerprintLocales
+              .split(',')
+              .map((l: string) => l.trim())
           }
 
           if (Object.keys(fingerprint).length > 0) {
@@ -593,16 +389,24 @@ export class PageScraper implements INodeType {
             fingerprint.rotateOnAntiBot = additionalOptions.fingerprintRotateOnAntiBot
           }
           if (additionalOptions.fingerprintBrowsers) {
-            fingerprint.browsers = additionalOptions.fingerprintBrowsers.split(',').map((b: string) => b.trim())
+            fingerprint.browsers = additionalOptions.fingerprintBrowsers
+              .split(',')
+              .map((b: string) => b.trim())
           }
           if (additionalOptions.fingerprintOperatingSystems) {
-            fingerprint.operatingSystems = additionalOptions.fingerprintOperatingSystems.split(',').map((os: string) => os.trim())
+            fingerprint.operatingSystems = additionalOptions.fingerprintOperatingSystems
+              .split(',')
+              .map((os: string) => os.trim())
           }
           if (additionalOptions.fingerprintDevices) {
-            fingerprint.devices = additionalOptions.fingerprintDevices.split(',').map((d: string) => d.trim())
+            fingerprint.devices = additionalOptions.fingerprintDevices
+              .split(',')
+              .map((d: string) => d.trim())
           }
           if (additionalOptions.fingerprintLocales) {
-            fingerprint.locales = additionalOptions.fingerprintLocales.split(',').map((l: string) => l.trim())
+            fingerprint.locales = additionalOptions.fingerprintLocales
+              .split(',')
+              .map((l: string) => l.trim())
           }
 
           if (Object.keys(fingerprint).length > 0) {
@@ -625,83 +429,23 @@ export class PageScraper implements INodeType {
             pairedItem: { item: i },
           })
         } else if (operation === 'batch') {
-          const itemsParam = this.getNodeParameter('items', i, {}) as any
-          const commonSettings = this.getNodeParameter('commonSettings', i, {}) as Record<
-            string,
-            any
-          >
-          const scheduleOptions = this.getNodeParameter('scheduleOptions', i, {}) as Record<
-            string,
-            any
-          >
-          const webhookOptions = this.getNodeParameter('webhookOptions', i, {}) as Record<
-            string,
-            any
-          >
+          const optionsParam = this.getNodeParameter('options', i) as any
+          let body: Record<string, any>
 
-          const body: Record<string, any> = {
-            items: [],
-          }
-
-          // Build items array
-          if (itemsParam.item && Array.isArray(itemsParam.item)) {
-            body.items = itemsParam.item.map((item: any) => {
-              const batchItem: Record<string, any> = { url: item.url }
-              if (item.mode) {
-                batchItem.mode = item.mode
+          if (typeof optionsParam === 'string') {
+            try {
+              body = yaml.load(optionsParam) as Record<string, any>
+            } catch (yamlError) {
+              try {
+                body = JSON.parse(optionsParam)
+              } catch (jsonError) {
+                throw new Error(
+                  `Failed to parse options field. It must be valid YAML or JSON. YAML error: ${(yamlError as Error).message}, JSON error: ${(jsonError as Error).message}`
+                )
               }
-              if (item.rawBody !== undefined) {
-                batchItem.rawBody = item.rawBody
-              }
-              return batchItem
-            })
-          }
-
-          // Add common settings
-          if (Object.keys(commonSettings).length > 0) {
-            body.commonSettings = commonSettings
-          }
-
-          // Add schedule
-          if (Object.keys(scheduleOptions).length > 0) {
-            if (
-              scheduleOptions.minDelayMs !== undefined &&
-              scheduleOptions.maxDelayMs !== undefined &&
-              scheduleOptions.minDelayMs > scheduleOptions.maxDelayMs
-            ) {
-              throw new Error(
-                'Validation failed: "schedule.minDelayMs" must be less than or equal to "schedule.maxDelayMs"'
-              )
             }
-            body.schedule = scheduleOptions
-          }
-
-          // Add webhook
-          if (webhookOptions.url) {
-            const webhook: Record<string, any> = {
-              url: webhookOptions.url,
-            }
-
-            if (webhookOptions.headers?.header && Array.isArray(webhookOptions.headers.header)) {
-              webhook.headers = {}
-              webhookOptions.headers.header.forEach((h: any) => {
-                if (h.name && h.value) {
-                  webhook.headers[h.name] = h.value
-                }
-              })
-            }
-
-            if (webhookOptions.backoffMs !== undefined) {
-              webhook.backoffMs = webhookOptions.backoffMs
-            }
-            if (webhookOptions.maxAttempts !== undefined) {
-              webhook.maxAttempts = webhookOptions.maxAttempts
-            }
-            if (webhookOptions.timeoutSecs !== undefined) {
-              webhook.timeoutSecs = webhookOptions.timeoutSecs
-            }
-
-            body.webhook = webhook
+          } else {
+            body = JSON.parse(JSON.stringify(optionsParam))
           }
 
           const response = await this.helpers.httpRequestWithAuthentication.call(
