@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-bozonx-page-scraper-microservice",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "n8n node for Page Scraper microservice - extract structured content, retrieve HTML, and process URLs in batches",
   "license": "MIT",
   "keywords": [
