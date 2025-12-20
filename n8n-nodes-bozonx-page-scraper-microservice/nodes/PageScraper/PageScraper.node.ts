@@ -472,7 +472,7 @@ export class PageScraper implements INodeType {
     const operation = this.getNodeParameter('operation', 0) as string
 
     const credentials = await this.getCredentials('pageScraperApi')
-    const apiUrl = (credentials.baseUrl as string).replace(/\/$/, '')
+    const apiUrl = (credentials.baseUrl as string).replace(/\/$/, '') + '/api/v1'
 
     for (let i = 0; i < items.length; i++) {
       try {

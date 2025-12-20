@@ -11,11 +11,11 @@ export class PageScraperApi implements ICredentialType {
       displayName: 'Base URL',
       name: 'baseUrl',
       type: 'string',
-      default: 'http://page-scraper-microservice:8080/api/v1',
-      placeholder: 'https://page-scraper.example.com/api/v1',
+      default: 'http://page-scraper-microservice:8080',
+      placeholder: 'https://page-scraper.example.com',
       required: true,
       description:
-        'Full base URL of the Page Scraper microservice API (including /api/v1 or custom path)',
+        'Base URL of the Page Scraper microservice API (e.g. http://page-scraper-microservice:8080)',
     },
     {
       displayName: 'Authentication',
@@ -94,7 +94,7 @@ export class PageScraperApi implements ICredentialType {
   test: ICredentialType['test'] = {
     request: {
       baseURL: '={{$credentials.baseUrl}}',
-      url: '/health',
+      url: '/api/v1/health',
     },
   }
 }
