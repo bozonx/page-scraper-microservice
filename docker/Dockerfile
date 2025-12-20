@@ -15,14 +15,15 @@ RUN corepack enable
 
 # System packages for realistic rendering and time zone
 RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-    procps \
-    fonts-noto \
-    fonts-noto-color-emoji \
-    fonts-liberation \
-    tzdata \
-    wget \
- && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y --no-install-recommends \
+  procps \
+  fonts-noto \
+  fonts-noto-color-emoji \
+  fonts-liberation \
+  tzdata \
+  wget \
+  tini \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile --prefer-offline || pnpm install --prod --prefer-offline
@@ -31,6 +32,5 @@ RUN pnpm dlx playwright install --with-deps chromium firefox
 COPY dist ./dist
 
 EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD wget -qO- http://127.0.0.1:8080/api/v1/health || exit 1
+ENTRYPOINT ["/sbin/tini", "--"]
 CMD ["node", "dist/src/main.js"]
