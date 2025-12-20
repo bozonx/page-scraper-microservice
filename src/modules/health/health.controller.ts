@@ -1,11 +1,13 @@
-import { Controller, Get } from '@nestjs/common'
+import { Controller, Get, Res, HttpStatus } from '@nestjs/common'
+import type { FastifyReply } from 'fastify'
+import { ShutdownService } from '../../common/services/shutdown.service.js'
 
 /**
  * Health check response interface
  * Defines the structure of health check responses
  */
 export interface HealthResponse {
-  status: 'ok' | 'error'
+  status: 'ok' | 'error' | 'shutting_down'
   timestamp?: string
   uptime?: number
 }
@@ -16,12 +18,17 @@ export interface HealthResponse {
  */
 @Controller('health')
 export class HealthController {
+  constructor(private readonly shutdownService: ShutdownService) { }
+
   /**
    * Basic health check endpoint returning a simple OK status
    * @returns Health response indicating service is operational
    */
   @Get()
-  public check(): HealthResponse {
-    return { status: 'ok' }
+  public check(@Res() res: FastifyReply) {
+    if (this.shutdownService.isShuttingDown()) {
+      return res.status(HttpStatus.SERVICE_UNAVAILABLE).send({ status: 'shutting_down' })
+    }
+    return res.status(HttpStatus.OK).send({ status: 'ok' })
   }
 }

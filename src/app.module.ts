@@ -8,6 +8,7 @@ import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js'
 import appConfig from './config/app.config.js'
 import scraperConfig from './config/scraper.config.js'
 import type { AppConfig } from './config/app.config.js'
+import { CommonModule } from './common/common.module.js'
 import pkg from '../package.json' with { type: 'json' }
 
 /**
@@ -42,15 +43,15 @@ import pkg from '../package.json' with { type: 'json' }
             // Pretty printing for development environment
             transport: isDev
               ? {
-                  target: 'pino-pretty',
-                  options: {
-                    colorize: true,
-                    singleLine: false,
-                    translateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss.l'Z'",
-                    ignore: 'pid,hostname',
-                    messageFormat: '[{context}] {msg}',
-                  },
-                }
+                target: 'pino-pretty',
+                options: {
+                  colorize: true,
+                  singleLine: false,
+                  translateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss.l'Z'",
+                  ignore: 'pid,hostname',
+                  messageFormat: '[{context}] {msg}',
+                },
+              }
               : undefined,
             // Custom serializers for request/response/error formatting
             serializers: {
@@ -104,6 +105,7 @@ import pkg from '../package.json' with { type: 'json' }
     }),
 
     // Feature modules
+    CommonModule,
     HealthModule,
     ScraperModule,
   ],
@@ -116,4 +118,4 @@ import pkg from '../package.json' with { type: 'json' }
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }
