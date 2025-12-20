@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service.js'
 import { BatchService } from './services/batch.service.js'
@@ -18,17 +18,21 @@ import {
   BatchJobCreationException,
   BatchJobStatusException,
 } from '../../common/exceptions/scraper.exception.js'
+import { ShutdownGuard } from '../../common/guards/shutdown.guard.js'
+import { ShutdownService } from '../../common/services/shutdown.service.js'
 
 /**
  * Scraper controller
  * Handles HTTP requests for web scraping operations and batch job management
  */
+@UseGuards(ShutdownGuard)
 @Controller()
 export class ScraperController {
   constructor(
     private readonly scraperService: ScraperService,
     private readonly batchService: BatchService,
     private readonly memoryStoreService: MemoryStoreService,
+    private readonly shutdownService: ShutdownService,
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(ScraperController.name)
@@ -42,6 +46,7 @@ export class ScraperController {
   @Post('page')
   @HttpCode(HttpStatus.OK)
   async scrapePage(@Body() request: ScraperRequestDto): Promise<ScraperResponseDto> {
+    this.shutdownService.incrementActiveRequests()
     try {
       this.logger.info(`Received scrape request for URL: ${request.url}`)
       const result = await this.scraperService
@@ -55,6 +60,8 @@ export class ScraperController {
     } catch (error) {
       this.logger.error(`Failed to scrape ${request.url}:`, error)
       throw this.handleScraperError(error)
+    } finally {
+      this.shutdownService.decrementActiveRequests()
     }
   }
 
@@ -66,6 +73,7 @@ export class ScraperController {
   @Post('html')
   @HttpCode(HttpStatus.OK)
   async getHtml(@Body() request: HtmlRequestDto): Promise<HtmlResponseDto> {
+    this.shutdownService.incrementActiveRequests()
     try {
       this.logger.info(`Received HTML request for URL: ${request.url}`)
       const result = await this.scraperService.getHtml(request)
@@ -74,6 +82,8 @@ export class ScraperController {
     } catch (error) {
       this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
       throw this.handleScraperError(error)
+    } finally {
+      this.shutdownService.decrementActiveRequests()
     }
   }
 
@@ -84,6 +94,7 @@ export class ScraperController {
    */
   @Post('batch')
   async createBatchJob(@Body() request: BatchRequestDto): Promise<BatchResponseDto> {
+    this.shutdownService.incrementActiveRequests()
     try {
       this.logger.info(`Received batch request with ${request.items.length} items`)
       const result = await this.batchService.createBatchJob(request)
@@ -99,6 +110,8 @@ export class ScraperController {
 
       const errorMessage = error instanceof Error ? error.message : String(error)
       throw new BatchJobCreationException(errorMessage)
+    } finally {
+      this.shutdownService.decrementActiveRequests()
     }
   }
 

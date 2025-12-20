@@ -8,6 +8,7 @@ import { ScraperConfig } from '../../../config/scraper.config.js'
 @Injectable()
 export class BrowserService implements OnModuleInit, OnModuleDestroy {
     private browser: Browser | null = null
+    private activePages = 0
     private readonly fingerprintInjector = new FingerprintInjector()
 
     constructor(
@@ -40,6 +41,19 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
 
     async onModuleDestroy() {
         if (this.browser) {
+            // Wait for active pages to close (with timeout)
+            if (this.activePages > 0) {
+                this.logger.info(`Waiting for ${this.activePages} active pages to close...`)
+                const timeout = 5000 // 5 seconds
+                const start = Date.now()
+                while (this.activePages > 0 && Date.now() - start < timeout) {
+                    await new Promise(resolve => setTimeout(resolve, 100))
+                }
+                if (this.activePages > 0) {
+                    this.logger.warn(`${this.activePages} pages still active, forcing browser close`)
+                }
+            }
+
             this.logger.info('Closing persistent Playwright browser...')
             await this.browser.close()
             this.browser = null
@@ -63,6 +77,7 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
         let context: BrowserContext | null = null
         let page: Page | null = null
 
+        this.activePages++
         try {
             // Create new isolated context
             context = await this.browser.newContext({
@@ -89,6 +104,7 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
             this.logger.error('Error in withPage', error)
             throw error
         } finally {
+            this.activePages--
             if (page) {
                 await page.close().catch(() => { })
             }

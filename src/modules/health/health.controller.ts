@@ -10,6 +10,7 @@ export interface HealthResponse {
   status: 'ok' | 'error' | 'shutting_down'
   timestamp?: string
   uptime?: number
+  activeRequests?: number
 }
 
 /**
@@ -27,7 +28,11 @@ export class HealthController {
   @Get()
   public check(@Res() res: FastifyReply) {
     if (this.shutdownService.isShuttingDown()) {
-      return res.status(HttpStatus.SERVICE_UNAVAILABLE).send({ status: 'shutting_down' })
+      return res.status(HttpStatus.SERVICE_UNAVAILABLE).send({
+        status: 'shutting_down',
+        activeRequests: this.shutdownService.getActiveRequests(),
+        timestamp: new Date().toISOString()
+      })
     }
     return res.status(HttpStatus.OK).send({ status: 'ok' })
   }

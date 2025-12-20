@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common'
+import { Injectable, OnModuleDestroy, OnModuleInit, OnApplicationShutdown } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '../../../config/scraper.config.js'
@@ -6,7 +6,7 @@ import { MemoryStoreService } from './memory-store.service.js'
 import { BatchService } from './batch.service.js'
 
 @Injectable()
-export class CleanupService implements OnModuleInit, OnModuleDestroy {
+export class CleanupService implements OnModuleInit, OnModuleDestroy, OnApplicationShutdown {
   private running = false
   private runningPromise: Promise<void> | null = null
   private lastRunStartedAt = 0
@@ -34,6 +34,14 @@ export class CleanupService implements OnModuleInit, OnModuleDestroy {
     if (this.intervalHandle) {
       clearInterval(this.intervalHandle)
       this.intervalHandle = null
+    }
+  }
+
+  async onApplicationShutdown(_signal?: string): Promise<void> {
+    // Wait for active cleanup to complete
+    if (this.runningPromise) {
+      this.logger.info('Waiting for cleanup to complete...')
+      await this.runningPromise
     }
   }
 

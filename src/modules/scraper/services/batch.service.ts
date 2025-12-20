@@ -281,8 +281,13 @@ export class BatchService implements OnApplicationShutdown {
     const job = this.jobs.get(jobId)
     if (!job) return
 
+    // Early exit if cancellation was requested (e.g., during shutdown)
+    if (job.cancelRequested) {
+      this.logger.debug(`Skipping item ${index} for job ${jobId} due to cancellation`)
+      return
+    }
+
     try {
-      if (job.cancelRequested) return
       job.startedAny = true
       // Build scraper request from common settings and item-specific settings
       const scraperRequest: ScraperRequestDto = this.buildScraperRequest(
@@ -485,6 +490,7 @@ export class BatchService implements OnApplicationShutdown {
    * Wait for one-shot webhook delivery (success or failure) before returning.
    */
   async onApplicationShutdown(_signal?: string): Promise<void> {
+    const SHUTDOWN_WEBHOOK_TIMEOUT = 5000 // 5 seconds instead of default 30
     const finalizePromises: Promise<void>[] = []
 
     for (const [jobId, job] of this.jobs.entries()) {
@@ -499,16 +505,29 @@ export class BatchService implements OnApplicationShutdown {
         this.updateJobStatus(jobId, 'partial')
 
         if (job.request.webhook) {
-          const p = this.sendWebhook(jobId).catch((err) => {
-            this.logger.error(`Failed to send webhook for job ${jobId} during shutdown:`, err)
+          const webhookPromise = Promise.race([
+            this.sendWebhook(jobId),
+            new Promise<void>((_, reject) =>
+              setTimeout(
+                () => reject(new Error('Webhook timeout during shutdown')),
+                SHUTDOWN_WEBHOOK_TIMEOUT
+              )
+            ),
+          ]).catch((err) => {
+            this.logger.warn(
+              `Webhook for job ${jobId} failed during shutdown: ${err.message}`
+            )
           })
-          finalizePromises.push(p)
+          finalizePromises.push(webhookPromise)
         }
       }
     }
 
     // Await all webhooks (one-shot) before shutdown completes
     if (finalizePromises.length > 0) {
+      this.logger.info(
+        `Waiting for ${finalizePromises.length} webhooks (max ${SHUTDOWN_WEBHOOK_TIMEOUT}ms)...`
+      )
       await Promise.allSettled(finalizePromises)
     }
   }
