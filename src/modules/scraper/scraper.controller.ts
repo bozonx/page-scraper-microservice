@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus, UseGuards } from '@nestjs/common'
+import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common'
+import { FastifyRequest } from 'fastify'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service.js'
 import { BatchService } from './services/batch.service.js'
@@ -45,12 +46,19 @@ export class ScraperController {
    */
   @Post('page')
   @HttpCode(HttpStatus.OK)
-  async scrapePage(@Body() request: ScraperRequestDto): Promise<ScraperResponseDto> {
+  async scrapePage(@Body() request: ScraperRequestDto, @Req() req: FastifyRequest): Promise<ScraperResponseDto> {
     this.shutdownService.incrementActiveRequests()
+    const ac = new AbortController()
+    const onDisconnect = () => {
+      this.logger.warn(`Client disconnected for ${request.url}`)
+      ac.abort()
+    }
+    req.raw.on('close', onDisconnect)
+
     try {
       this.logger.info(`Received scrape request for URL: ${request.url}`)
       const result = await this.scraperService
-        .scrapePage(request)
+        .scrapePage(request, ac.signal)
         .then((res: ScraperResponseDto) => {
           this.memoryStoreService.addPage(request, res)
           return res
@@ -58,9 +66,14 @@ export class ScraperController {
       this.logger.info(`Successfully scraped ${request.url}`)
       return result
     } catch (error) {
-      this.logger.error(`Failed to scrape ${request.url}:`, error)
+      if (ac.signal.aborted) {
+        this.logger.warn(`Request aborted for ${request.url}`)
+      } else {
+        this.logger.error(`Failed to scrape ${request.url}:`, error)
+      }
       throw this.handleScraperError(error)
     } finally {
+      req.raw.off('close', onDisconnect)
       this.shutdownService.decrementActiveRequests()
     }
   }
@@ -72,17 +85,29 @@ export class ScraperController {
    */
   @Post('html')
   @HttpCode(HttpStatus.OK)
-  async getHtml(@Body() request: HtmlRequestDto): Promise<HtmlResponseDto> {
+  async getHtml(@Body() request: HtmlRequestDto, @Req() req: FastifyRequest): Promise<HtmlResponseDto> {
     this.shutdownService.incrementActiveRequests()
+    const ac = new AbortController()
+    const onDisconnect = () => {
+      this.logger.warn(`Client disconnected for html ${request.url}`)
+      ac.abort()
+    }
+    req.raw.on('close', onDisconnect)
+
     try {
       this.logger.info(`Received HTML request for URL: ${request.url}`)
-      const result = await this.scraperService.getHtml(request)
+      const result = await this.scraperService.getHtml(request, ac.signal)
       this.logger.info(`Successfully retrieved HTML from ${request.url}`)
       return result
     } catch (error) {
-      this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
+      if (ac.signal.aborted) {
+        this.logger.warn(`Request aborted for html ${request.url}`)
+      } else {
+        this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
+      }
       throw this.handleScraperError(error)
     } finally {
+      req.raw.off('close', onDisconnect)
       this.shutdownService.decrementActiveRequests()
     }
   }

@@ -19,8 +19,16 @@ export class ConcurrencyService implements OnApplicationShutdown {
     this.limit = pLimit(max)
   }
 
-  run<T>(fn: () => Promise<T>): Promise<T> {
-    return this.limit(fn)
+  run<T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    if (signal?.aborted) {
+      return Promise.reject(new Error('Request aborted'))
+    }
+    return this.limit(async () => {
+      if (signal?.aborted) {
+        throw new Error('Request aborted')
+      }
+      return fn()
+    })
   }
 
   async onApplicationShutdown(_signal?: string): Promise<void> {

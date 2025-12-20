@@ -37,7 +37,7 @@ export class ScraperService {
    * @param request Scraper request parameters
    * @returns Extracted page content
    */
-  async scrapePage(request: ScraperRequestDto): Promise<ScraperResponseDto> {
+  async scrapePage(request: ScraperRequestDto, signal?: AbortSignal): Promise<ScraperResponseDto> {
     return this.concurrencyService.run(async () => {
       const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
       const mode = request.mode || scraperConfig.defaultMode
@@ -49,10 +49,10 @@ export class ScraperService {
 
         // Use appropriate scraping method based on mode
         if (mode === 'playwright') {
-          content = await this.scrapeWithPlaywright(request)
+          content = await this.scrapeWithPlaywright(request, signal)
         } else {
           // 'extractor' mode (default)
-          content = await this.scrapeWithExtractor(request)
+          content = await this.scrapeWithExtractor(request, signal)
         }
 
         // Prepare body based on rawBody flag: either raw extractor output or Markdown
@@ -92,7 +92,7 @@ export class ScraperService {
         this.logger.error(`Failed to scrape page ${request.url}:`, error)
         throw error
       }
-    })
+    }, signal)
   }
 
   /**
@@ -100,8 +100,10 @@ export class ScraperService {
    * @param request Scraper request parameters
    * @returns Extracted content
    */
-  private async scrapeWithExtractor(request: ScraperRequestDto): Promise<any> {
+  private async scrapeWithExtractor(request: ScraperRequestDto, signal?: AbortSignal): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+
+    if (signal?.aborted) throw new Error('Request aborted')
 
     // Simulate fingerprint via headers when possible
     const fp = this.fingerprintService.generateFingerprint(request.fingerprint)
@@ -123,12 +125,13 @@ export class ScraperService {
    * @param request Scraper request parameters
    * @returns Extracted content
    */
-  private async scrapeWithPlaywright(request: ScraperRequestDto): Promise<any> {
+  private async scrapeWithPlaywright(request: ScraperRequestDto, signal?: AbortSignal): Promise<any> {
     // Generate fingerprint if enabled
     const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint)
 
     // Retry mechanism with fingerprint rotation
     for (let attempt = 0; attempt < this.maxRetries; attempt++) {
+      if (signal?.aborted) throw new Error('Request aborted')
       try {
         // Generate new fingerprint for retry attempts
         const currentFingerprint =
@@ -136,9 +139,10 @@ export class ScraperService {
             ? this.fingerprintService.generateFingerprint(request.fingerprint)
             : fingerprint
 
-        const result = await this.scrapeWithPlaywrightInternal(request, currentFingerprint)
+        const result = await this.scrapeWithPlaywrightInternal(request, currentFingerprint, signal)
         return result
       } catch (error) {
+        if (signal?.aborted) throw new Error('Request aborted')
         // Check if we should rotate fingerprint and retry
         if (
           this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint) &&
@@ -164,7 +168,8 @@ export class ScraperService {
    */
   private async scrapeWithPlaywrightInternal(
     request: ScraperRequestDto,
-    fingerprint: any
+    fingerprint: any,
+    signal?: AbortSignal
   ): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const articleExtractor = this.articleExtractor
@@ -213,7 +218,7 @@ export class ScraperService {
       }
 
       return extracted
-    }, fingerprint)
+    }, fingerprint, signal)
   }
 
   /**
@@ -221,7 +226,7 @@ export class ScraperService {
    * @param request HTML request parameters
    * @returns Raw HTML content
    */
-  async getHtml(request: HtmlRequestDto): Promise<HtmlResponseDto> {
+  async getHtml(request: HtmlRequestDto, signal?: AbortSignal): Promise<HtmlResponseDto> {
     return this.concurrencyService.run(async () => {
       this.logger.info(`Retrieving HTML from: ${request.url}`)
 
@@ -238,12 +243,14 @@ export class ScraperService {
                 ? this.fingerprintService.generateFingerprint(request.fingerprint)
                 : fingerprint
 
-            const html = await this.getHtmlWithPlaywright(request, currentFingerprint)
+            if (signal?.aborted) throw new Error('Request aborted')
+            const html = await this.getHtmlWithPlaywright(request, currentFingerprint, signal)
             return {
               url: request.url,
               html,
             }
           } catch (error) {
+            if (signal?.aborted) throw new Error('Request aborted')
             // Check if we should rotate fingerprint and retry
             if (
               this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint) &&
@@ -266,7 +273,7 @@ export class ScraperService {
         this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
         throw error
       }
-    })
+    }, signal)
   }
 
   /**
@@ -275,7 +282,7 @@ export class ScraperService {
    * @param fingerprint Browser fingerprint to use
    * @returns Raw HTML content
    */
-  private async getHtmlWithPlaywright(request: HtmlRequestDto, fingerprint: any): Promise<string> {
+  private async getHtmlWithPlaywright(request: HtmlRequestDto, fingerprint: any, signal?: AbortSignal): Promise<string> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
     return this.browserService.withPage(async (page) => {
@@ -313,6 +320,6 @@ export class ScraperService {
       }
 
       return htmlContent
-    }, fingerprint)
+    }, fingerprint, signal)
   }
 }

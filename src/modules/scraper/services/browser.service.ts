@@ -67,17 +67,35 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
      */
     async withPage<T>(
         callback: (page: Page) => Promise<T>,
-        fingerprint?: any
+        fingerprint?: any,
+        signal?: AbortSignal
     ): Promise<T> {
         if (!this.browser) {
             this.logger.error('Browser not initialized')
             throw new Error('Browser not initialized')
         }
 
+        if (signal?.aborted) {
+            throw new Error('Request aborted')
+        }
+
         let context: BrowserContext | null = null
         let page: Page | null = null
 
         this.activePages++
+
+        // Setup abort handler
+        const onAbort = async () => {
+            if (page) {
+                this.logger.warn('Request aborted, closing page...')
+                await page.close().catch(() => { })
+            }
+        }
+
+        if (signal) {
+            signal.addEventListener('abort', onAbort, { once: true })
+        }
+
         try {
             // Create new isolated context
             context = await this.browser.newContext({
@@ -99,11 +117,23 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
             }
 
             page = await context.newPage()
+
+            // Check again if aborted during setup
+            if (signal?.aborted) {
+                throw new Error('Request aborted')
+            }
+
             return await callback(page)
         } catch (error) {
+            if (signal?.aborted) {
+                throw new Error('Request aborted')
+            }
             this.logger.error('Error in withPage', error)
             throw error
         } finally {
+            if (signal) {
+                signal.removeEventListener('abort', onAbort)
+            }
             this.activePages--
             if (page) {
                 await page.close().catch(() => { })
