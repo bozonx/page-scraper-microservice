@@ -1,5 +1,5 @@
 import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common'
-import { FastifyRequest } from 'fastify'
+import type { FastifyRequest } from 'fastify'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service.js'
 import { BatchService } from './services/batch.service.js'
