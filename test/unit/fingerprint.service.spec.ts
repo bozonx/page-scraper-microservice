@@ -25,8 +25,10 @@ describe('FingerprintService (unit)', () => {
     fingerprintRotateOnAntiBot: true,
     batchMinDelayMs: 1500,
     batchMaxDelayMs: 4000,
+    globalMaxConcurrency: 3,
     dataLifetimeMins: 60,
-    webhookTimeoutMs: 10000,
+    cleanupIntervalMins: 10,
+    defaultWebhookTimeoutSecs: 30,
     defaultWebhookBackoffMs: 1000,
     defaultWebhookMaxAttempts: 3,
   } as ScraperConfig
@@ -87,16 +89,6 @@ describe('FingerprintService (unit)', () => {
       expect(result.headers['User-Agent']).toBe(customUA)
     })
 
-    it('should respect browsers option', () => {
-      const result = service.generateFingerprint({
-        browsers: ['chrome'],
-      })
-
-      // We can't easily verify the browser name from the opaque fingerprint object 
-      // without deep inspection, but we can check if UA contains Chrome
-      expect(result.fingerprint.navigator.userAgent).toContain('Chrome')
-    })
-
     it('should respect operatingSystems option', () => {
       // This is a loose check as we rely on the library, but ensures no errors
       const result = service.generateFingerprint({
@@ -122,22 +114,6 @@ describe('FingerprintService (unit)', () => {
       })
       // We check if the generated fingerprint has the locale or if it runs without error
       expect(result).toBeDefined()
-    })
-
-    it('should support firefox browser', () => {
-      const result = service.generateFingerprint({
-        browsers: ['firefox'],
-      })
-      expect(result.fingerprint.navigator.userAgent).toContain('Firefox')
-    })
-
-    it('should support multiple browsers', () => {
-      const result = service.generateFingerprint({
-        browsers: ['chrome', 'firefox'],
-      })
-      // Should generate without error - the library picks one randomly
-      expect(result).toBeDefined()
-      expect(result.fingerprint.navigator.userAgent).toBeDefined()
     })
 
     it('should support linux operating system', () => {

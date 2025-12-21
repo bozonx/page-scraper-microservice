@@ -6,7 +6,7 @@ A production-ready NestJS microservice designed to extract structured article da
 
 - **Dual Scraping Modes:** 
   - **Extractor:** Fast static HTML parsing using `@extractus/article-extractor`.
-  - **Playwright:** Full Chrome/Firefox rendering for JavaScript-heavy sites with configurable navigation timeouts.
+  - **Playwright:** Full Chrome rendering for JavaScript-heavy sites with configurable navigation timeouts.
 - **Rich Data Extraction:** Captures title, description, author, date, language, main image, favicon, content type, source, outgoing links, time-to-read estimates, and converts body to Markdown (or returns raw HTML).
 - **Batch Processing:** Orchestrate multiple URL scrapes asynchronously with configurable delays, random jitter, and per-item settings override.
 - **Advanced Anti-Bot Protection:** 
@@ -25,7 +25,7 @@ A production-ready NestJS microservice designed to extract structured article da
 - **Framework:** NestJS with Fastify adapter for high performance
 - **Scraping Engines:**
   - `@extractus/article-extractor` for static content extraction
-  - Playwright (Chromium/Firefox) for dynamic content rendering
+  - Playwright (Chromium) for dynamic content rendering
 - **Validation:** class-validator and class-transformer for strict DTO validation
 - **Logging:** Pino for structured, high-performance logging
 - **Fingerprinting:** fingerprint-generator and fingerprint-injector for browser simulation
@@ -58,7 +58,7 @@ src/
 1.  **Install dependencies:**
     ```bash
     pnpm install
-    pnpm dlx playwright install chromium firefox
+    pnpm dlx playwright install chromium
     ```
 
 2.  **Start development server:**
@@ -138,9 +138,7 @@ Configure the service using environment variables.
 
 When using the `fingerprint` parameter in API requests, you can specify the following options:
 
-**Browsers** (`browsers` array):
-- `chrome` - Google Chrome browser
-- `firefox` - Mozilla Firefox browser
+- `chrome` - Google Chrome browser (default)
 
 **Operating Systems** (`operatingSystems` array):
 - `windows` - Microsoft Windows
@@ -211,7 +209,6 @@ POST /api/v1/page
     "rotateOnAntiBot": true,     // Rotate fingerprint on bot detection
     "blockTrackers": true,       // Block analytics (Playwright only)
     "blockHeavyResources": false,// Block images, videos, fonts (Playwright only)
-    "browsers": ["chrome", "firefox"], // Browser types to simulate
     "operatingSystems": ["windows", "macos", "linux"], // OS types to simulate
     "devices": ["desktop", "mobile"], // Device types to simulate
     "locales": ["en-US"]         // Locales to simulate
@@ -262,7 +259,7 @@ POST /api/v1/html
     "rotateOnAntiBot": true,
     "blockTrackers": true,       // Block analytics scripts
     "blockHeavyResources": false,// Block images, videos, fonts
-    "browsers": ["chrome"]
+    "operatingSystems": ["windows"]
   }
 }
 ```
@@ -299,7 +296,6 @@ POST /api/v1/batch
       "rotateOnAntiBot": true,
       "blockTrackers": true,     // Block analytics (Playwright only)
       "blockHeavyResources": false,// Block images, videos, fonts (Playwright only)
-      "browsers": ["chrome", "firefox"],
       "operatingSystems": ["windows", "macos"],
       "devices": ["desktop"]
     }
@@ -432,8 +428,8 @@ When a batch job completes (or fails), the service sends a POST request to your 
 ### Anti-Bot Protection
 - **Browser Fingerprints:** 
   - Generates realistic browser profiles (User-Agent, screen size, locale, timezone) to mimic real devices.
-  - Supports multiple browsers (Chrome, Firefox), operating systems, and device types.
-  - Customizable via `fingerprint` settings per request (browsers, operatingSystems, devices, locales).
+  - Supports multiple operating systems and device types via Chromium engine.
+  - Customizable via `fingerprint` settings per request (operatingSystems, devices, locales).
 - **Resource Blocking:** 
   - **Trackers:** Blocks analytics scripts (Google Analytics, Facebook Pixel, etc.) to speed up loading and reduce detection.
   - **Heavy Resources:** Optionally blocks images, videos, and fonts to minimize bandwidth and improve performance.
@@ -470,7 +466,6 @@ curl -X POST http://localhost:8080/api/v1/page \
       "timezoneId": "Europe/Moscow",
       "blockTrackers": true,
       "blockHeavyResources": true,
-      "browsers": ["firefox"],
       "operatingSystems": ["linux"]
     }
   }'
@@ -525,7 +520,6 @@ curl -X POST http://localhost:8080/api/v1/page \
     "url": "https://mobile-site.com",
     "mode": "playwright",
     "fingerprint": {
-      "browsers": ["chrome"],
       "operatingSystems": ["android"],
       "devices": ["mobile"],
       "locale": "en-US"

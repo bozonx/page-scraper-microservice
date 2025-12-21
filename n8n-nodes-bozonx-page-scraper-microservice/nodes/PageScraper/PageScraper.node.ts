@@ -184,14 +184,6 @@ export class PageScraper implements INodeType {
             description: 'Whether to rotate fingerprint when anti-bot behavior is detected',
           },
           {
-            displayName: 'Fingerprint: Allowed Browsers',
-            name: 'fingerprintBrowsers',
-            type: 'string',
-            default: 'chrome,firefox',
-            description: 'Comma-separated list of allowed browsers (e.g., chrome,firefox)',
-            placeholder: 'chrome,firefox',
-          },
-          {
             displayName: 'Fingerprint: Operating Systems',
             name: 'fingerprintOperatingSystems',
             type: 'string',
@@ -311,11 +303,6 @@ export class PageScraper implements INodeType {
           if (additionalOptions.fingerprintRotateOnAntiBot !== undefined) {
             fingerprint.rotateOnAntiBot = additionalOptions.fingerprintRotateOnAntiBot
           }
-          if (additionalOptions.fingerprintBrowsers) {
-            fingerprint.browsers = additionalOptions.fingerprintBrowsers
-              .split(',')
-              .map((b: string) => b.trim())
-          }
           if (additionalOptions.fingerprintOperatingSystems) {
             fingerprint.operatingSystems = additionalOptions.fingerprintOperatingSystems
               .split(',')
@@ -390,11 +377,6 @@ export class PageScraper implements INodeType {
           }
           if (additionalOptions.fingerprintRotateOnAntiBot !== undefined) {
             fingerprint.rotateOnAntiBot = additionalOptions.fingerprintRotateOnAntiBot
-          }
-          if (additionalOptions.fingerprintBrowsers) {
-            fingerprint.browsers = additionalOptions.fingerprintBrowsers
-              .split(',')
-              .map((b: string) => b.trim())
           }
           if (additionalOptions.fingerprintOperatingSystems) {
             fingerprint.operatingSystems = additionalOptions.fingerprintOperatingSystems

@@ -27,7 +27,7 @@ RUN apt-get update \
 
 COPY package.json pnpm-lock.yaml ./
 RUN pnpm install --prod --frozen-lockfile --prefer-offline || pnpm install --prod --prefer-offline
-RUN pnpm dlx playwright install --with-deps chromium firefox
+RUN pnpm dlx playwright install --with-deps chromium
 
 COPY dist ./dist
 

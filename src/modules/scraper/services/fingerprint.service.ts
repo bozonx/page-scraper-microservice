@@ -61,7 +61,7 @@ export class FingerprintService {
     }
 
     const generatorOptions: any = {
-      browsers: fingerprintConfig.browsers?.map(b => ({ name: b })) || [{ name: 'chrome' }],
+      browsers: [{ name: 'chrome' }],
       operatingSystems: fingerprintConfig.operatingSystems || ['windows'],
       devices: fingerprintConfig.devices || ['desktop'],
       locales: fingerprintConfig.locales || [scraperConfig.defaultLocale],

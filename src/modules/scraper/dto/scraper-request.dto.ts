@@ -53,15 +53,6 @@ export class FingerprintConfigDto {
   public rotateOnAntiBot?: boolean
 
   /**
-   * List of browsers to simulate (e.g., ['chrome', 'firefox'])
-   * Available options: chrome, firefox
-   */
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  public browsers?: string[]
-
-  /**
    * List of operating systems to simulate (e.g., ['windows', 'macos', 'linux'])
    * Available options: windows, macos, linux, android, ios
    */
