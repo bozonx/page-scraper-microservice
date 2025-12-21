@@ -32,5 +32,5 @@ RUN pnpm dlx playwright install --with-deps chromium firefox
 COPY dist ./dist
 
 EXPOSE 8080
-ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["tini", "--"]
 CMD ["node", "dist/src/main.js"]
