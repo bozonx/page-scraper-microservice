@@ -12,19 +12,20 @@
  */
 import { jest } from '@jest/globals'
 import nock from 'nock'
-let originalFetch: any;
+let originalFetch: any
 
-// Make jest available globally for ESM tests and helpers
-(globalThis as any).jest = jest
+  // Make jest available globally for ESM tests and helpers
+;(globalThis as any).jest = jest
 
 // Lightweight mocks for heavy/IO-bound modules to ensure unit tests never hit real network/engines
 jest.mock('crawlee', () => {
   class MockPlaywrightCrawler {
-    private handler: (ctx: any) => Promise<void> | void;
-    constructor(options: any, _config?: any) {  // Добавляем второй параметр для config
-      this.handler = options?.requestHandler ?? (async () => undefined);
+    private handler: (ctx: any) => Promise<void> | void
+    constructor(options: any, _config?: any) {
+      // Добавляем второй параметр для config
+      this.handler = options?.requestHandler ?? (async () => undefined)
     }
-    addRequests = jest.fn();
+    addRequests = jest.fn()
     run = jest.fn(async () => {
       const page = {
         addInitScript: jest.fn(async () => undefined),
@@ -32,49 +33,60 @@ jest.mock('crawlee', () => {
         route: jest.fn(async (_: any, cb: any) => cb({ abort: () => undefined })),
         goto: jest.fn(async () => undefined),
         content: jest.fn(async () => '<html><body><p>Mock Content</p></body></html>'),
-      };
-      await this.handler({ page });
-    });
+      }
+      await this.handler({ page })
+    })
   }
-  
+
   // Добавляем мок для Configuration
   class MockConfiguration {
     constructor(_options: any) {
       // Ничего не делаем, это просто мок
     }
   }
-  
-  return { 
+
+  return {
     PlaywrightCrawler: MockPlaywrightCrawler,
-    Configuration: MockConfiguration  // Экспортируем Configuration
-  };
-});
+    Configuration: MockConfiguration, // Экспортируем Configuration
+  }
+})
+
+jest.unstable_mockModule('@ghostery/adblocker-playwright', () => {
+  return {
+    PlaywrightBlocker: {
+      fromPrebuiltAdsAndTracking: jest.fn(async () => ({
+        enableBlockingInPage: jest.fn(async () => undefined),
+        disableBlockingInPage: jest.fn(async () => undefined),
+      })),
+    },
+  }
+})
 
 // Note: @extractus/article-extractor is mocked at the test level
 // to handle dynamic imports properly
 
 // Block all external network calls; allow localhost for tests that use local adapters
 beforeAll(() => {
-  nock.disableNetConnect();
-  nock.enableNetConnect('127.0.0.1');
-  originalFetch = (global as any).fetch;
-  (global as any).fetch = jest.fn(async () => ({
+  nock.disableNetConnect()
+  nock.enableNetConnect('127.0.0.1')
+  originalFetch = (global as any).fetch
+  ;(global as any).fetch = jest.fn(async () => ({
     ok: true,
     status: 200,
     text: async () => '',
     json: async () => ({}),
-  }));
-});
+  }))
+})
 
 afterEach(() => {
-  nock.cleanAll();
-  jest.clearAllMocks();
-});
+  nock.cleanAll()
+  jest.clearAllMocks()
+})
 
 afterAll(() => {
-  (global as any).fetch = originalFetch;
-});
+  ;(global as any).fetch = originalFetch
+})
 
 afterAll(() => {
-  nock.enableNetConnect();
-});
+  nock.enableNetConnect()
+})

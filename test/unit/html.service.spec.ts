@@ -23,20 +23,23 @@ describe('ScraperService - getHtml (unit)', () => {
   const logger = createMockLogger()
   const articleExtractor = createMockArticleExtractor()
   const fingerprintService: Partial<FingerprintService> = {
-    generateFingerprint: jest.fn(() => ({
-      fingerprint: {
-        navigator: {
-          userAgent: 'UA',
-          language: 'en-US',
-        },
-        screen: { width: 1920, height: 1080, colorDepth: 24, pixelDepth: 24 },
-      },
-      headers: {
-        'User-Agent': 'UA',
-        'Accept-Language': 'en-US',
-      },
-      timezone: 'UTC',
-    } as any)),
+    generateFingerprint: jest.fn(
+      () =>
+        ({
+          fingerprint: {
+            navigator: {
+              userAgent: 'UA',
+              language: 'en-US',
+            },
+            screen: { width: 1920, height: 1080, colorDepth: 24, pixelDepth: 24 },
+          },
+          headers: {
+            'User-Agent': 'UA',
+            'Accept-Language': 'en-US',
+          },
+          timezone: 'UTC',
+        }) as any
+    ),
     shouldRotateFingerprint: jest.fn(() => false),
   }
 
@@ -48,8 +51,11 @@ describe('ScraperService - getHtml (unit)', () => {
         content: jest.fn().mockResolvedValue('<html><body><h1>Hello</h1></body></html>'),
         close: jest.fn(),
       }
-      return callback(page)
+      const result = await callback(page)
+      ;(browserService as any).lastPage = page
+      return result
     }),
+    lastPage: undefined as any,
   }
 
   const scraperConfig: ScraperConfig = {
@@ -73,10 +79,12 @@ describe('ScraperService - getHtml (unit)', () => {
     // Batch processing settings
     batchMinDelayMs: 1500,
     batchMaxDelayMs: 4000,
+    globalMaxConcurrency: 3,
     dataLifetimeMins: 60,
+    cleanupIntervalMins: 10,
 
     // Webhook settings
-    webhookTimeoutMs: 10000,
+    defaultWebhookTimeoutSecs: 30,
     defaultWebhookBackoffMs: 1000,
     defaultWebhookMaxAttempts: 3,
   } as ScraperConfig
@@ -118,6 +126,12 @@ describe('ScraperService - getHtml (unit)', () => {
     expect(res.html).toBeDefined()
     expect(typeof res.html).toBe('string')
     expect(res.html).toContain('<html>')
+
+    const page = (browserService as any).lastPage
+    expect(page.goto).toHaveBeenCalledWith(dto.url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 30000,
+    })
   })
 
   it('applies fingerprint configuration', async () => {

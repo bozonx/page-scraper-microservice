@@ -11,6 +11,7 @@ import { FingerprintService } from './fingerprint.service.js'
 import { TurndownConverterService } from './turndown.service.js'
 import type { IArticleExtractor } from './article-extractor.interface.js'
 import { ConcurrencyService } from './concurrency.service.js'
+import type { PlaywrightBlocker } from '@ghostery/adblocker-playwright'
 
 /**
  * Main scraper service
@@ -19,6 +20,7 @@ import { ConcurrencyService } from './concurrency.service.js'
 @Injectable()
 export class ScraperService {
   private readonly maxRetries = 3
+  private trackerBlockerPromise: Promise<PlaywrightBlocker> | null = null
 
   constructor(
     private readonly configService: ConfigService,
@@ -30,6 +32,18 @@ export class ScraperService {
     private readonly browserService: BrowserService
   ) {
     this.logger.setContext(ScraperService.name)
+  }
+
+  private getTrackerBlocker(): Promise<PlaywrightBlocker> {
+    if (!this.trackerBlockerPromise) {
+      this.trackerBlockerPromise = (async () => {
+        const mod = await import('@ghostery/adblocker-playwright')
+        return mod.PlaywrightBlocker.fromPrebuiltAdsAndTracking(
+          globalThis.fetch as unknown as typeof fetch
+        )
+      })()
+    }
+    return this.trackerBlockerPromise
   }
 
   /**
@@ -100,7 +114,10 @@ export class ScraperService {
    * @param request Scraper request parameters
    * @returns Extracted content
    */
-  private async scrapeWithExtractor(request: ScraperRequestDto, signal?: AbortSignal): Promise<any> {
+  private async scrapeWithExtractor(
+    request: ScraperRequestDto,
+    signal?: AbortSignal
+  ): Promise<any> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
     if (signal?.aborted) throw new Error('Request aborted')
@@ -125,7 +142,10 @@ export class ScraperService {
    * @param request Scraper request parameters
    * @returns Extracted content
    */
-  private async scrapeWithPlaywright(request: ScraperRequestDto, signal?: AbortSignal): Promise<any> {
+  private async scrapeWithPlaywright(
+    request: ScraperRequestDto,
+    signal?: AbortSignal
+  ): Promise<any> {
     // Generate fingerprint if enabled
     const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint)
 
@@ -174,51 +194,57 @@ export class ScraperService {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
     const articleExtractor = this.articleExtractor
 
-    return this.browserService.withPage(async (page) => {
-      // Determine effective blocking flags from fingerprint configuration
-      const effectiveBlockTrackers =
-        request.fingerprint?.blockTrackers ?? scraperConfig.playwrightBlockTrackers
-      const effectiveBlockHeavy =
-        request.fingerprint?.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
+    const taskTimeoutMs = (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000
+    const navigationTimeoutMs = Math.max(1, scraperConfig.playwrightNavigationTimeoutSecs) * 1000
+    const gotoTimeoutMs = Math.min(taskTimeoutMs, navigationTimeoutMs)
 
-      // Block trackers and heavy resources
-      if (effectiveBlockTrackers) {
-        await page.route(
-          '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
-          (route) => route.abort()
-        )
-      }
+    return this.browserService.withPage(
+      async (page) => {
+        // Determine effective blocking flags from fingerprint configuration
+        const effectiveBlockTrackers =
+          request.fingerprint?.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+        const effectiveBlockHeavy =
+          request.fingerprint?.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
 
-      if (effectiveBlockHeavy) {
-        await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
-          route.abort()
-        )
-      }
+        if (effectiveBlockTrackers) {
+          const blocker = await this.getTrackerBlocker()
+          await blocker.enableBlockingInPage(page)
+        }
 
-      // Navigate to page
-      await page.goto(request.url, {
-        waitUntil: 'networkidle',
-        timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
-      })
+        if (effectiveBlockHeavy) {
+          await page.route('**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}', (route) =>
+            route.abort()
+          )
+          await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) => route.abort())
+        }
 
-      // Get HTML content
-      const html = await page.content()
+        // Navigate to page
+        await page.goto(request.url, {
+          waitUntil: 'domcontentloaded',
+          timeout: gotoTimeoutMs,
+        })
 
-      // Extract content using article extractor with same header hints
-      const headers: Record<string, string> = {}
-      if (fingerprint.headers?.['Accept-Language'])
-        headers['Accept-Language'] = fingerprint.headers['Accept-Language']
-      if (fingerprint.headers?.['User-Agent'])
-        headers['User-Agent'] = fingerprint.headers['User-Agent']
+        // Get HTML content
+        const html = await page.content()
 
-      const extracted = await articleExtractor.extractFromHtml(html, request.url, { headers })
+        // Extract content using article extractor with same header hints
+        const headers: Record<string, string> = {}
+        if (fingerprint.headers?.['Accept-Language'])
+          headers['Accept-Language'] = fingerprint.headers['Accept-Language']
+        if (fingerprint.headers?.['User-Agent'])
+          headers['User-Agent'] = fingerprint.headers['User-Agent']
 
-      if (!extracted) {
-        throw new Error('Content extraction resulted in empty response')
-      }
+        const extracted = await articleExtractor.extractFromHtml(html, request.url, { headers })
 
-      return extracted
-    }, fingerprint, signal)
+        if (!extracted) {
+          throw new Error('Content extraction resulted in empty response')
+        }
+
+        return extracted
+      },
+      fingerprint,
+      signal
+    )
   }
 
   /**
@@ -282,44 +308,55 @@ export class ScraperService {
    * @param fingerprint Browser fingerprint to use
    * @returns Raw HTML content
    */
-  private async getHtmlWithPlaywright(request: HtmlRequestDto, fingerprint: any, signal?: AbortSignal): Promise<string> {
+  private async getHtmlWithPlaywright(
+    request: HtmlRequestDto,
+    fingerprint: any,
+    signal?: AbortSignal
+  ): Promise<string> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
-    return this.browserService.withPage(async (page) => {
-      // Determine effective blocking flags from fingerprint configuration
-      const effectiveBlockTrackers =
-        request.fingerprint?.blockTrackers ?? scraperConfig.playwrightBlockTrackers
-      const effectiveBlockHeavy =
-        request.fingerprint?.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
+    const taskTimeoutMs = (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000
+    const navigationTimeoutMs = Math.max(1, scraperConfig.playwrightNavigationTimeoutSecs) * 1000
+    const gotoTimeoutMs = Math.min(taskTimeoutMs, navigationTimeoutMs)
 
-      // Block trackers and heavy resources
-      if (effectiveBlockTrackers) {
-        await page.route(
-          '**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}',
-          (route) => route.abort()
-        )
-      }
+    return this.browserService.withPage(
+      async (page) => {
+        // Determine effective blocking flags from fingerprint configuration
+        const effectiveBlockTrackers =
+          request.fingerprint?.blockTrackers ?? scraperConfig.playwrightBlockTrackers
+        const effectiveBlockHeavy =
+          request.fingerprint?.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
 
-      if (effectiveBlockHeavy) {
-        await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) =>
-          route.abort()
-        )
-      }
+        // Block trackers and heavy resources
+        if (effectiveBlockTrackers) {
+          const blocker = await this.getTrackerBlocker()
+          await blocker.enableBlockingInPage(page)
+        }
 
-      // Navigate to page
-      await page.goto(request.url, {
-        waitUntil: 'networkidle',
-        timeout: (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000,
-      })
+        if (effectiveBlockHeavy) {
+          await page.route('**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}', (route) =>
+            route.abort()
+          )
+          await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) => route.abort())
+        }
 
-      // Get raw HTML content
-      const htmlContent = await page.content()
+        // Navigate to page
+        await page.goto(request.url, {
+          waitUntil: 'domcontentloaded',
+          timeout: gotoTimeoutMs,
+        })
 
-      if (!htmlContent) {
-        throw new Error('HTML retrieval resulted in empty response')
-      }
+        // Get raw HTML content
+        const htmlContent = await page.content()
 
-      return htmlContent
-    }, fingerprint, signal)
+        if (!htmlContent) {
+          throw new Error('HTML retrieval resulted in empty response')
+        }
+
+        return htmlContent
+      },
+      fingerprint,
+      signal
+    )
   }
 }
