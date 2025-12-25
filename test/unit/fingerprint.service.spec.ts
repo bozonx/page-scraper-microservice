@@ -75,10 +75,9 @@ describe('FingerprintService (unit)', () => {
     })
 
     it('should use default locale when not specified', () => {
-      // Note: fingerprint-generator might not strictly respect the locale passed in 'locales' option 
-      // if it's not in its database, but we can check if it runs without error.
       const result = service.generateFingerprint()
       expect(result).toBeDefined()
+      expect(result.fingerprint.navigator.language).toBe('en-US')
     })
 
     it('should use custom user agent when specified', () => {
@@ -104,16 +103,6 @@ describe('FingerprintService (unit)', () => {
       // Just verify it generates without error - fingerprint-generator handles device logic internally
       expect(result).toBeDefined()
       expect(result.fingerprint.navigator.userAgent).toBeDefined()
-    })
-
-    it('should respect locales option', () => {
-      // Note: fingerprint-generator might not strictly enforce this in the UA string
-      // but it should be present in the navigator properties or headers
-      const result = service.generateFingerprint({
-        locales: ['de-DE'],
-      })
-      // We check if the generated fingerprint has the locale or if it runs without error
-      expect(result).toBeDefined()
     })
 
     it('should support linux operating system', () => {

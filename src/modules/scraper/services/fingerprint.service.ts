@@ -27,7 +27,9 @@ export class FingerprintService {
    * @param config Optional fingerprint configuration overrides
    * @returns Generated browser fingerprint with headers
    */
-  generateFingerprint(config?: FingerprintConfigDto): BrowserFingerprintWithHeaders & { timezone?: string } {
+  generateFingerprint(
+    config?: FingerprintConfigDto
+  ): BrowserFingerprintWithHeaders & { timezone?: string } {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
 
     // Use provided config or defaults
@@ -56,7 +58,7 @@ export class FingerprintService {
       // So if we return a dummy object with no userAgent, it works.
       return {
         fingerprint: {} as any,
-        headers: {} as any
+        headers: {} as any,
       }
     }
 
@@ -64,11 +66,10 @@ export class FingerprintService {
       browsers: [{ name: 'chrome' }],
       operatingSystems: fingerprintConfig.operatingSystems || ['windows'],
       devices: fingerprintConfig.devices || ['desktop'],
-      locales: fingerprintConfig.locales || [scraperConfig.defaultLocale],
     }
 
-    // If specific user agent is requested, we can't easily force it in fingerprint-generator 
-    // without breaking consistency. 
+    // If specific user agent is requested, we can't easily force it in fingerprint-generator
+    // without breaking consistency.
     // However, the previous implementation allowed overriding UA.
     // If UA is provided, we might just want to override it in the headers result.
 
@@ -78,9 +79,10 @@ export class FingerprintService {
       // Handle User-Agent
       if (!fingerprintConfig.userAgent) {
         // undefined → use default from env
-        fingerprint.fingerprint.navigator.userAgent = scraperConfig.defaultUserAgent === 'auto'
-          ? fingerprint.fingerprint.navigator.userAgent
-          : scraperConfig.defaultUserAgent
+        fingerprint.fingerprint.navigator.userAgent =
+          scraperConfig.defaultUserAgent === 'auto'
+            ? fingerprint.fingerprint.navigator.userAgent
+            : scraperConfig.defaultUserAgent
         fingerprint.headers['User-Agent'] = fingerprint.fingerprint.navigator.userAgent
       } else if (fingerprintConfig.userAgent === 'auto') {
         // 'auto' → use what fingerprint-generator created (already set)

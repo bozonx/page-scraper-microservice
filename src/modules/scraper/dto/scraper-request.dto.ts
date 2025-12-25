@@ -71,14 +71,6 @@ export class FingerprintConfigDto {
   public devices?: string[]
 
   /**
-   * List of locales to simulate (e.g., ['en-US', 'de-DE'])
-   */
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  public locales?: string[]
-
-  /**
    * Block common tracking scripts and analytics for faster page loading (Playwright only)
    */
   @IsOptional()

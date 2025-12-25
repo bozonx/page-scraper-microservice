@@ -200,14 +200,6 @@ export class PageScraper implements INodeType {
             description: 'Comma-separated list of device types to simulate (e.g., desktop,mobile)',
             placeholder: 'desktop',
           },
-          {
-            displayName: 'Fingerprint: Locales',
-            name: 'fingerprintLocales',
-            type: 'string',
-            default: 'en-US',
-            description: 'Comma-separated list of locales to simulate (e.g., en-US,de-DE)',
-            placeholder: 'en-US',
-          },
         ],
       },
 
@@ -313,11 +305,6 @@ export class PageScraper implements INodeType {
               .split(',')
               .map((d: string) => d.trim())
           }
-          if (additionalOptions.fingerprintLocales) {
-            fingerprint.locales = additionalOptions.fingerprintLocales
-              .split(',')
-              .map((l: string) => l.trim())
-          }
 
           if (Object.keys(fingerprint).length > 0) {
             body.fingerprint = fingerprint
@@ -387,11 +374,6 @@ export class PageScraper implements INodeType {
             fingerprint.devices = additionalOptions.fingerprintDevices
               .split(',')
               .map((d: string) => d.trim())
-          }
-          if (additionalOptions.fingerprintLocales) {
-            fingerprint.locales = additionalOptions.fingerprintLocales
-              .split(',')
-              .map((l: string) => l.trim())
           }
 
           if (Object.keys(fingerprint).length > 0) {

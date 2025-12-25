@@ -151,9 +151,6 @@ When using the `fingerprint` parameter in API requests, you can specify the foll
 - `desktop` - Desktop computers
 - `mobile` - Mobile devices (phones and tablets)
 
-**Locales** (`locales` array):
-- Any valid locale string (e.g., `en-US`, `ru-RU`, `de-DE`, `fr-FR`, `es-ES`, `ja-JP`, `zh-CN`)
-
 
 ### Playwright Settings
 
@@ -210,8 +207,7 @@ POST /api/v1/page
     "blockTrackers": true,       // Block analytics (Playwright only)
     "blockHeavyResources": false,// Block images, videos, fonts (Playwright only)
     "operatingSystems": ["windows", "macos", "linux"], // OS types to simulate
-    "devices": ["desktop", "mobile"], // Device types to simulate
-    "locales": ["en-US"]         // Locales to simulate
+    "devices": ["desktop", "mobile"] // Device types to simulate
   }
 }
 ```
@@ -429,7 +425,7 @@ When a batch job completes (or fails), the service sends a POST request to your 
 - **Browser Fingerprints:** 
   - Generates realistic browser profiles (User-Agent, screen size, locale, timezone) to mimic real devices.
   - Supports multiple operating systems and device types via Chromium engine.
-  - Customizable via `fingerprint` settings per request (operatingSystems, devices, locales).
+  - Customizable via `fingerprint` settings per request (operatingSystems, devices).
 - **Resource Blocking:** 
   - **Trackers:** Blocks analytics scripts (Google Analytics, Facebook Pixel, etc.) to speed up loading and reduce detection.
   - **Heavy Resources:** Optionally blocks images, videos, and fonts to minimize bandwidth and improve performance.
