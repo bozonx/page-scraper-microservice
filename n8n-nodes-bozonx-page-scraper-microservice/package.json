@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-bozonx-page-scraper-microservice",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "n8n node for Page Scraper microservice - extract structured content, retrieve HTML, and process URLs in batches",
   "license": "MIT",
   "keywords": [
@@ -41,12 +41,12 @@
     ]
   },
   "devDependencies": {
-    "@n8n/node-cli": "^0.16.0",
+    "@n8n/node-cli": "^0.17.0",
     "@types/js-yaml": "^4.0.9",
-    "eslint": "9.39.1",
-    "n8n-workflow": "^1.118.1",
-    "prettier": "3.6.2",
-    "release-it": "^19.0.6",
+    "eslint": "9.39.2",
+    "n8n-workflow": "^2.2.1",
+    "prettier": "3.7.4",
+    "release-it": "^19.2.1",
     "typescript": "5.9.3"
   },
   "peerDependencies": {
