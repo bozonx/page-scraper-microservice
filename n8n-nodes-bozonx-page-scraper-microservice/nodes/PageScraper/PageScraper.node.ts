@@ -40,10 +40,10 @@ export class PageScraper implements INodeType {
             action: 'Scrape a single page',
           },
           {
-            name: 'Get HTML',
-            value: 'html',
-            description: 'Retrieve raw HTML content from a page',
-            action: 'Get raw HTML from a page',
+            name: 'Fetch Content',
+            value: 'fetch',
+            description: 'Fetch raw content from a URL (HTML/XML/RSS)',
+            action: 'Fetch raw content from a URL',
           },
           {
             name: 'Create Batch',
@@ -68,7 +68,7 @@ export class PageScraper implements INodeType {
         type: 'string',
         displayOptions: {
           show: {
-            operation: ['page', 'html'],
+            operation: ['page', 'fetch'],
           },
         },
         default: '',
@@ -118,7 +118,7 @@ export class PageScraper implements INodeType {
         type: 'collection',
         displayOptions: {
           show: {
-            operation: ['page', 'html'],
+            operation: ['page', 'fetch'],
           },
         },
         default: {},
@@ -325,7 +325,7 @@ export class PageScraper implements INodeType {
             json: response as Record<string, any>,
             pairedItem: { item: i },
           })
-        } else if (operation === 'html') {
+        } else if (operation === 'fetch') {
           const url = this.getNodeParameter('url', i) as string
           const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as Record<
             string,
@@ -334,11 +334,12 @@ export class PageScraper implements INodeType {
 
           const body: Record<string, any> = {
             url,
+            engine: 'playwright',
           }
 
-          // Add non-fingerprint additional options
+          // Map taskTimeoutSecs to timeoutSecs for /fetch endpoint
           if (additionalOptions.taskTimeoutSecs !== undefined) {
-            body.taskTimeoutSecs = additionalOptions.taskTimeoutSecs
+            body.timeoutSecs = additionalOptions.taskTimeoutSecs
           }
 
           // Build fingerprint object from additionalOptions
@@ -385,7 +386,7 @@ export class PageScraper implements INodeType {
             'pageScraperApi',
             {
               method: 'POST',
-              url: `${apiUrl}/html`,
+              url: `${apiUrl}/fetch`,
               body,
               json: true,
             }

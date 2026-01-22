@@ -246,38 +246,7 @@ POST /api/v1/page
 }
 ```
 
-### 2. Get Raw HTML (`POST /html`)
-
-Returns the fully rendered HTML of a page using Playwright. Useful for debug or custom parsing.
-
-**Request:**
-```jsonc
-POST /api/v1/html
-{
-  "url": "https://example.com/dynamic-page",
-  "taskTimeoutSecs": 60,         // Override default timeout (≥1)
-  "fingerprint": {               // Browser fingerprint settings (same as /page)
-    "generate": true,
-    "userAgent": "auto",
-    "locale": "en-US",
-    "timezoneId": "UTC",
-    "rotateOnAntiBot": true,
-    "blockTrackers": true,       // Block analytics scripts
-    "blockHeavyResources": false,// Block images, videos, fonts
-    "operatingSystems": ["windows"]
-  }
-}
-```
-
-**Response (200 OK):**
-```jsonc
-{
-  "url": "https://example.com/dynamic-page",
-  "html": "<!DOCTYPE html><html>...</html>"
-}
-```
-
-### 3. Fetch Raw Content (`POST /fetch`)
+### 2. Fetch Raw Content (`POST /fetch`)
 
 Fetches the raw content of a URL and returns it as a string. This endpoint is intended for integrating external services that need the raw HTML/XML (e.g. RSS).
 

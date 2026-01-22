@@ -18,8 +18,6 @@ import { FetchService } from './services/fetch.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
 import { ScraperRequestDto } from './dto/scraper-request.dto.js'
 import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto.js'
-import { HtmlRequestDto } from './dto/html-request.dto.js'
-import { HtmlResponseDto } from './dto/html-response.dto.js'
 import { FetchRequestDto } from './dto/fetch-request.dto.js'
 import type { FetchResponseDto } from './dto/fetch-response.dto.js'
 import { BatchRequestDto, BatchResponseDto, BatchJobStatusDto } from './dto/batch.dto.js'
@@ -126,43 +124,6 @@ export class ScraperController {
         throw error
       }
 
-      throw this.handleScraperError(error)
-    } finally {
-      req.raw.off('close', onDisconnect)
-      this.shutdownService.decrementActiveRequests()
-    }
-  }
-
-  /**
-   * Retrieves raw HTML content from a page using Playwright
-   * @param request HTML request parameters
-   * @returns Raw HTML content
-   */
-  @Post('html')
-  @HttpCode(HttpStatus.OK)
-  async getHtml(
-    @Body() request: HtmlRequestDto,
-    @Req() req: FastifyRequest
-  ): Promise<HtmlResponseDto> {
-    this.shutdownService.incrementActiveRequests()
-    const ac = new AbortController()
-    const onDisconnect = () => {
-      this.logger.warn(`Client disconnected for html ${request.url}`)
-      ac.abort()
-    }
-    req.raw.on('close', onDisconnect)
-
-    try {
-      this.logger.info(`Received HTML request for URL: ${request.url}`)
-      const result = await this.scraperService.getHtml(request, ac.signal)
-      this.logger.info(`Successfully retrieved HTML from ${request.url}`)
-      return result
-    } catch (error) {
-      if (ac.signal.aborted) {
-        this.logger.warn(`Request aborted for html ${request.url}`)
-      } else {
-        this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
-      }
       throw this.handleScraperError(error)
     } finally {
       req.raw.off('close', onDisconnect)

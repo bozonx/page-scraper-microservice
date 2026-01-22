@@ -5,8 +5,6 @@ import { BrowserService } from './browser.service.js'
 import { ScraperConfig } from '../../../config/scraper.config.js'
 import { ScraperRequestDto } from '../dto/scraper-request.dto.js'
 import { ScraperResponseDto } from '../dto/scraper-response.dto.js'
-import { HtmlRequestDto } from '../dto/html-request.dto.js'
-import { HtmlResponseDto } from '../dto/html-response.dto.js'
 import { FingerprintService } from './fingerprint.service.js'
 import { TurndownConverterService } from './turndown.service.js'
 import type { IArticleExtractor } from './article-extractor.interface.js'
@@ -241,119 +239,6 @@ export class ScraperService {
         }
 
         return extracted
-      },
-      fingerprint,
-      signal
-    )
-  }
-
-  /**
-   * Retrieves raw HTML content from a web page using Playwright
-   * @param request HTML request parameters
-   * @returns Raw HTML content
-   */
-  async getHtml(request: HtmlRequestDto, signal?: AbortSignal): Promise<HtmlResponseDto> {
-    return this.concurrencyService.run(async () => {
-      this.logger.info(`Retrieving HTML from: ${request.url}`)
-
-      try {
-        // Generate fingerprint if enabled
-        const fingerprint = this.fingerprintService.generateFingerprint(request.fingerprint)
-
-        // Retry mechanism with fingerprint rotation
-        for (let attempt = 0; attempt < this.maxRetries; attempt++) {
-          try {
-            // Generate new fingerprint for retry attempts
-            const currentFingerprint =
-              attempt > 0
-                ? this.fingerprintService.generateFingerprint(request.fingerprint)
-                : fingerprint
-
-            if (signal?.aborted) throw new Error('Request aborted')
-            const html = await this.getHtmlWithPlaywright(request, currentFingerprint, signal)
-            return {
-              url: request.url,
-              html,
-            }
-          } catch (error) {
-            if (signal?.aborted) throw new Error('Request aborted')
-            // Check if we should rotate fingerprint and retry
-            if (
-              this.fingerprintService.shouldRotateFingerprint(error, request.fingerprint) &&
-              attempt < this.maxRetries - 1
-            ) {
-              this.logger.warn(
-                `Anti-bot detected for ${request.url}, rotating fingerprint and retrying (attempt ${attempt + 1}/${this.maxRetries})`
-              )
-              continue
-            }
-
-            // If it's last attempt or no anti-bot detected, throw error
-            throw error
-          }
-        }
-
-        // This should never be reached due to throw in loop, but TypeScript needs it
-        throw new Error('Failed to retrieve HTML after all retry attempts')
-      } catch (error) {
-        this.logger.error(`Failed to retrieve HTML from ${request.url}:`, error)
-        throw error
-      }
-    }, signal)
-  }
-
-  /**
-   * Internal Playwright HTML retrieval implementation
-   * @param request HTML request parameters
-   * @param fingerprint Browser fingerprint to use
-   * @returns Raw HTML content
-   */
-  private async getHtmlWithPlaywright(
-    request: HtmlRequestDto,
-    fingerprint: any,
-    signal?: AbortSignal
-  ): Promise<string> {
-    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-
-    const taskTimeoutMs = (request.taskTimeoutSecs || scraperConfig.defaultTaskTimeoutSecs) * 1000
-    const navigationTimeoutMs = Math.max(1, scraperConfig.playwrightNavigationTimeoutSecs) * 1000
-    const gotoTimeoutMs = Math.min(taskTimeoutMs, navigationTimeoutMs)
-
-    return this.browserService.withPage(
-      async (page) => {
-        // Determine effective blocking flags from fingerprint configuration
-        const effectiveBlockTrackers =
-          request.fingerprint?.blockTrackers ?? scraperConfig.playwrightBlockTrackers
-        const effectiveBlockHeavy =
-          request.fingerprint?.blockHeavyResources ?? scraperConfig.playwrightBlockHeavyResources
-
-        // Block trackers and heavy resources
-        if (effectiveBlockTrackers) {
-          const blocker = await this.getTrackerBlocker()
-          await blocker.enableBlockingInPage(page)
-        }
-
-        if (effectiveBlockHeavy) {
-          await page.route('**/*.{css,font,png,jpg,jpeg,gif,svg,webp,ico,woff,woff2}', (route) =>
-            route.abort()
-          )
-          await page.route('**/*.{mp4,avi,mov,wmv,flv,webm,mp3,wav,ogg}', (route) => route.abort())
-        }
-
-        // Navigate to page
-        await page.goto(request.url, {
-          waitUntil: 'domcontentloaded',
-          timeout: gotoTimeoutMs,
-        })
-
-        // Get raw HTML content
-        const htmlContent = await page.content()
-
-        if (!htmlContent) {
-          throw new Error('HTML retrieval resulted in empty response')
-        }
-
-        return htmlContent
       },
       fingerprint,
       signal

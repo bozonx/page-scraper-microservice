@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Resource blocking (trackers, heavy resources)
   - SSRF validation before navigation
   - Returns rendered HTML via `page.content()`
-  - Supports same fingerprint configuration as `/html` endpoint
+  - Supports same fingerprint configuration as `/page` endpoint
 - **Content-type validation**: Rejects binary content (images, videos, PDFs) for `engine=http`
   - Allows only text/* and application/xml|rss+xml|atom+xml|json|ld+json
   - Returns `FETCH_UNSUPPORTED_CONTENT_TYPE` error for binary data
