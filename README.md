@@ -272,23 +272,29 @@ POST /api/v1/html
 
 Fetches the raw content of a URL and returns it as a string. This endpoint is intended for integrating external services that need the raw HTML/XML (e.g. RSS).
 
-Current supported engine:
-- `engine=http`
+Supported engines:
+- `engine=http` - Fast HTTP fetch without browser rendering
+- `engine=playwright` - Full browser rendering for JavaScript-heavy sites
 
 **Request:**
 ```jsonc
 POST /api/v1/fetch
 {
   "url": "https://example.com",
-  "engine": "http",
+  "engine": "http",              // "http" or "playwright"
   "timeoutSecs": 60,
   "debug": false,
   "fingerprint": {
     "generate": true,
     "userAgent": "auto",
     "locale": "en-US",
-    "timezoneId": "UTC"
-  }
+    "timezoneId": "UTC",
+    "rotateOnAntiBot": true,
+    "blockTrackers": true,       // Playwright only
+    "blockHeavyResources": true  // Playwright only
+  },
+  "locale": "en-US",             // Browser locale (overrides fingerprint.locale)
+  "timezoneId": "UTC"            // Timezone ID (overrides fingerprint.timezoneId)
 }
 ```
 
@@ -300,7 +306,7 @@ POST /api/v1/fetch
   "detectedContentType": "text/html; charset=utf-8",
   "meta": {
     "durationMs": 123,
-    "engine": "http",
+    "engine": "http",              // or "playwright"
     "attempts": 1,
     "wasAntibot": false,
     "statusCode": 200
@@ -316,7 +322,8 @@ POST /api/v1/fetch
     "durationMs": 123,
     "engine": "http",
     "attempts": 1,
-    "wasAntibot": false
+    "wasAntibot": false,
+    "statusCode": 404
   },
   "error": {
     "code": "FETCH_TIMEOUT",
@@ -327,9 +334,10 @@ POST /api/v1/fetch
 ```
 
 **Notes:**
-- The service enforces basic SSRF protections and blocks private/metadata IP ranges.
-- Redirects are followed up to a fixed limit.
-- Responses are limited in size to prevent memory abuse.
+- The service enforces SSRF protections and blocks private/metadata IP ranges.
+- `engine=http`: Fast HTTP fetch, follows redirects up to a fixed limit, responses are size-limited.
+- `engine=playwright`: Full browser rendering with anti-bot protection, supports JavaScript-heavy sites.
+- Use `debug=true` to include response headers and stack traces in error responses.
 
 ### 4. Create Batch Job (`POST /batch`)
 

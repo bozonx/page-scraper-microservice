@@ -1,10 +1,14 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { fetch } from 'undici'
 import { FetchRequestDto } from '../dto/fetch-request.dto.js'
 import type { FetchErrorResponseDto, FetchResponseDto } from '../dto/fetch-response.dto.js'
 import { assertUrlAllowed } from '../../../utils/ssrf.util.js'
 import { FingerprintService } from './fingerprint.service.js'
+import { BrowserService } from './browser.service.js'
+import type { ScraperConfig } from '../../../config/scraper.config.js'
+import { ConcurrencyService } from './concurrency.service.js'
 
 interface HttpFetchOptions {
   timeoutSecs: number
@@ -17,7 +21,10 @@ interface HttpFetchOptions {
 @Injectable()
 export class FetchService {
   constructor(
+    private readonly configService: ConfigService,
     private readonly fingerprintService: FingerprintService,
+    private readonly concurrencyService: ConcurrencyService,
+    private readonly browserService: BrowserService,
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(FetchService.name)
@@ -26,98 +33,193 @@ export class FetchService {
   async fetch(requestDto: FetchRequestDto, signal?: AbortSignal): Promise<FetchResponseDto> {
     const start = Date.now()
 
-    if (requestDto.engine !== 'http') {
-      const payload: FetchErrorResponseDto = {
-        finalUrl: requestDto.url,
-        meta: {
-          durationMs: Date.now() - start,
-          engine: requestDto.engine,
-          attempts: 1,
-          wasAntibot: false,
-        },
-        error: {
-          code: 'FETCH_ENGINE_NOT_SUPPORTED',
-          message: 'Only engine=http is supported in this version',
-          retryable: false,
-        },
-      }
-      throw new HttpException(payload, HttpStatus.BAD_REQUEST)
+    if (requestDto.engine === 'http') {
+      return await this.concurrencyService.run(async () => {
+        const timeoutSecs = requestDto.timeoutSecs ?? 60
+        const debug = requestDto.debug === true
+
+        const opts: HttpFetchOptions = {
+          timeoutSecs,
+          maxRedirects: 7,
+          maxResponseBytes: 10 * 1024 * 1024,
+          signal,
+          debug,
+        }
+
+        const allowLocalhost =
+          process.env.NODE_ENV === 'test' || typeof process.env.JEST_WORKER_ID === 'string'
+
+        let finalUrl: string | undefined
+        let attempts = 0
+        let wasAntibot = false
+
+        try {
+          const fp = this.fingerprintService.generateFingerprint({
+            ...requestDto.fingerprint,
+            locale: requestDto.locale ?? requestDto.fingerprint?.locale,
+            timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
+          })
+
+          const headers: Record<string, string> = {}
+          if (fp.headers?.['User-Agent']) headers['User-Agent'] = String(fp.headers['User-Agent'])
+          if (fp.headers?.['Accept-Language'])
+            headers['Accept-Language'] = String(fp.headers['Accept-Language'])
+
+          const { content, detectedContentType, statusCode, responseHeaders, url } =
+            await this.httpFetch(requestDto.url, {
+              ...opts,
+              headers,
+              allowLocalhost,
+            })
+
+          finalUrl = url
+          attempts = 1
+          wasAntibot = statusCode === 403 || statusCode === 429
+
+          return {
+            finalUrl,
+            content,
+            detectedContentType,
+            meta: {
+              durationMs: Date.now() - start,
+              engine: 'http',
+              attempts,
+              wasAntibot,
+              statusCode,
+              ...(debug ? { responseHeaders } : {}),
+            },
+          }
+        } catch (err) {
+          const durationMs = Date.now() - start
+          const mapped = this.mapError(err, { debug })
+
+          const payload: FetchErrorResponseDto = {
+            finalUrl,
+            meta: {
+              durationMs,
+              engine: 'http',
+              attempts: attempts || 1,
+              wasAntibot,
+            },
+            error: {
+              ...mapped,
+              ...(debug && err instanceof Error ? { stack: err.stack } : {}),
+            },
+          }
+
+          throw new HttpException(payload as any, mapped.httpStatus)
+        }
+      }, signal)
     }
 
-    const timeoutSecs = requestDto.timeoutSecs ?? 60
-    const debug = requestDto.debug === true
+    if (requestDto.engine === 'playwright') {
+      return await this.concurrencyService.run(async () => {
+        const timeoutSecs = requestDto.timeoutSecs ?? 60
+        const debug = requestDto.debug === true
 
-    const opts: HttpFetchOptions = {
-      timeoutSecs,
-      maxRedirects: 7,
-      maxResponseBytes: 10 * 1024 * 1024,
-      signal,
-      debug,
+        const allowLocalhost =
+          process.env.NODE_ENV === 'test' || typeof process.env.JEST_WORKER_ID === 'string'
+
+        let finalUrl: string | undefined
+        let attempts = 0
+        let wasAntibot = false
+        let statusCode: number | undefined
+
+        try {
+          const fp = this.fingerprintService.generateFingerprint({
+            ...requestDto.fingerprint,
+            locale: requestDto.locale ?? requestDto.fingerprint?.locale,
+            timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
+          })
+
+          const validatedUrl = await assertUrlAllowed(requestDto.url, { allowLocalhost })
+          const scraperConfig = this.configService.get<ScraperConfig>('scraper')
+          const navigationTimeoutMs =
+            Math.max(1, scraperConfig?.playwrightNavigationTimeoutSecs ?? 60) * 1000
+          const gotoTimeoutMs = Math.min(timeoutSecs * 1000, navigationTimeoutMs)
+
+          const result = await this.browserService.withPage(
+            async (page) => {
+              const response = await page.goto(validatedUrl.toString(), {
+                waitUntil: 'domcontentloaded',
+                timeout: gotoTimeoutMs,
+              })
+
+              finalUrl = page.url() || validatedUrl.toString()
+              statusCode = response?.status()
+              const responseHeaders = response?.headers() ?? undefined
+              const detectedContentType = responseHeaders?.['content-type']
+
+              const content = await page.content()
+              if (!content) {
+                throw new Error('Fetch resulted in empty response')
+              }
+
+              return {
+                content,
+                detectedContentType,
+                responseHeaders,
+              }
+            },
+            fp,
+            signal
+          )
+
+          attempts = 1
+          wasAntibot = statusCode === 403 || statusCode === 429
+
+          return {
+            finalUrl: finalUrl ?? requestDto.url,
+            content: result.content,
+            detectedContentType: result.detectedContentType,
+            meta: {
+              durationMs: Date.now() - start,
+              engine: 'playwright',
+              attempts,
+              wasAntibot,
+              statusCode,
+              ...(debug ? { responseHeaders: result.responseHeaders } : {}),
+            },
+          }
+        } catch (err) {
+          const durationMs = Date.now() - start
+          const mapped = this.mapError(err, { debug })
+
+          const payload: FetchErrorResponseDto = {
+            finalUrl,
+            meta: {
+              durationMs,
+              engine: 'playwright',
+              attempts: attempts || 1,
+              wasAntibot,
+              statusCode,
+            },
+            error: {
+              ...mapped,
+              ...(debug && err instanceof Error ? { stack: err.stack } : {}),
+            },
+          }
+
+          throw new HttpException(payload as any, mapped.httpStatus)
+        }
+      }, signal)
     }
 
-    const allowLocalhost =
-      process.env.NODE_ENV === 'test' || typeof process.env.JEST_WORKER_ID === 'string'
-
-    let finalUrl: string | undefined
-    let attempts = 0
-    let wasAntibot = false
-
-    try {
-      const fp = this.fingerprintService.generateFingerprint({
-        ...requestDto.fingerprint,
-        locale: requestDto.locale ?? requestDto.fingerprint?.locale,
-        timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
-      })
-
-      const headers: Record<string, string> = {}
-      if (fp.headers?.['User-Agent']) headers['User-Agent'] = String(fp.headers['User-Agent'])
-      if (fp.headers?.['Accept-Language'])
-        headers['Accept-Language'] = String(fp.headers['Accept-Language'])
-
-      const { content, detectedContentType, statusCode, responseHeaders, url } =
-        await this.httpFetch(requestDto.url, {
-          ...opts,
-          headers,
-          allowLocalhost,
-        })
-
-      finalUrl = url
-      attempts = 1
-      wasAntibot = statusCode === 403 || statusCode === 429
-
-      return {
-        finalUrl,
-        content,
-        detectedContentType,
-        meta: {
-          durationMs: Date.now() - start,
-          engine: 'http',
-          attempts,
-          wasAntibot,
-          statusCode,
-          ...(debug ? { responseHeaders } : {}),
-        },
-      }
-    } catch (err) {
-      const durationMs = Date.now() - start
-      const mapped = this.mapError(err, { debug })
-
-      const payload: FetchErrorResponseDto = {
-        finalUrl,
-        meta: {
-          durationMs,
-          engine: 'http',
-          attempts: attempts || 1,
-          wasAntibot,
-        },
-        error: {
-          ...mapped,
-          ...(debug && err instanceof Error ? { stack: err.stack } : {}),
-        },
-      }
-
-      throw new HttpException(payload as any, mapped.httpStatus)
+    const payload: FetchErrorResponseDto = {
+      finalUrl: requestDto.url,
+      meta: {
+        durationMs: Date.now() - start,
+        engine: requestDto.engine,
+        attempts: 1,
+        wasAntibot: false,
+      },
+      error: {
+        code: 'FETCH_ENGINE_NOT_SUPPORTED',
+        message: 'Engine is not supported',
+        retryable: false,
+      },
     }
+    throw new HttpException(payload, HttpStatus.BAD_REQUEST)
   }
 
   private async httpFetch(

@@ -3,8 +3,20 @@ import { FetchService } from '@/modules/scraper/services/fetch.service.js'
 
 describe('FetchService (unit)', () => {
   it('returns 400 when engine is not supported', async () => {
+    const configService = {
+      get: jest.fn(() => ({ playwrightNavigationTimeoutSecs: 60 })),
+    } as any
+
     const fingerprintService = {
       generateFingerprint: jest.fn(() => ({ headers: {} })),
+    } as any
+
+    const concurrencyService = {
+      run: jest.fn(async (fn: () => Promise<any>) => await fn()),
+    } as any
+
+    const browserService = {
+      withPage: jest.fn(),
     } as any
 
     const logger = {
@@ -14,10 +26,16 @@ describe('FetchService (unit)', () => {
       error: jest.fn(),
     } as any
 
-    const service = new FetchService(fingerprintService, logger)
+    const service = new FetchService(
+      configService,
+      fingerprintService,
+      concurrencyService,
+      browserService,
+      logger
+    )
 
     await expect(
-      service.fetch({ url: 'https://example.com', engine: 'playwright', timeoutSecs: 1 } as any)
+      service.fetch({ url: 'https://example.com', engine: 'nope', timeoutSecs: 1 } as any)
     ).rejects.toMatchObject({
       status: 400,
     })
@@ -25,7 +43,7 @@ describe('FetchService (unit)', () => {
     try {
       await service.fetch({
         url: 'https://example.com',
-        engine: 'playwright',
+        engine: 'nope',
         timeoutSecs: 1,
       } as any)
     } catch (e) {
