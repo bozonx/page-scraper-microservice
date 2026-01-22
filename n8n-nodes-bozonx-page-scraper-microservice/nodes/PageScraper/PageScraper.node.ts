@@ -113,6 +113,30 @@ export class PageScraper implements INodeType {
         description: 'Whether to return body as provided by extractor (no Markdown conversion)',
       },
       {
+        displayName: 'Fetch Engine',
+        name: 'fetchEngine',
+        type: 'options',
+        displayOptions: {
+          show: {
+            operation: ['fetch'],
+          },
+        },
+        options: [
+          {
+            name: 'HTTP',
+            value: 'http',
+            description: 'Fast HTTP fetch without browser rendering',
+          },
+          {
+            name: 'Playwright',
+            value: 'playwright',
+            description: 'Full browser rendering for JavaScript-heavy sites',
+          },
+        ],
+        default: 'http',
+        description: 'Fetch engine to use',
+      },
+      {
         displayName: 'Additional Options',
         name: 'additionalOptions',
         type: 'collection',
@@ -235,7 +259,7 @@ export class PageScraper implements INodeType {
         description:
           'Batch request configuration in YAML or JSON format. All fields will be sent to the server as-is',
         placeholder:
-          'items:\n  - url: https://example.com/page1\n    mode: extractor\n  - url: https://example.com/page2\ncommonSettings:\n  rawBody: false\nschedule:\n  minDelayMs: 1500\n  maxDelayMs: 4000',
+          'items:\n  - url: https://example.com/page1\n    mode: extractor\n  - url: https://example.com/page2\ncommonSettings:\n  rawBody: false\nschedule:\n  minDelayMs: 1500\n  maxDelayMs: 4000\n  jitter: true',
       },
     ],
     usableAsTool: true,
@@ -327,6 +351,7 @@ export class PageScraper implements INodeType {
           })
         } else if (operation === 'fetch') {
           const url = this.getNodeParameter('url', i) as string
+          const fetchEngine = this.getNodeParameter('fetchEngine', i) as string
           const additionalOptions = this.getNodeParameter('additionalOptions', i, {}) as Record<
             string,
             any
@@ -334,10 +359,9 @@ export class PageScraper implements INodeType {
 
           const body: Record<string, any> = {
             url,
-            engine: 'playwright',
+            engine: fetchEngine,
           }
 
-          // Map taskTimeoutSecs to timeoutSecs for /fetch endpoint
           if (additionalOptions.taskTimeoutSecs !== undefined) {
             body.timeoutSecs = additionalOptions.taskTimeoutSecs
           }
