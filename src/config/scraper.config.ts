@@ -39,6 +39,29 @@ export class ScraperConfig {
   @IsString()
   public defaultTimezoneId!: string
 
+  // Fetch (/fetch) settings
+  /**
+   * Maximum number of retry attempts for /fetch operations (>=1)
+   */
+  @IsInt()
+  @Min(1)
+  public fetchRetryMaxAttempts!: number
+
+  /**
+   * Maximum number of redirects to follow for /fetch engine=http (0-20)
+   */
+  @IsInt()
+  @Min(0)
+  @Max(20)
+  public fetchMaxRedirects!: number
+
+  /**
+   * Maximum response size in bytes for /fetch engine=http (>=1)
+   */
+  @IsInt()
+  @Min(1)
+  public fetchMaxResponseBytes!: number
+
   // Playwright settings
   /**
    * Run Playwright in headless mode (true = no browser UI, false = show browser)
@@ -64,6 +87,12 @@ export class ScraperConfig {
    */
   @IsBoolean()
   public playwrightBlockHeavyResources!: boolean
+
+  /**
+   * Extra Chromium launch args for Playwright. Can be a JSON array string or a space-separated list.
+   */
+  @IsString()
+  public playwrightExtraArgs!: string
 
   // Fingerprint settings
   /**
@@ -160,6 +189,14 @@ export default registerAs('scraper', (): ScraperConfig => {
     defaultLocale: process.env.DEFAULT_FINGERPRINT_LOCALE || 'en-US',
     defaultTimezoneId: process.env.DEFAULT_FINGERPRINT_TIMEZONE_ID || 'UTC',
 
+    // Fetch (/fetch) settings
+    fetchRetryMaxAttempts: parseInt(process.env.FETCH_RETRY_MAX_ATTEMPTS ?? '3', 10),
+    fetchMaxRedirects: parseInt(process.env.FETCH_MAX_REDIRECTS ?? '7', 10),
+    fetchMaxResponseBytes: parseInt(
+      process.env.FETCH_MAX_RESPONSE_BYTES ?? String(10 * 1024 * 1024),
+      10
+    ),
+
     // Playwright settings - default to true unless explicitly set to 'false'
     playwrightHeadless: process.env.PLAYWRIGHT_HEADLESS !== 'false',
     playwrightNavigationTimeoutSecs: parseInt(
@@ -168,6 +205,7 @@ export default registerAs('scraper', (): ScraperConfig => {
     ),
     playwrightBlockTrackers: process.env.DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS !== 'false',
     playwrightBlockHeavyResources: process.env.DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES !== 'false',
+    playwrightExtraArgs: process.env.PLAYWRIGHT_EXTRA_ARGS ?? '[]',
 
     // Fingerprint settings - default to true unless explicitly set to 'false'
     fingerprintGenerate: process.env.DEFAULT_FINGERPRINT_GENERATE !== 'false',

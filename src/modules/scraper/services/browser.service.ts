@@ -11,6 +11,24 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
   private activePages = 0
   private readonly fingerprintInjector = new FingerprintInjector()
 
+  private parseExtraArgs(value: string | undefined): string[] {
+    const raw = (value ?? '').trim()
+    if (!raw) return []
+
+    if (raw.startsWith('[')) {
+      try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) {
+          return parsed.map((v) => String(v)).filter((v) => v.length > 0)
+        }
+      } catch {
+        // ignore
+      }
+    }
+
+    return raw.split(/\s+/).filter(Boolean)
+  }
+
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: PinoLogger
@@ -23,6 +41,7 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
     this.logger.info('Launching persistent Playwright browser...')
 
     try {
+      const extraArgs = this.parseExtraArgs(scraperConfig.playwrightExtraArgs)
       this.browser = await chromium.launch({
         headless: scraperConfig.playwrightHeadless,
         args: [
@@ -30,6 +49,7 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
           '--disable-setuid-sandbox',
           '--disable-dev-shm-usage',
           '--disable-gpu',
+          ...extraArgs,
         ],
       })
       this.logger.info('Browser launched successfully')
@@ -71,7 +91,11 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
   async withPage<T>(
     callback: (page: Page) => Promise<T>,
     fingerprint?: any,
-    signal?: AbortSignal
+    signal?: AbortSignal,
+    opts?: {
+      timezoneId?: string
+      locale?: string
+    }
   ): Promise<T> {
     if (!this.browser) {
       this.logger.error('Browser not initialized')
@@ -112,7 +136,8 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
             }
           : undefined,
         userAgent: fingerprint?.fingerprint?.navigator?.userAgent,
-        locale: fingerprint?.fingerprint?.navigator?.language,
+        locale: opts?.locale ?? fingerprint?.fingerprint?.navigator?.language,
+        timezoneId: opts?.timezoneId,
       })
 
       context.setDefaultNavigationTimeout(navigationTimeoutMs)

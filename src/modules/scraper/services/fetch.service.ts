@@ -1,6 +1,7 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
+import type { Page } from 'playwright'
 import { fetch } from 'undici'
 import { FetchRequestDto } from '../dto/fetch-request.dto.js'
 import type { FetchErrorResponseDto, FetchResponseDto } from '../dto/fetch-response.dto.js'
@@ -18,6 +19,13 @@ interface HttpFetchOptions {
   debug: boolean
 }
 
+interface RetryDecision {
+  retryable: boolean
+  wasAntibot: boolean
+  rotateFingerprint: boolean
+  retryAfterMs?: number
+}
+
 @Injectable()
 export class FetchService {
   constructor(
@@ -33,6 +41,9 @@ export class FetchService {
   async fetch(requestDto: FetchRequestDto, signal?: AbortSignal): Promise<FetchResponseDto> {
     const start = Date.now()
 
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')
+    const retryMaxAttempts = Math.max(1, scraperConfig?.fetchRetryMaxAttempts ?? 3)
+
     if (requestDto.engine === 'http') {
       return await this.concurrencyService.run(async () => {
         const timeoutSecs = requestDto.timeoutSecs ?? 60
@@ -40,8 +51,8 @@ export class FetchService {
 
         const opts: HttpFetchOptions = {
           timeoutSecs,
-          maxRedirects: 7,
-          maxResponseBytes: 10 * 1024 * 1024,
+          maxRedirects: Math.max(0, scraperConfig?.fetchMaxRedirects ?? 7),
+          maxResponseBytes: Math.max(1, scraperConfig?.fetchMaxResponseBytes ?? 10 * 1024 * 1024),
           signal,
           debug,
         }
@@ -52,43 +63,81 @@ export class FetchService {
         let finalUrl: string | undefined
         let attempts = 0
         let wasAntibot = false
+        let statusCode: number | undefined
 
         try {
-          const fp = this.fingerprintService.generateFingerprint({
+          const fpBase = this.fingerprintService.generateFingerprint({
             ...requestDto.fingerprint,
             locale: requestDto.locale ?? requestDto.fingerprint?.locale,
             timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
           })
 
-          const headers: Record<string, string> = {}
-          if (fp.headers?.['User-Agent']) headers['User-Agent'] = String(fp.headers['User-Agent'])
-          if (fp.headers?.['Accept-Language'])
-            headers['Accept-Language'] = String(fp.headers['Accept-Language'])
+          for (let attempt = 0; attempt < retryMaxAttempts; attempt++) {
+            if (signal?.aborted) throw new Error('Request aborted')
 
-          const { content, detectedContentType, statusCode, responseHeaders, url } =
-            await this.httpFetch(requestDto.url, {
-              ...opts,
-              headers,
-              allowLocalhost,
-            })
+            const fp =
+              attempt > 0
+                ? this.fingerprintService.generateFingerprint({
+                    ...requestDto.fingerprint,
+                    locale: requestDto.locale ?? requestDto.fingerprint?.locale,
+                    timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
+                  })
+                : fpBase
 
-          finalUrl = url
-          attempts = 1
-          wasAntibot = statusCode === 403 || statusCode === 429
+            const headers: Record<string, string> = {}
+            if (fp.headers?.['User-Agent']) headers['User-Agent'] = String(fp.headers['User-Agent'])
+            if (fp.headers?.['Accept-Language'])
+              headers['Accept-Language'] = String(fp.headers['Accept-Language'])
 
-          return {
-            finalUrl,
-            content,
-            detectedContentType,
-            meta: {
-              durationMs: Date.now() - start,
-              engine: 'http',
-              attempts,
-              wasAntibot,
-              statusCode,
-              ...(debug ? { responseHeaders } : {}),
-            },
+            try {
+              attempts = attempt + 1
+              const {
+                content,
+                detectedContentType,
+                statusCode: sc,
+                responseHeaders,
+                url,
+              } = await this.httpFetch(requestDto.url, {
+                ...opts,
+                headers,
+                allowLocalhost,
+              })
+
+              finalUrl = url
+              statusCode = sc
+              wasAntibot = wasAntibot || sc === 403 || sc === 429
+
+              return {
+                finalUrl,
+                content,
+                detectedContentType,
+                meta: {
+                  durationMs: Date.now() - start,
+                  engine: 'http',
+                  attempts,
+                  wasAntibot,
+                  statusCode,
+                  ...(debug ? { responseHeaders } : {}),
+                },
+              }
+            } catch (err) {
+              const decision = this.getRetryDecision(err)
+              wasAntibot = wasAntibot || decision.wasAntibot
+
+              if (!decision.retryable || attempt >= retryMaxAttempts - 1) {
+                throw err
+              }
+
+              if (decision.retryAfterMs) {
+                await this.sleep(decision.retryAfterMs, signal)
+              } else {
+                await this.sleep(this.computeBackoffMs(attempt), signal)
+              }
+              continue
+            }
           }
+
+          throw new Error('Fetch failed')
         } catch (err) {
           const durationMs = Date.now() - start
           const mapped = this.mapError(err, { debug })
@@ -100,6 +149,7 @@ export class FetchService {
               engine: 'http',
               attempts: attempts || 1,
               wasAntibot,
+              statusCode,
             },
             error: {
               ...mapped,
@@ -126,61 +176,142 @@ export class FetchService {
         let statusCode: number | undefined
 
         try {
-          const fp = this.fingerprintService.generateFingerprint({
+          const fpBase = this.fingerprintService.generateFingerprint({
             ...requestDto.fingerprint,
             locale: requestDto.locale ?? requestDto.fingerprint?.locale,
             timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
           })
 
           const validatedUrl = await assertUrlAllowed(requestDto.url, { allowLocalhost })
-          const scraperConfig = this.configService.get<ScraperConfig>('scraper')
           const navigationTimeoutMs =
             Math.max(1, scraperConfig?.playwrightNavigationTimeoutSecs ?? 60) * 1000
           const gotoTimeoutMs = Math.min(timeoutSecs * 1000, navigationTimeoutMs)
 
-          const result = await this.browserService.withPage(
-            async (page) => {
-              const response = await page.goto(validatedUrl.toString(), {
-                waitUntil: 'domcontentloaded',
-                timeout: gotoTimeoutMs,
-              })
+          for (let attempt = 0; attempt < retryMaxAttempts; attempt++) {
+            if (signal?.aborted) throw new Error('Request aborted')
 
-              finalUrl = page.url() || validatedUrl.toString()
-              statusCode = response?.status()
-              const responseHeaders = response?.headers() ?? undefined
-              const detectedContentType = responseHeaders?.['content-type']
+            const fp =
+              attempt > 0
+                ? this.fingerprintService.generateFingerprint({
+                    ...requestDto.fingerprint,
+                    locale: requestDto.locale ?? requestDto.fingerprint?.locale,
+                    timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
+                  })
+                : fpBase
 
-              const content = await page.content()
-              if (!content) {
-                throw new Error('Fetch resulted in empty response')
-              }
+            try {
+              attempts = attempt + 1
+
+              const result = await this.browserService.withPage(
+                async (page) => {
+                  const locale = requestDto.locale ?? fp.fingerprint?.navigator?.language
+                  if (locale) {
+                    await page.addInitScript(
+                      ({ lng }) => {
+                        try {
+                          Object.defineProperty(navigator, 'language', {
+                            get: () => lng,
+                          })
+                          Object.defineProperty(navigator, 'languages', {
+                            get: () => [lng],
+                          })
+                        } catch {
+                          // ignore
+                        }
+                      },
+                      { lng: String(locale) }
+                    )
+                  }
+
+                  const headers: Record<string, string> = {}
+                  if (fp.headers?.['Accept-Language']) {
+                    headers['Accept-Language'] = String(fp.headers['Accept-Language'])
+                  } else if (locale) {
+                    headers['Accept-Language'] = String(locale)
+                  }
+                  if (Object.keys(headers).length > 0) {
+                    await page.setExtraHTTPHeaders(headers)
+                  }
+
+                  const response = await page.goto(validatedUrl.toString(), {
+                    waitUntil: 'domcontentloaded',
+                    timeout: gotoTimeoutMs,
+                  })
+
+                  await this.tryAcceptCookieConsent(page, signal)
+
+                  finalUrl = page.url() || validatedUrl.toString()
+                  statusCode = response?.status()
+                  const responseHeaders = response?.headers() ?? undefined
+                  const detectedContentType = responseHeaders?.['content-type']
+
+                  const content = await page.content()
+                  if (!content) {
+                    throw new Error('Fetch resulted in empty response')
+                  }
+
+                  if (statusCode === 403 || statusCode === 429) {
+                    const e = new Error(`HTTP status ${statusCode}`)
+                    ;(e as any).statusCode = statusCode
+                    throw e
+                  }
+
+                  return {
+                    content,
+                    detectedContentType,
+                    responseHeaders,
+                  }
+                },
+                fp,
+                signal,
+                {
+                  timezoneId: requestDto.timezoneId,
+                  locale: requestDto.locale,
+                }
+              )
+
+              wasAntibot = wasAntibot || statusCode === 403 || statusCode === 429
 
               return {
-                content,
-                detectedContentType,
-                responseHeaders,
+                finalUrl: finalUrl ?? requestDto.url,
+                content: result.content,
+                detectedContentType: result.detectedContentType,
+                meta: {
+                  durationMs: Date.now() - start,
+                  engine: 'playwright',
+                  attempts,
+                  wasAntibot,
+                  statusCode,
+                  ...(debug ? { responseHeaders: result.responseHeaders } : {}),
+                },
               }
-            },
-            fp,
-            signal
-          )
+            } catch (err) {
+              const decision = this.getRetryDecision(err)
+              wasAntibot = wasAntibot || decision.wasAntibot
 
-          attempts = 1
-          wasAntibot = statusCode === 403 || statusCode === 429
+              const rotateOnAntiBot =
+                requestDto.fingerprint?.rotateOnAntiBot ??
+                scraperConfig?.fingerprintRotateOnAntiBot ??
+                true
 
-          return {
-            finalUrl: finalUrl ?? requestDto.url,
-            content: result.content,
-            detectedContentType: result.detectedContentType,
-            meta: {
-              durationMs: Date.now() - start,
-              engine: 'playwright',
-              attempts,
-              wasAntibot,
-              statusCode,
-              ...(debug ? { responseHeaders: result.responseHeaders } : {}),
-            },
+              if (decision.wasAntibot && rotateOnAntiBot && attempt < retryMaxAttempts - 1) {
+                // fingerprint will be regenerated on the next attempt
+              }
+
+              if (!decision.retryable || attempt >= retryMaxAttempts - 1) {
+                throw err
+              }
+
+              if (decision.retryAfterMs) {
+                await this.sleep(decision.retryAfterMs, signal)
+              } else {
+                await this.sleep(this.computeBackoffMs(attempt), signal)
+              }
+              continue
+            }
           }
+
+          throw new Error('Fetch failed')
         } catch (err) {
           const durationMs = Date.now() - start
           const mapped = this.mapError(err, { debug })
@@ -282,6 +413,10 @@ export class FetchService {
           const e = new Error(`HTTP status ${statusCode}`)
           ;(e as any).statusCode = statusCode
           ;(e as any).finalUrl = validated.toString()
+          const retryAfter = res.headers.get('retry-after')
+          if (retryAfter) {
+            ;(e as any).retryAfter = String(retryAfter)
+          }
           throw e
         }
 
@@ -404,6 +539,126 @@ export class FetchService {
       message: msg,
       retryable: true,
       httpStatus: HttpStatus.BAD_GATEWAY,
+    }
+  }
+
+  private getRetryDecision(err: unknown): RetryDecision {
+    const statusCode = (err as any)?.statusCode
+    const retryAfterHeader = (err as any)?.retryAfter
+
+    if (typeof statusCode === 'number') {
+      const wasAntibot = statusCode === 403 || statusCode === 429
+      const retryable = statusCode === 429 || statusCode >= 500
+      const retryAfterMs = this.parseRetryAfterMs(retryAfterHeader)
+
+      return {
+        retryable,
+        wasAntibot,
+        rotateFingerprint: wasAntibot,
+        ...(retryAfterMs ? { retryAfterMs } : {}),
+      }
+    }
+
+    const msg = err instanceof Error ? err.message : String(err)
+    const lower = msg.toLowerCase()
+    const wasAntibot =
+      lower.includes('captcha') ||
+      lower.includes('cloudflare') ||
+      lower.includes('access denied') ||
+      lower.includes('forbidden') ||
+      lower.includes('rate limit')
+
+    const retryable =
+      lower.includes('timeout') ||
+      lower.includes('navigation') ||
+      lower.includes('net::') ||
+      lower.includes('request aborted')
+
+    return {
+      retryable,
+      wasAntibot,
+      rotateFingerprint: wasAntibot,
+    }
+  }
+
+  private parseRetryAfterMs(value: unknown): number | undefined {
+    if (typeof value !== 'string') return undefined
+    const raw = value.trim()
+    if (!raw) return undefined
+
+    const asSeconds = Number(raw)
+    if (Number.isFinite(asSeconds) && asSeconds >= 0) {
+      return Math.min(asSeconds * 1000, 60_000)
+    }
+
+    const parsed = Date.parse(raw)
+    if (!Number.isFinite(parsed)) return undefined
+    const ms = parsed - Date.now()
+    if (ms <= 0) return undefined
+    return Math.min(ms, 60_000)
+  }
+
+  private computeBackoffMs(attempt: number): number {
+    const base = 250
+    const max = 5000
+    const exp = Math.min(max, base * 2 ** Math.max(0, attempt))
+    const jitter = Math.floor(Math.random() * 200)
+    return exp + jitter
+  }
+
+  private async sleep(ms: number, signal?: AbortSignal): Promise<void> {
+    if (ms <= 0) return
+    if (signal?.aborted) throw new Error('Request aborted')
+
+    await new Promise<void>((resolve, reject) => {
+      const t = setTimeout(() => {
+        cleanup()
+        resolve()
+      }, ms)
+
+      const onAbort = () => {
+        clearTimeout(t)
+        cleanup()
+        reject(new Error('Request aborted'))
+      }
+
+      const cleanup = () => {
+        if (signal) {
+          signal.removeEventListener('abort', onAbort)
+        }
+      }
+
+      if (signal) {
+        signal.addEventListener('abort', onAbort, { once: true })
+      }
+
+      ;(t as any).unref?.()
+    })
+  }
+
+  private async tryAcceptCookieConsent(page: Page, signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) return
+
+    const selectors = [
+      'button#onetrust-accept-btn-handler',
+      'button[data-testid="accept-all"]',
+      'button[aria-label="Accept all"]',
+      'button:has-text("Accept all")',
+      'button:has-text("I agree")',
+      'button:has-text("Accept")',
+      'button:has-text("Agree")',
+      'button:has-text("Принять")',
+      'button:has-text("Согласен")',
+    ]
+
+    for (const selector of selectors) {
+      if (signal?.aborted) return
+      try {
+        await page.click(selector, { timeout: 300 })
+        return
+      } catch {
+        // ignore
+      }
     }
   }
 }
