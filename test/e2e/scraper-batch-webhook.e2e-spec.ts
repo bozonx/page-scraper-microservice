@@ -2,23 +2,30 @@ import { createServer, IncomingMessage } from 'node:http'
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { createTestApp } from '../helpers/test-app.factory.js'
 import { startTestServer } from '../helpers/test-server.js'
+import { isPlaywrightAvailable } from '../helpers/playwright-available.js'
 
-describe('Scraper /batch webhook (e2e)', () => {
+const describeIfPlaywright = isPlaywrightAvailable() ? describe : describe.skip
+
+describeIfPlaywright('Scraper /batch webhook (e2e)', () => {
   let app: NestFastifyApplication
   let testPageServer: ReturnType<typeof startTestServer>
   let webhookServer: ReturnType<typeof createServer>
   let receivedBody: any | null = null
   let receivedHeaders: IncomingMessage['headers'] | null = null
 
-  const targetUrl = 'http://localhost:8083/test-page'
-  const webhookPort = 8084
-  const webhookUrl = `http://localhost:${webhookPort}/webhook`
+  let targetUrl: string
+  let webhookUrl: string
 
   const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
   beforeAll(async () => {
     // Start test page server on dedicated port
-    testPageServer = startTestServer(8083)
+    testPageServer = startTestServer(0)
+    const testPageAddress = testPageServer.address()
+    if (!testPageAddress || typeof testPageAddress === 'string') {
+      throw new Error('Test page server address is not available')
+    }
+    targetUrl = `http://localhost:${testPageAddress.port}/test-page`
 
     // Start webhook receiver server
     webhookServer = createServer((req, res) => {
@@ -41,7 +48,12 @@ describe('Scraper /batch webhook (e2e)', () => {
       })
     })
 
-    webhookServer.listen(webhookPort)
+    webhookServer.listen(0)
+    const webhookAddress = webhookServer.address()
+    if (!webhookAddress || typeof webhookAddress === 'string') {
+      throw new Error('Webhook server address is not available')
+    }
+    webhookUrl = `http://localhost:${webhookAddress.port}/webhook`
 
     // Give servers time to start
     await wait(500)

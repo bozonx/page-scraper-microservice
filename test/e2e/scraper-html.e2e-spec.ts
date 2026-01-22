@@ -1,14 +1,22 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify'
 import { createTestApp } from '../helpers/test-app.factory.js'
 import { startTestServer } from '../helpers/test-server.js'
+import { isPlaywrightAvailable } from '../helpers/playwright-available.js'
 
-describe('Scraper /html (e2e)', () => {
+const describeIfPlaywright = isPlaywrightAvailable() ? describe : describe.skip
+
+describeIfPlaywright('Scraper /html (e2e)', () => {
   let app: NestFastifyApplication
   let testServer: ReturnType<typeof startTestServer>
-  const targetUrl = 'http://localhost:8081/test-page'
+  let targetUrl: string
 
   beforeAll(async () => {
-    testServer = startTestServer(8081)
+    testServer = startTestServer(0)
+    const address = testServer.address()
+    if (!address || typeof address === 'string') {
+      throw new Error('Test server address is not available')
+    }
+    targetUrl = `http://localhost:${address.port}/test-page`
     await new Promise((resolve) => setTimeout(resolve, 500))
     app = await createTestApp()
   }, 20000)

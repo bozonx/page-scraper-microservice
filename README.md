@@ -268,7 +268,70 @@ POST /api/v1/html
 }
 ```
 
-### 3. Create Batch Job (`POST /batch`)
+### 3. Fetch Raw Content (`POST /fetch`)
+
+Fetches the raw content of a URL and returns it as a string. This endpoint is intended for integrating external services that need the raw HTML/XML (e.g. RSS).
+
+Current supported engine:
+- `engine=http`
+
+**Request:**
+```jsonc
+POST /api/v1/fetch
+{
+  "url": "https://example.com",
+  "engine": "http",
+  "timeoutSecs": 60,
+  "debug": false,
+  "fingerprint": {
+    "generate": true,
+    "userAgent": "auto",
+    "locale": "en-US",
+    "timezoneId": "UTC"
+  }
+}
+```
+
+**Response (200 OK):**
+```jsonc
+{
+  "finalUrl": "https://example.com",
+  "content": "<!doctype html><html>...</html>",
+  "detectedContentType": "text/html; charset=utf-8",
+  "meta": {
+    "durationMs": 123,
+    "engine": "http",
+    "attempts": 1,
+    "wasAntibot": false,
+    "statusCode": 200
+  }
+}
+```
+
+**Error Response (4xx/5xx):**
+```jsonc
+{
+  "finalUrl": "https://example.com",
+  "meta": {
+    "durationMs": 123,
+    "engine": "http",
+    "attempts": 1,
+    "wasAntibot": false
+  },
+  "error": {
+    "code": "FETCH_TIMEOUT",
+    "message": "Request timeout",
+    "retryable": true
+  }
+}
+```
+
+**Notes:**
+- The service enforces basic SSRF protections and blocks private/metadata IP ranges.
+- Redirects are followed up to a fixed limit.
+- Responses are limited in size to prevent memory abuse.
+
+### 4. Create Batch Job (`POST /batch`)
 
 Queue multiple URLs for processing. Returns a Job ID immediately.
 
@@ -318,7 +381,7 @@ POST /api/v1/batch
 }
 ```
 
-### 4. Check Batch Status (`GET /batch/:jobId`)
+### 5. Check Batch Status (`GET /batch/:jobId`)
 
 Poll the status of a batch job.
 
@@ -357,7 +420,7 @@ Poll the status of a batch job.
 }
 ```
 
-### 5. Health Check (`GET /health`)
+### 6. Health Check (`GET /health`)
 
 **Response:** `{"status": "ok"}`
 

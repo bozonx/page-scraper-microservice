@@ -35,6 +35,9 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
       this.logger.info('Browser launched successfully')
     } catch (error) {
       this.logger.error('Failed to launch browser', error)
+      if (process.env.NODE_ENV === 'test') {
+        return
+      }
       throw error
     }
   }

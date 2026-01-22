@@ -10,6 +10,7 @@ import { CleanupService } from './services/cleanup.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
 import { ConcurrencyService } from './services/concurrency.service.js'
 import { BrowserService } from './services/browser.service.js'
+import { FetchService } from './services/fetch.service.js'
 
 /**
  * Scraper module
@@ -28,6 +29,7 @@ import { BrowserService } from './services/browser.service.js'
     MemoryStoreService,
     ConcurrencyService,
     BrowserService,
+    FetchService,
     {
       // Provide article extractor as an interface for better testability
       provide: 'IArticleExtractor',
@@ -44,7 +46,8 @@ import { BrowserService } from './services/browser.service.js'
     MemoryStoreService,
     ConcurrencyService,
     BrowserService,
+    FetchService,
     'IArticleExtractor',
   ],
 })
-export class ScraperModule { }
+export class ScraperModule {}

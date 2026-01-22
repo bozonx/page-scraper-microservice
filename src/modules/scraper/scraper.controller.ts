@@ -1,13 +1,27 @@
-import { Controller, Post, Get, Body, Param, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common'
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  Req,
+  HttpException,
+} from '@nestjs/common'
 import type { FastifyRequest } from 'fastify'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service.js'
 import { BatchService } from './services/batch.service.js'
+import { FetchService } from './services/fetch.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
 import { ScraperRequestDto } from './dto/scraper-request.dto.js'
 import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto.js'
 import { HtmlRequestDto } from './dto/html-request.dto.js'
 import { HtmlResponseDto } from './dto/html-response.dto.js'
+import { FetchRequestDto } from './dto/fetch-request.dto.js'
+import type { FetchResponseDto } from './dto/fetch-response.dto.js'
 import { BatchRequestDto, BatchResponseDto, BatchJobStatusDto } from './dto/batch.dto.js'
 import {
   ScraperException,
@@ -32,6 +46,7 @@ export class ScraperController {
   constructor(
     private readonly scraperService: ScraperService,
     private readonly batchService: BatchService,
+    private readonly fetchService: FetchService,
     private readonly memoryStoreService: MemoryStoreService,
     private readonly shutdownService: ShutdownService,
     private readonly logger: PinoLogger
@@ -46,7 +61,10 @@ export class ScraperController {
    */
   @Post('page')
   @HttpCode(HttpStatus.OK)
-  async scrapePage(@Body() request: ScraperRequestDto, @Req() req: FastifyRequest): Promise<ScraperResponseDto> {
+  async scrapePage(
+    @Body() request: ScraperRequestDto,
+    @Req() req: FastifyRequest
+  ): Promise<ScraperResponseDto> {
     this.shutdownService.incrementActiveRequests()
     const ac = new AbortController()
     const onDisconnect = () => {
@@ -78,6 +96,43 @@ export class ScraperController {
     }
   }
 
+  @Post('fetch')
+  @HttpCode(HttpStatus.OK)
+  async fetch(
+    @Body() request: FetchRequestDto,
+    @Req() req: FastifyRequest
+  ): Promise<FetchResponseDto> {
+    this.shutdownService.incrementActiveRequests()
+    const ac = new AbortController()
+    const onDisconnect = () => {
+      this.logger.warn(`Client disconnected for fetch ${request.url}`)
+      ac.abort()
+    }
+    req.raw.on('close', onDisconnect)
+
+    try {
+      this.logger.info(`Received fetch request for URL: ${request.url}`)
+      const result = await this.fetchService.fetch(request, ac.signal)
+      this.logger.info(`Successfully fetched ${request.url}`)
+      return result
+    } catch (error) {
+      if (ac.signal.aborted) {
+        this.logger.warn(`Request aborted for fetch ${request.url}`)
+      } else {
+        this.logger.error(`Failed to fetch ${request.url}:`, error)
+      }
+
+      if (error instanceof HttpException) {
+        throw error
+      }
+
+      throw this.handleScraperError(error)
+    } finally {
+      req.raw.off('close', onDisconnect)
+      this.shutdownService.decrementActiveRequests()
+    }
+  }
+
   /**
    * Retrieves raw HTML content from a page using Playwright
    * @param request HTML request parameters
@@ -85,7 +140,10 @@ export class ScraperController {
    */
   @Post('html')
   @HttpCode(HttpStatus.OK)
-  async getHtml(@Body() request: HtmlRequestDto, @Req() req: FastifyRequest): Promise<HtmlResponseDto> {
+  async getHtml(
+    @Body() request: HtmlRequestDto,
+    @Req() req: FastifyRequest
+  ): Promise<HtmlResponseDto> {
     this.shutdownService.incrementActiveRequests()
     const ac = new AbortController()
     const onDisconnect = () => {
