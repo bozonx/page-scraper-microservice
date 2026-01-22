@@ -35,18 +35,17 @@ A production-ready NestJS microservice designed to extract structured article da
 src/
 ├── config/           # Configuration modules (app, scraper)
 ├── modules/
-│   ├── scraper/      # Core scraping logic, DTOs, controllers
-│   ├── batch/        # Batch job management and scheduling
-│   └── webhook/      # Webhook delivery with retry logic
+│   ├── scraper/      # Core scraping logic, DTOs, controller, batch + webhook services
+│   └── health/       # Health check endpoint
 ├── common/           # Shared utilities, guards, filters
 └── main.ts           # Application entry point
 ```
 
 ### Key Components
 - **ScraperService:** Orchestrates extraction and Playwright modes
-- **BatchService:** Manages batch jobs, scheduling, and concurrency
+- **BatchService:** Manages batch jobs and scheduling
 - **WebhookService:** Handles reliable webhook delivery with retries
-- **ConcurrencyLimiter:** Global in-memory queue for task throttling
+- **ConcurrencyService:** Global in-memory queue for task throttling
 - **FingerprintService:** Generates and manages browser fingerprints
 
 ---
@@ -79,19 +78,20 @@ src/
     ```
 
 ### Docker
-
-**Using Docker Compose:**
-```bash
-docker-compose up -d
-```
-
-**Using Docker directly:**
-```bash
-docker build -t page-scraper-microservice -f docker/Dockerfile .
-docker run --rm -p 8080:8080 \
-  -e NODE_ENV=production \
-  page-scraper-microservice
-```
+ 
+ **Using Docker Compose:**
+ ```bash
+ docker compose -f docker/docker-compose.yml up -d
+ ```
+ 
+ **Using Docker directly:**
+ ```bash
+ pnpm run build
+ docker build -t page-scraper-microservice -f docker/Dockerfile .
+ docker run --rm -p 8080:8080 \
+   -e NODE_ENV=production \
+   page-scraper-microservice
+ ```
 
 ---
 
@@ -99,17 +99,15 @@ docker run --rm -p 8080:8080 \
 
 A vanilla JavaScript web interface is available for testing the microservice functionality without writing code.
 
-**Access the UI:**
-- Start the service (development or production)
-- Open your browser to `http://localhost:8080/`
-
-**Features:**
-- **Single Page Tab:** Test the `/page` endpoint with all configuration options
-- **Fetch Content Tab:** Test the `/fetch` endpoint for raw content retrieval
-- **Batch Processing Tab:** Create batch jobs with multiple URLs
-- **Batch Status Tab:** Check the status of batch jobs by Job ID
-
-The UI provides forms for all endpoint parameters including fingerprint settings, timeouts, and webhook configuration. Responses are displayed in a formatted JSON viewer.
+ **Access the UI:**
+ - Start the service (development or production)
+ - Open your browser to `http://localhost:8080/` (or `http://localhost:8080/{BASE_PATH}/` if `BASE_PATH` is set)
+ 
+ **Features:**
+ - **Single Page Tab:** Test the `/page` endpoint with all configuration options
+ - **Fetch Content Tab:** Test the `/fetch` endpoint for raw content retrieval
+ 
+ The UI provides forms for all endpoint parameters including fingerprint settings, timeouts, and webhook configuration. Responses are displayed in a formatted JSON viewer.
 
 ---
 
@@ -212,6 +210,8 @@ When using the `fingerprint` parameter in API requests, you can specify the foll
 ## API Reference
 
 **Base URL:** `http://localhost:8080/api/v1`
+ 
+ If `BASE_PATH` is set, all routes (including the API and the Test UI) are prefixed with it. Example: `BASE_PATH=app` => API base URL is `http://localhost:8080/app/api/v1`.
 
 ### 1. Scrape a Page (`POST /page`)
 
@@ -266,7 +266,7 @@ POST /api/v1/page
 
 ### 2. Fetch Raw Content (`POST /fetch`)
 
-Fetches the raw content of a URL and returns it as a string. This endpoint is intended for integrating external services that need the raw HTML/XML (e.g. RSS).
+Fetches the raw content of a URL and returns it as a string. This endpoint is intended for integrating external services that need the raw HTML/XML (e.g. RSS) or the rendered HTML of a SPA.
 
 Supported engines:
 - `engine=http` - Fast HTTP fetch without browser rendering
@@ -343,7 +343,7 @@ POST /api/v1/fetch
 - `FETCH_TOO_MANY_REDIRECTS` (HTTP 508) when redirect limit is exceeded
 - `FETCH_RESPONSE_TOO_LARGE` (HTTP 413) when response exceeds size limits
 
-### 4. Create Batch Job (`POST /batch`)
+### 3. Create Batch Job (`POST /batch`)
 
 Queue multiple URLs for processing. Returns a Job ID immediately.
 
@@ -365,8 +365,8 @@ POST /api/v1/batch
       "locale": "en-US",
       "timezoneId": "UTC",
       "rotateOnAntiBot": true,
-      "blockTrackers": true,     // Block analytics (Playwright only)
-      "blockHeavyResources": false,// Block images, videos, fonts (Playwright only)
+      "blockTrackers": true,     // Playwright only
+      "blockHeavyResources": false,// Playwright only
       "operatingSystems": ["windows", "macos"],
       "devices": ["desktop"]
     }
@@ -393,7 +393,7 @@ POST /api/v1/batch
 }
 ```
 
-### 5. Check Batch Status (`GET /batch/:jobId`)
+### 4. Check Batch Status (`GET /batch/:jobId`)
 
 Poll the status of a batch job.
 
@@ -432,7 +432,7 @@ Poll the status of a batch job.
 }
 ```
 
-### 6. Health Check (`GET /health`)
+### 5. Health Check (`GET /health`)
 
 **Response:** `{"status": "ok"}`
 
