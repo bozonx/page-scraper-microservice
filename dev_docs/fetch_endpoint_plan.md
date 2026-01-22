@@ -1,11 +1,11 @@
-# План: добавить публичный эндпоинт `POST /fetch` и HTTP-движок `cheerio`
+# План: добавить публичный эндпоинт `POST /fetch` и HTTP-движок `http`
 
 ## Цель
 Сделать микросервис универсальным “fetcher”-сервисом для получения контента (HTML/RSS) с антибот-защитой.
 
 - Внешний контракт: единый `POST /fetch`.
 - Движки выполнения:
-  - `cheerio` — HTTP fetch (скачать HTML или RSS/Atom, без рендеринга).
+  - `http` — HTTP fetch (скачать HTML или RSS/Atom, без рендеринга).
   - `playwright` — браузерный fetch с антибот мерами.
 - Парсинг/извлечение статей **не является целью `/fetch`**: news-сервис и любые другие клиенты сами решают как парсить `content`.
 
@@ -26,7 +26,7 @@
 ```jsonc
 {
   "url": "https://example.com/page",
-  "engine": "cheerio", // "cheerio" | "playwright"
+  "engine": "http", // "http" | "playwright"
 
   "timeoutSecs": 60,
 
@@ -56,7 +56,7 @@
   "detectedContentType": "text/html", // опционально
   "meta": {
     "durationMs": 1234,
-    "engine": "cheerio",
+    "engine": "http",
     "attempts": 1,
     "wasAntibot": false,
     "statusCode": 200
@@ -95,7 +95,7 @@
 - `src/modules/scraper/dto/fetch-response.dto.ts`
 
 Важно:
-- `engine` — строгий enum: `cheerio | playwright`.
+- `engine` — строгий enum: `http | playwright`.
 - `timeoutSecs` семантически соответствует текущему `taskTimeoutSecs` (верхний лимит всей операции).
 - `fingerprint` — используем текущий `FingerprintConfigDto` как базу, но в DTO для `/fetch` отделяем:
   - `locale`/`timezoneId` как отдельные поля request (как в требованиях news-сервиса).
@@ -115,10 +115,10 @@
 
 ---
 
-## Реализация движка `cheerio` (HTTP fetch)
+## Реализация движка `http` (HTTP fetch)
 
 ### Задача
-`cheerio` в данном плане означает **не парсинг DOM**, а "скачать контент по HTTP" и вернуть как строку.
+`http` в данном плане означает "скачать контент по HTTP" и вернуть как строку.
 
 ### Рекомендованная библиотека
 - Использовать `undici`
@@ -177,7 +177,7 @@
 - Вынести/добавить в конфиг `globals.http.retryMaxAttempts` (как в требованиях news-сервиса), либо завести отдельные env для fetcher.
 
 ### Алгоритм
-- Для `cheerio` и `playwright` унифицировать ретраи:
+- Для `http` и `playwright` унифицировать ретраи:
   - `retryMaxAttempts` (например 3)
   - backoff:
     - если ответ 429/503 и есть `Retry-After` — учитывать
@@ -244,7 +244,7 @@
 
 ### E2E (`test/e2e/`)
 - `POST /fetch`:
-  - `engine=cheerio` возвращает HTML от тестового http-сервера.
+  - `engine=http` возвращает HTML от тестового http-сервера.
   - RSS mime type проходит.
   - редиректы корректно обновляют `finalUrl`.
 
@@ -265,10 +265,10 @@ Playwright e2e тесты — по возможности ограничить (
 
 ## Порядок внедрения (итерации)
 
-1) **Итерация 1: контракт + cheerio fetch + SSRF**
-- Добавить `/fetch` с `engine=cheerio`.
+1) **Итерация 1: контракт + http fetch + SSRF**
+- Добавить `/fetch` с `engine=http`.
 - SSRF, таймаут, редиректы, лимит размера.
-- Unit + E2E для cheerio.
+- Unit + E2E для http.
 
 2) **Итерация 2: playwright fetch (без сложных эвристик)**
 - Подключить `engine=playwright` на базе существующего `BrowserService`.
