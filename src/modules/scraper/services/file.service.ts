@@ -121,6 +121,15 @@ export class FileService {
     this.logger.setContext(FileService.name)
   }
 
+  private getSafeUpstreamRequestHeaders(requestDto: FileRequestDto): Record<string, string> {
+    try {
+      return sanitizeUpstreamRequestHeaders(requestDto.headers)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
+    }
+  }
+
   public async proxyFile(
     requestDto: FileRequestDto,
     signal?: AbortSignal
@@ -191,13 +200,7 @@ export class FileService {
     let currentUrl = requestDto.url
     let redirects = 0
 
-    let safeHeaders: Record<string, string>
-    try {
-      safeHeaders = sanitizeUpstreamRequestHeaders(requestDto.headers)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
-    }
+    const safeHeaders = this.getSafeUpstreamRequestHeaders(requestDto)
 
     while (true) {
       if (this.isRequestAborted(signal)) {
@@ -337,20 +340,22 @@ export class FileService {
 
     return await this.browserService.withPage(
       async (page) => {
-        let safeHeaders: Record<string, string>
-        try {
-          safeHeaders = sanitizeUpstreamRequestHeaders(requestDto.headers)
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err)
-          throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
-        }
+        const safeHeaders = this.getSafeUpstreamRequestHeaders(requestDto)
 
         if (Object.keys(safeHeaders).length > 0) {
           await page.setExtraHTTPHeaders(safeHeaders)
         }
 
         const timeout = Math.min(this.getTimeoutMs(requestDto), navigationTimeoutMs)
-        await page.goto(validatedUrl.toString(), { timeout, waitUntil: 'domcontentloaded' })
+        try {
+          await page.goto(validatedUrl.toString(), { timeout, waitUntil: 'commit' })
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          if (msg.toLowerCase().includes('download is starting')) {
+            return { finalUrl: validatedUrl.toString(), cookieHeader: undefined }
+          }
+          throw err
+        }
 
         const finalUrl = page.url()
         const validatedFinalUrl = await assertUrlAllowed(finalUrl, { allowLocalhost })
@@ -377,13 +382,7 @@ export class FileService {
 
     const bootstrap = await this.getPlaywrightBootstrap(requestDto, signal)
 
-    let safeHeaders: Record<string, string>
-    try {
-      safeHeaders = sanitizeUpstreamRequestHeaders(requestDto.headers)
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err)
-      throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
-    }
+    let safeHeaders = this.getSafeUpstreamRequestHeaders(requestDto)
 
     if (bootstrap.cookieHeader) {
       safeHeaders = {

@@ -167,7 +167,18 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
       if (signal?.aborted) {
         throw new Error('Request aborted')
       }
-      this.logger.error('Error in withPage', error)
+      if (error instanceof Error) {
+        this.logger.error(
+          {
+            errName: error.name,
+            errMessage: error.message,
+            errStack: error.stack,
+          },
+          'Error in withPage'
+        )
+      } else {
+        this.logger.error({ err: error }, 'Error in withPage')
+      }
       throw error
     } finally {
       if (signal) {
