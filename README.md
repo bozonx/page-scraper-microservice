@@ -158,8 +158,17 @@ When using the `fingerprint` parameter in API requests, you can specify the foll
 | --- | --- | --- |
 | `PLAYWRIGHT_HEADLESS` | Run browser in headless mode (no UI) | `true` |
 | `PLAYWRIGHT_NAVIGATION_TIMEOUT_SECS` | Navigation timeout for browser operations in seconds (≥1) | `30` |
+| `PLAYWRIGHT_EXTRA_ARGS` | Extra Chromium args for Playwright. Format: JSON array (recommended) or space-separated string | `[]` |
 | `DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS` | Block tracking scripts and analytics for faster loading | `true` |
 | `DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES` | Block images, videos, and fonts for faster scraping | `true` |
+
+### Fetch (`/fetch`) Settings
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `FETCH_RETRY_MAX_ATTEMPTS` | Maximum number of attempts for `/fetch` retries (both engines) | `3` |
+| `FETCH_MAX_REDIRECTS` | Maximum number of redirects for `/fetch` with `engine=http` | `7` |
+| `FETCH_MAX_RESPONSE_BYTES` | Maximum response size in bytes for `/fetch` with `engine=http` | `10485760` |
 
 ### Batch Processing Settings
 

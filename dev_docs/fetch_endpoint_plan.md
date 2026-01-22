@@ -261,6 +261,43 @@ Playwright e2e тесты — по возможности ограничить (
 - перенести поля 1:1 в `POST /fetch` (fingerprint/locale/timezone/timeout).
 - использовать `meta.attempts` и `meta.wasAntibot` для логов/наблюдаемости.
 
+### Маппинг полей (news -> fetch)
+
+1) URL
+- `request.url` -> `body.url`
+
+2) Таймауты
+- `request.userData.taskTimeoutSecs` (или аналогичный верхний лимит на операцию) -> `body.timeoutSecs`
+
+3) Locale / Timezone
+- `request.userData.locale` -> `body.locale`
+- `request.userData.timezoneId` -> `body.timezoneId`
+
+4) Fingerprint
+- `request.userData.fingerprint` -> `body.fingerprint`
+  - Важно: при наличии `body.locale` и `body.timezoneId` они считаются приоритетными (overrides), а `fingerprint.locale/timezoneId` остаются как fallback.
+
+5) Выбор движка
+- Для RSS/Atom и простых HTML страниц: `body.engine=http`
+- Для JS-heavy страниц и антибота: `body.engine=playwright`
+
+6) Debug
+- В проде держать `body.debug=false`
+- Для расследований/инцидентов включать `body.debug=true` точечно (в ответе могут появиться stack/headers)
+
+### Рекомендованный сценарий внедрения
+
+1) Добавить в news-сервис feature-flag (например `FETCHER_ENABLED`) и адрес fetcher-сервиса.
+2) На первом этапе включить `/fetch` только для части источников (canary).
+3) Логировать:
+   - `finalUrl`
+   - `meta.engine`, `meta.attempts`, `meta.wasAntibot`, `meta.statusCode`
+   - `error.code`, `error.retryable` (при ошибках)
+4) Политика ретраев:
+   - не дублировать ретраи на уровне news-сервиса, если fetcher уже делает retry (чтобы не получить retry^2).
+   - если нужно иметь ретраи на уровне news, то ограничить их до 1 попытки и только для retryable-ошибок.
+5) Постепенно переключить все источники.
+
 ---
 
 ## Порядок внедрения (итерации)
