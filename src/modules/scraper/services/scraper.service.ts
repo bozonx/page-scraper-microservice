@@ -230,6 +230,11 @@ export class ScraperService {
         // Get HTML content
         const html = await page.content()
 
+        const maxHtmlBytes = Math.max(1, scraperConfig?.fetchMaxResponseBytes ?? 10 * 1024 * 1024)
+        if (Buffer.byteLength(html, 'utf-8') > maxHtmlBytes) {
+          throw new Error('Response too large')
+        }
+
         // Extract content using article extractor with same header hints
         const headers: Record<string, string> = {}
         if (fingerprint.headers?.['Accept-Language'])
