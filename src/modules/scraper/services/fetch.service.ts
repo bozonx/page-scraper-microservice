@@ -59,8 +59,7 @@ export class FetchService {
           debug,
         }
 
-        const allowLocalhost =
-          process.env.NODE_ENV === 'test' || typeof process.env.JEST_WORKER_ID === 'string'
+        const allowLocalhost = process.env.NODE_ENV === 'test'
 
         let finalUrl: string | undefined
         let attempts = 0
@@ -159,6 +158,13 @@ export class FetchService {
           const durationMs = Date.now() - start
           const mapped = this.mapError(err, { debug })
 
+          if (typeof (err as any)?.statusCode === 'number') {
+            statusCode = (err as any).statusCode
+          }
+          if (typeof (err as any)?.finalUrl === 'string') {
+            finalUrl = (err as any).finalUrl
+          }
+
           const payload: FetchErrorResponseDto = {
             finalUrl,
             meta: {
@@ -183,9 +189,10 @@ export class FetchService {
       return await this.concurrencyService.run(async () => {
         const timeoutSecs = requestDto.timeoutSecs ?? 60
         const debug = requestDto.debug === true
+        const totalTimeoutMs = timeoutSecs * 1000
+        const deadlineMs = start + totalTimeoutMs
 
-        const allowLocalhost =
-          process.env.NODE_ENV === 'test' || typeof process.env.JEST_WORKER_ID === 'string'
+        const allowLocalhost = process.env.NODE_ENV === 'test'
 
         let finalUrl: string | undefined
         let attempts = 0
@@ -202,7 +209,6 @@ export class FetchService {
           const validatedUrl = await assertUrlAllowed(requestDto.url, { allowLocalhost })
           const navigationTimeoutMs =
             Math.max(1, scraperConfig?.playwrightNavigationTimeoutSecs ?? 60) * 1000
-          const gotoTimeoutMs = Math.min(timeoutSecs * 1000, navigationTimeoutMs)
 
           const rotateOnAntiBot =
             requestDto.fingerprint?.rotateOnAntiBot ??
@@ -211,6 +217,13 @@ export class FetchService {
 
           for (let attempt = 0; attempt < retryMaxAttempts; attempt++) {
             if (signal?.aborted) throw new Error('Request aborted')
+
+            const remainingMs = deadlineMs - Date.now()
+            if (remainingMs <= 0) {
+              throw new Error('Timeout')
+            }
+
+            const gotoTimeoutMs = Math.min(remainingMs, navigationTimeoutMs)
 
             const shouldRotate = attempt > 0 && wasAntibot && rotateOnAntiBot
             const fp = shouldRotate
@@ -272,6 +285,14 @@ export class FetchService {
                     throw new Error('Fetch resulted in empty response')
                   }
 
+                  const maxResponseBytes = Math.max(
+                    1,
+                    scraperConfig?.fetchMaxResponseBytes ?? 10 * 1024 * 1024
+                  )
+                  if (Buffer.byteLength(content, 'utf-8') > maxResponseBytes) {
+                    throw new Error('Response too large')
+                  }
+
                   if (statusCode === 403 || statusCode === 429) {
                     const e = new Error(`HTTP status ${statusCode}`)
                     ;(e as any).statusCode = statusCode
@@ -328,6 +349,13 @@ export class FetchService {
         } catch (err) {
           const durationMs = Date.now() - start
           const mapped = this.mapError(err, { debug })
+
+          if (typeof (err as any)?.statusCode === 'number') {
+            statusCode = (err as any).statusCode
+          }
+          if (typeof (err as any)?.finalUrl === 'string') {
+            finalUrl = (err as any).finalUrl
+          }
 
           const payload: FetchErrorResponseDto = {
             finalUrl,
@@ -461,7 +489,23 @@ export class FetchService {
   }
 
   private async readBodyWithLimit(res: any, maxBytes: number): Promise<string> {
-    if (!res?.body || typeof res.body.getReader !== 'function') return ''
+    if (!res) return ''
+
+    const contentLengthHeader = res.headers?.get?.('content-length')
+    if (typeof contentLengthHeader === 'string') {
+      const parsed = Number(contentLengthHeader)
+      if (Number.isFinite(parsed) && parsed > maxBytes) {
+        throw new Error('Response too large')
+      }
+    }
+
+    if (!res.body || typeof res.body.getReader !== 'function') {
+      const buf = Buffer.from(await res.arrayBuffer())
+      if (buf.byteLength > maxBytes) {
+        throw new Error('Response too large')
+      }
+      return buf.toString('utf-8')
+    }
 
     const reader = res.body.getReader()
     const chunks: Uint8Array[] = []
@@ -567,19 +611,19 @@ export class FetchService {
 
     if (lower.includes('too many redirects')) {
       return {
-        code: 'FETCH_HTTP_STATUS',
+        code: 'FETCH_TOO_MANY_REDIRECTS',
         message: 'Too many redirects',
         retryable: false,
-        httpStatus: HttpStatus.BAD_GATEWAY,
+        httpStatus: HttpStatus.LOOP_DETECTED,
       }
     }
 
     if (lower.includes('response too large')) {
       return {
-        code: 'FETCH_HTTP_STATUS',
+        code: 'FETCH_RESPONSE_TOO_LARGE',
         message: 'Response too large',
         retryable: false,
-        httpStatus: HttpStatus.BAD_GATEWAY,
+        httpStatus: HttpStatus.PAYLOAD_TOO_LARGE,
       }
     }
 
@@ -646,10 +690,7 @@ export class FetchService {
       lower.includes('rate limit')
 
     const retryable =
-      lower.includes('timeout') ||
-      lower.includes('navigation') ||
-      lower.includes('net::') ||
-      lower.includes('request aborted')
+      lower.includes('timeout') || lower.includes('navigation') || lower.includes('net::') || false
 
     return {
       retryable,

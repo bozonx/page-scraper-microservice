@@ -348,9 +348,13 @@ POST /api/v1/fetch
   - Only accepts text content types (text/*, application/xml, application/rss+xml, application/atom+xml, application/json)
   - Rejects binary content (images, videos, PDFs) with `FETCH_UNSUPPORTED_CONTENT_TYPE` error
 - `engine=playwright`: Full browser rendering with anti-bot protection, supports JavaScript-heavy sites.
-- `timeoutSecs` is a total budget for the entire operation including all redirects and retry attempts.
+- `timeoutSecs` is a total budget for the entire operation including retries (and redirects for `engine=http`).
 - `rotateOnAntiBot=true` rotates fingerprint only when anti-bot protection is detected.
 - Use `debug=true` to include response headers and stack traces in error responses.
+
+**Common error codes:**
+- `FETCH_TOO_MANY_REDIRECTS` (HTTP 508) when redirect limit is exceeded
+- `FETCH_RESPONSE_TOO_LARGE` (HTTP 413) when response exceeds size limits
 
 ### 4. Create Batch Job (`POST /batch`)
 

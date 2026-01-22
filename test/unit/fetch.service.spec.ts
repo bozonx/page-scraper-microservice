@@ -165,6 +165,24 @@ describe('FetchService (unit)', () => {
       expect(mapped.httpStatus).toBe(400)
     })
 
+    it('maps too many redirects to FETCH_TOO_MANY_REDIRECTS', () => {
+      const service = createService() as any
+      const mapped = service.mapError(new Error('Too many redirects'), { debug: false })
+
+      expect(mapped.code).toBe('FETCH_TOO_MANY_REDIRECTS')
+      expect(mapped.retryable).toBe(false)
+      expect(mapped.httpStatus).toBe(508)
+    })
+
+    it('maps response too large to FETCH_RESPONSE_TOO_LARGE', () => {
+      const service = createService() as any
+      const mapped = service.mapError(new Error('Response too large'), { debug: false })
+
+      expect(mapped.code).toBe('FETCH_RESPONSE_TOO_LARGE')
+      expect(mapped.retryable).toBe(false)
+      expect(mapped.httpStatus).toBe(413)
+    })
+
     it('maps unsupported content type to FETCH_UNSUPPORTED_CONTENT_TYPE', () => {
       const service = createService() as any
       const mapped = service.mapError(new Error('Unsupported content type: image/png'), {
