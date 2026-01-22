@@ -10,7 +10,7 @@ import { BrowserService } from './browser.service.js'
 import { FingerprintService } from './fingerprint.service.js'
 import { FileRequestDto } from '../dto/file-request.dto.js'
 
-const HOP_BY_HOP_HEADERS = new Set([
+export const HOP_BY_HOP_HEADERS = new Set([
   'connection',
   'keep-alive',
   'proxy-authenticate',
@@ -21,37 +21,58 @@ const HOP_BY_HOP_HEADERS = new Set([
   'upgrade',
 ])
 
-function sanitizeUpstreamRequestHeaders(
+const DANGEROUS_REQUEST_HEADERS = new Set([
+  'cookie',
+  'authorization',
+  'proxy-authorization',
+  'proxy-authenticate',
+])
+
+const MAX_UPSTREAM_REQUEST_HEADERS = 50
+const MAX_HEADER_NAME_LENGTH = 200
+const MAX_HEADER_VALUE_LENGTH = 2000
+
+export function sanitizeUpstreamRequestHeaders(
   headers: Record<string, string> | undefined
 ): Record<string, string> {
   if (!headers) return {}
   const out: Record<string, string> = {}
 
-  for (const [k, v] of Object.entries(headers)) {
+  const entries = Object.entries(headers)
+  if (entries.length > MAX_UPSTREAM_REQUEST_HEADERS) {
+    throw new Error('Too many headers')
+  }
+
+  for (const [k, v] of entries) {
     const key = k.toLowerCase()
     if (HOP_BY_HOP_HEADERS.has(key)) continue
+    if (DANGEROUS_REQUEST_HEADERS.has(key)) {
+      throw new Error(`Forbidden header: ${k}`)
+    }
     if (key === 'host') continue
     if (key === 'content-length') continue
     if (v == null) continue
-    out[k] = String(v)
+    if (k.length > MAX_HEADER_NAME_LENGTH) {
+      throw new Error('Header name too long')
+    }
+    if (v.length > MAX_HEADER_VALUE_LENGTH) {
+      throw new Error('Header value too long')
+    }
+    out[k] = v
   }
 
   return out
 }
 
-function sanitizeUpstreamResponseHeaders(headers: Record<string, string>): Record<string, string> {
+export function sanitizeUpstreamResponseHeaders(
+  headers: Record<string, string>
+): Record<string, string> {
   const out: Record<string, string> = {}
 
   for (const [k, v] of Object.entries(headers)) {
     const key = k.toLowerCase()
     if (HOP_BY_HOP_HEADERS.has(key)) continue
     if (key === 'set-cookie') continue
-    if (key === 'content-encoding') {
-      // Avoid mismatched content-encoding if the client/framework changes the body handling
-      // We stream as-is, but leaving it may break clients if something tampers with the stream.
-      // Keeping it removed is safer.
-      continue
-    }
     out[k] = v
   }
 
@@ -150,6 +171,10 @@ export class FileService {
     return Math.max(1, timeoutSecs) * 1000
   }
 
+  private isRequestAborted(signal?: AbortSignal): boolean {
+    return signal?.aborted === true
+  }
+
   private async httpDownload(
     requestDto: FileRequestDto,
     signal?: AbortSignal
@@ -166,7 +191,18 @@ export class FileService {
     let currentUrl = requestDto.url
     let redirects = 0
 
+    let safeHeaders: Record<string, string>
+    try {
+      safeHeaders = sanitizeUpstreamRequestHeaders(requestDto.headers)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
+    }
+
     while (true) {
+      if (this.isRequestAborted(signal)) {
+        throw this.httpError('FILE_ABORTED', 'Request aborted', HttpStatus.BAD_REQUEST)
+      }
       const validated = await assertUrlAllowed(currentUrl, { allowLocalhost })
 
       const controller = new AbortController()
@@ -184,7 +220,7 @@ export class FileService {
       try {
         const res = await fetch(validated.toString(), {
           method: 'GET',
-          headers: sanitizeUpstreamRequestHeaders(requestDto.headers),
+          headers: safeHeaders,
           redirect: 'manual',
           signal: controller.signal,
         })
@@ -243,6 +279,9 @@ export class FileService {
         }
       } catch (err: any) {
         if (err?.name === 'AbortError') {
+          if (this.isRequestAborted(signal)) {
+            throw this.httpError('FILE_ABORTED', 'Request aborted', HttpStatus.BAD_REQUEST)
+          }
           throw this.httpError('FILE_TIMEOUT', 'Request timeout', HttpStatus.GATEWAY_TIMEOUT)
         }
 
@@ -251,6 +290,18 @@ export class FileService {
         }
 
         const msg = err instanceof Error ? err.message : String(err)
+        if (msg.toLowerCase().includes('too many headers')) {
+          throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
+        }
+        if (msg.toLowerCase().includes('forbidden header')) {
+          throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
+        }
+        if (msg.toLowerCase().includes('header name too long')) {
+          throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
+        }
+        if (msg.toLowerCase().includes('header value too long')) {
+          throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
+        }
         if (msg.toLowerCase().includes('ssrf blocked')) {
           throw this.httpError('FILE_SSRF_BLOCKED', 'SSRF blocked', HttpStatus.BAD_REQUEST)
         }
@@ -271,10 +322,10 @@ export class FileService {
     }
   }
 
-  private async playwrightDownload(
+  private async getPlaywrightBootstrap(
     requestDto: FileRequestDto,
     signal?: AbortSignal
-  ): Promise<FileProxyResult> {
+  ): Promise<{ finalUrl: string; cookieHeader: string | undefined }> {
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')
     const allowLocalhost = process.env.NODE_ENV === 'test'
 
@@ -282,30 +333,145 @@ export class FileService {
     const navigationTimeoutMs =
       Math.max(1, scraperConfig?.playwrightNavigationTimeoutSecs ?? 60) * 1000
 
-    const maxBytes = this.getMaxBytes(requestDto)
-
     const fp = this.fingerprintService.generateFingerprint({})
 
     return await this.browserService.withPage(
       async (page) => {
-        const headers = sanitizeUpstreamRequestHeaders(requestDto.headers)
-        if (Object.keys(headers).length > 0) {
-          await page.setExtraHTTPHeaders(headers)
+        let safeHeaders: Record<string, string>
+        try {
+          safeHeaders = sanitizeUpstreamRequestHeaders(requestDto.headers)
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err)
+          throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
         }
 
-        const response = await page.request.get(validatedUrl.toString(), {
-          timeout: Math.min(this.getTimeoutMs(requestDto), navigationTimeoutMs),
+        if (Object.keys(safeHeaders).length > 0) {
+          await page.setExtraHTTPHeaders(safeHeaders)
+        }
+
+        const timeout = Math.min(this.getTimeoutMs(requestDto), navigationTimeoutMs)
+        await page.goto(validatedUrl.toString(), { timeout, waitUntil: 'domcontentloaded' })
+
+        const finalUrl = page.url()
+        const validatedFinalUrl = await assertUrlAllowed(finalUrl, { allowLocalhost })
+        const cookies = await page.context().cookies([validatedFinalUrl.toString()])
+        const cookieHeader = cookies.length
+          ? cookies.map((c) => `${c.name}=${c.value}`).join('; ')
+          : undefined
+
+        return { finalUrl: validatedFinalUrl.toString(), cookieHeader }
+      },
+      fp,
+      signal
+    )
+  }
+
+  private async playwrightDownload(
+    requestDto: FileRequestDto,
+    signal?: AbortSignal
+  ): Promise<FileProxyResult> {
+    const allowLocalhost = process.env.NODE_ENV === 'test'
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')
+    const maxRedirects = Math.max(0, scraperConfig?.fileMaxRedirects ?? 7)
+    const maxBytes = this.getMaxBytes(requestDto)
+
+    const bootstrap = await this.getPlaywrightBootstrap(requestDto, signal)
+
+    let safeHeaders: Record<string, string>
+    try {
+      safeHeaders = sanitizeUpstreamRequestHeaders(requestDto.headers)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      throw this.httpError('FILE_INVALID_HEADERS', msg, HttpStatus.BAD_REQUEST)
+    }
+
+    if (bootstrap.cookieHeader) {
+      safeHeaders = {
+        ...safeHeaders,
+        Cookie: bootstrap.cookieHeader,
+      }
+    }
+
+    return await this.httpDownloadStream(
+      {
+        url: bootstrap.finalUrl,
+        headers: safeHeaders,
+        timeoutMs: this.getTimeoutMs(requestDto),
+        maxRedirects,
+        maxBytes,
+        allowLocalhost,
+        modeUsed: 'playwright',
+      },
+      signal
+    )
+  }
+
+  private async httpDownloadStream(
+    args: {
+      url: string
+      headers: Record<string, string>
+      timeoutMs: number
+      maxRedirects: number
+      maxBytes: number
+      allowLocalhost: boolean
+      modeUsed: 'http' | 'playwright'
+    },
+    signal?: AbortSignal
+  ): Promise<FileProxyResult> {
+    const deadlineMs = Date.now() + args.timeoutMs
+    let currentUrl = args.url
+    let redirects = 0
+
+    while (true) {
+      if (this.isRequestAborted(signal)) {
+        throw this.httpError('FILE_ABORTED', 'Request aborted', HttpStatus.BAD_REQUEST)
+      }
+
+      const validated = await assertUrlAllowed(currentUrl, { allowLocalhost: args.allowLocalhost })
+
+      const controller = new AbortController()
+      const onAbort = () => controller.abort()
+      signal?.addEventListener('abort', onAbort)
+
+      const remainingMs = Math.max(0, deadlineMs - Date.now())
+      if (remainingMs <= 0) {
+        signal?.removeEventListener('abort', onAbort)
+        throw this.httpError('FILE_TIMEOUT', 'Request timeout', HttpStatus.GATEWAY_TIMEOUT)
+      }
+
+      const timeout = setTimeout(() => controller.abort(), remainingMs)
+
+      try {
+        const res = await fetch(validated.toString(), {
+          method: 'GET',
+          headers: args.headers,
+          redirect: 'manual',
+          signal: controller.signal,
         })
 
-        const responseHeaders = response.headers()
-        const filteredHeaders = sanitizeUpstreamResponseHeaders(
-          Object.fromEntries(Object.entries(responseHeaders).map(([k, v]) => [k, String(v)]))
-        )
+        if (res.status >= 300 && res.status < 400 && res.headers.get('location')) {
+          if (redirects >= args.maxRedirects) {
+            throw this.httpError(
+              'FILE_TOO_MANY_REDIRECTS',
+              'Too many redirects',
+              HttpStatus.LOOP_DETECTED
+            )
+          }
+          redirects += 1
+          const location = String(res.headers.get('location'))
+          currentUrl = new URL(location, validated).toString()
+          continue
+        }
 
-        const contentLength = responseHeaders['content-length']
-        if (typeof contentLength === 'string') {
-          const parsed = Number(contentLength)
-          if (Number.isFinite(parsed) && parsed > maxBytes) {
+        const responseHeaders: Record<string, string> = {}
+        for (const [k, v] of (res.headers as any).entries()) {
+          responseHeaders[k] = String(v)
+        }
+
+        const contentLengthHeader = res.headers.get('content-length')
+        if (typeof contentLengthHeader === 'string') {
+          const parsed = Number(contentLengthHeader)
+          if (Number.isFinite(parsed) && parsed > args.maxBytes) {
             throw this.httpError(
               'FILE_RESPONSE_TOO_LARGE',
               'Response too large',
@@ -314,28 +480,56 @@ export class FileService {
           }
         }
 
-        const buf = await response.body()
-        if (buf.byteLength > maxBytes) {
+        if (!res.body) {
+          throw this.httpError(
+            'FILE_EMPTY_RESPONSE',
+            'Empty upstream response',
+            HttpStatus.BAD_GATEWAY
+          )
+        }
+
+        const upstream = Readable.fromWeb(res.body as any)
+        const limiter = new ByteLimitTransform(args.maxBytes)
+        const stream = upstream.pipe(limiter)
+
+        const filteredHeaders = sanitizeUpstreamResponseHeaders(responseHeaders)
+
+        return {
+          statusCode: res.status,
+          finalUrl: validated.toString(),
+          headers: filteredHeaders,
+          stream,
+          modeUsed: args.modeUsed,
+        }
+      } catch (err: any) {
+        if (err?.name === 'AbortError') {
+          if (this.isRequestAborted(signal)) {
+            throw this.httpError('FILE_ABORTED', 'Request aborted', HttpStatus.BAD_REQUEST)
+          }
+          throw this.httpError('FILE_TIMEOUT', 'Request timeout', HttpStatus.GATEWAY_TIMEOUT)
+        }
+
+        if (err instanceof HttpException) {
+          throw err
+        }
+
+        const msg = err instanceof Error ? err.message : String(err)
+        if (msg.toLowerCase().includes('ssrf blocked')) {
+          throw this.httpError('FILE_SSRF_BLOCKED', 'SSRF blocked', HttpStatus.BAD_REQUEST)
+        }
+        if (msg.toLowerCase().includes('response too large')) {
           throw this.httpError(
             'FILE_RESPONSE_TOO_LARGE',
             'Response too large',
             HttpStatus.PAYLOAD_TOO_LARGE
           )
         }
-
-        const stream = Readable.from(buf)
-
-        return {
-          statusCode: response.status(),
-          finalUrl: validatedUrl.toString(),
-          headers: filteredHeaders,
-          stream,
-          modeUsed: 'playwright',
-        }
-      },
-      fp,
-      signal
-    )
+        throw this.httpError('FILE_ERROR', msg, HttpStatus.BAD_GATEWAY)
+      } finally {
+        clearTimeout(timeout)
+        signal?.removeEventListener('abort', onAbort)
+      }
+    }
   }
 
   private httpError(code: string, message: string, status: HttpStatus): HttpException {
