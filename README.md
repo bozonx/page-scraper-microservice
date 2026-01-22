@@ -332,7 +332,47 @@ POST /api/v1/fetch
 
 **Note:** Upstream non-2xx HTTP responses are returned as `FETCH_HTTP_STATUS` with HTTP 502.
 
-### 3. Health Check (`GET /health`)
+### 3. File Proxy (`POST /file`)
+
+Proxies a URL and streams the upstream response body as-is. This endpoint is intended for downloading binary content (images, PDFs, archives, etc.) and can use Playwright for anti-bot protected sources.
+
+**Request:**
+```jsonc
+{
+  "url": "https://example.com/file.bin",
+  "mode": "auto",                 // "auto" | "http" | "playwright" (default: auto)
+  "timeoutSecs": 60,
+  "maxBytes": 26214400,             // Optional per-request cap (cannot exceed service limit)
+  "headers": {
+    "User-Agent": "...",
+    "Accept": "*/*",
+    "Referer": "https://example.com/"
+  }
+}
+```
+
+**Response (200 OK):**
+- Streaming binary response (non-JSON)
+- The service forwards upstream headers where possible
+- Adds diagnostic headers:
+  - `X-Final-Url`
+  - `X-Mode-Used: http|playwright`
+
+**Notes:**
+- The service enforces SSRF protections and blocks private/metadata IP ranges.
+- Hop-by-hop headers (e.g. `connection`, `transfer-encoding`) and `set-cookie` are not forwarded.
+- `mode=auto` first tries `http` and falls back to Playwright on suspected anti-bot (HTTP 403/429).
+- Response size is limited by `FILE_MAX_RESPONSE_BYTES` (and optionally `maxBytes` per request).
+
+**Example:**
+```bash
+curl -X POST http://localhost:8080/api/v1/file \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/image.jpg","mode":"auto"}' \
+  -o image.jpg
+```
+
+### 4. Health Check (`GET /health`)
 
 **Response:** `{"status": "ok"}`
 

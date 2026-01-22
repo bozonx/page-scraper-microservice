@@ -9,6 +9,7 @@ import { MemoryStoreService } from './services/memory-store.service.js'
 import { ConcurrencyService } from './services/concurrency.service.js'
 import { BrowserService } from './services/browser.service.js'
 import { FetchService } from './services/fetch.service.js'
+import { FileService } from './services/file.service.js'
 
 /**
  * Scraper module
@@ -26,6 +27,7 @@ import { FetchService } from './services/fetch.service.js'
     ConcurrencyService,
     BrowserService,
     FetchService,
+    FileService,
     {
       // Provide article extractor as an interface for better testability
       provide: 'IArticleExtractor',
@@ -41,6 +43,7 @@ import { FetchService } from './services/fetch.service.js'
     ConcurrencyService,
     BrowserService,
     FetchService,
+    FileService,
     'IArticleExtractor',
   ],
 })

@@ -7,10 +7,19 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const htmlPath = join(__dirname, '../e2e/examples', 'test-page.html')
 const htmlContent = readFileSync(htmlPath, 'utf-8')
 const rssContent = `<?xml version="1.0" encoding="UTF-8"?>\n<rss version="2.0"><channel><title>Test</title><item><title>Hello</title></item></channel></rss>`
+const pngSignature = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 
 export function startTestServer(port = 0) {
   const server = createServer((req, res) => {
     const url = req.url ?? '/'
+    if (url.startsWith('/binary')) {
+      res.writeHead(200, {
+        'Content-Type': 'application/octet-stream',
+        'Content-Length': String(pngSignature.byteLength),
+      })
+      res.end(pngSignature)
+      return
+    }
     if (url.startsWith('/redirect')) {
       res.writeHead(302, { Location: '/test-page' })
       res.end()

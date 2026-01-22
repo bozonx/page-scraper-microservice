@@ -6,17 +6,21 @@ import {
   HttpStatus,
   UseGuards,
   Req,
+  Res,
   HttpException,
 } from '@nestjs/common'
 import type { FastifyRequest } from 'fastify'
+import type { FastifyReply } from 'fastify'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service.js'
 import { FetchService } from './services/fetch.service.js'
+import { FileService } from './services/file.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
 import { ScraperRequestDto } from './dto/scraper-request.dto.js'
 import { ScraperResponseDto } from './dto/scraper-response.dto.js'
 import { FetchRequestDto } from './dto/fetch-request.dto.js'
 import type { FetchResponseDto } from './dto/fetch-response.dto.js'
+import { FileRequestDto } from './dto/file-request.dto.js'
 import { ScraperException } from '../../common/exceptions/scraper.exception.js'
 import { ShutdownGuard } from '../../common/guards/shutdown.guard.js'
 import { ShutdownService } from '../../common/services/shutdown.service.js'
@@ -31,11 +35,57 @@ export class ScraperController {
   constructor(
     private readonly scraperService: ScraperService,
     private readonly fetchService: FetchService,
+    private readonly fileService: FileService,
     private readonly memoryStoreService: MemoryStoreService,
     private readonly shutdownService: ShutdownService,
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(ScraperController.name)
+  }
+
+  @Post('file')
+  async file(
+    @Body() request: FileRequestDto,
+    @Req() req: FastifyRequest,
+    @Res() reply: FastifyReply
+  ) {
+    this.shutdownService.incrementActiveRequests()
+    const ac = new AbortController()
+    const onDisconnect = () => {
+      this.logger.warn(`Client disconnected for file ${request.url}`)
+      ac.abort()
+    }
+    req.raw.on('close', onDisconnect)
+
+    try {
+      this.logger.info(`Received file proxy request for URL: ${request.url}`)
+      const result = await this.fileService.proxyFile(request, ac.signal)
+
+      reply.status(result.statusCode)
+      for (const [k, v] of Object.entries(result.headers)) {
+        if (typeof v === 'string' && v.length > 0) {
+          reply.header(k, v)
+        }
+      }
+      reply.header('X-Final-Url', result.finalUrl)
+      reply.header('X-Mode-Used', result.modeUsed)
+      return reply.send(result.stream)
+    } catch (error) {
+      if (ac.signal.aborted) {
+        this.logger.warn(`Request aborted for file ${request.url}`)
+      } else {
+        this.logger.error(`Failed to proxy file ${request.url}:`, error)
+      }
+
+      if (error instanceof HttpException) {
+        throw error
+      }
+
+      throw this.handleScraperError(error)
+    } finally {
+      req.raw.off('close', onDisconnect)
+      this.shutdownService.decrementActiveRequests()
+    }
   }
 
   /**

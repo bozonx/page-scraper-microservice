@@ -8,6 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **POST /file endpoint**: Streaming file proxy (binary downloads)
+  - Streams upstream response body as-is (non-JSON)
+  - Supports `mode=auto|http|playwright` for anti-bot protected sources
+  - SSRF protections and response size limits
+  - Forwards upstream headers with hop-by-hop and `set-cookie` filtering
+  - Adds `X-Final-Url` and `X-Mode-Used` diagnostic headers
 - **POST /fetch endpoint**: Playwright engine support (`engine=playwright`)
   - Full browser rendering for JavaScript-heavy sites
   - Anti-bot protection with fingerprint injection

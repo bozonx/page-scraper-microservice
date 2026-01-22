@@ -62,6 +62,22 @@ export class ScraperConfig {
   @Min(1)
   public fetchMaxResponseBytes!: number
 
+  // File proxy (/file) settings
+  /**
+   * Maximum number of redirects to follow for /file engine=http (0-20)
+   */
+  @IsInt()
+  @Min(0)
+  @Max(20)
+  public fileMaxRedirects!: number
+
+  /**
+   * Maximum response size in bytes for /file (>=1)
+   */
+  @IsInt()
+  @Min(1)
+  public fileMaxResponseBytes!: number
+
   // Playwright settings
   /**
    * Run Playwright in headless mode (true = no browser UI, false = show browser)
@@ -149,6 +165,13 @@ export default registerAs('scraper', (): ScraperConfig => {
     fetchMaxRedirects: parseInt(process.env.FETCH_MAX_REDIRECTS ?? '7', 10),
     fetchMaxResponseBytes: parseInt(
       process.env.FETCH_MAX_RESPONSE_BYTES ?? String(10 * 1024 * 1024),
+      10
+    ),
+
+    // File proxy (/file) settings
+    fileMaxRedirects: parseInt(process.env.FILE_MAX_REDIRECTS ?? '7', 10),
+    fileMaxResponseBytes: parseInt(
+      process.env.FILE_MAX_RESPONSE_BYTES ?? String(25 * 1024 * 1024),
       10
     ),
 
