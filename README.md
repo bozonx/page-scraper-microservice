@@ -345,7 +345,11 @@ POST /api/v1/fetch
 **Notes:**
 - The service enforces SSRF protections and blocks private/metadata IP ranges.
 - `engine=http`: Fast HTTP fetch, follows redirects up to a fixed limit, responses are size-limited.
+  - Only accepts text content types (text/*, application/xml, application/rss+xml, application/atom+xml, application/json)
+  - Rejects binary content (images, videos, PDFs) with `FETCH_UNSUPPORTED_CONTENT_TYPE` error
 - `engine=playwright`: Full browser rendering with anti-bot protection, supports JavaScript-heavy sites.
+- `timeoutSecs` is a total budget for the entire operation including all redirects and retry attempts.
+- `rotateOnAntiBot=true` rotates fingerprint only when anti-bot protection is detected.
 - Use `debug=true` to include response headers and stack traces in error responses.
 
 ### 4. Create Batch Job (`POST /batch`)

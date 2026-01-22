@@ -12,7 +12,7 @@ import type { ScraperConfig } from '../../../config/scraper.config.js'
 import { ConcurrencyService } from './concurrency.service.js'
 
 interface HttpFetchOptions {
-  timeoutSecs: number
+  timeoutMs: number
   maxRedirects: number
   maxResponseBytes: number
   signal?: AbortSignal
@@ -48,9 +48,11 @@ export class FetchService {
       return await this.concurrencyService.run(async () => {
         const timeoutSecs = requestDto.timeoutSecs ?? 60
         const debug = requestDto.debug === true
+        const totalTimeoutMs = timeoutSecs * 1000
+        const deadlineMs = start + totalTimeoutMs
 
         const opts: HttpFetchOptions = {
-          timeoutSecs,
+          timeoutMs: totalTimeoutMs,
           maxRedirects: Math.max(0, scraperConfig?.fetchMaxRedirects ?? 7),
           maxResponseBytes: Math.max(1, scraperConfig?.fetchMaxResponseBytes ?? 10 * 1024 * 1024),
           signal,
@@ -72,17 +74,27 @@ export class FetchService {
             timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
           })
 
+          const rotateOnAntiBot =
+            requestDto.fingerprint?.rotateOnAntiBot ??
+            scraperConfig?.fingerprintRotateOnAntiBot ??
+            true
+
           for (let attempt = 0; attempt < retryMaxAttempts; attempt++) {
             if (signal?.aborted) throw new Error('Request aborted')
 
-            const fp =
-              attempt > 0
-                ? this.fingerprintService.generateFingerprint({
-                    ...requestDto.fingerprint,
-                    locale: requestDto.locale ?? requestDto.fingerprint?.locale,
-                    timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
-                  })
-                : fpBase
+            const remainingMs = deadlineMs - Date.now()
+            if (remainingMs <= 0) {
+              throw new Error('Timeout')
+            }
+
+            const shouldRotate = attempt > 0 && wasAntibot && rotateOnAntiBot
+            const fp = shouldRotate
+              ? this.fingerprintService.generateFingerprint({
+                  ...requestDto.fingerprint,
+                  locale: requestDto.locale ?? requestDto.fingerprint?.locale,
+                  timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
+                })
+              : fpBase
 
             const headers: Record<string, string> = {}
             if (fp.headers?.['User-Agent']) headers['User-Agent'] = String(fp.headers['User-Agent'])
@@ -97,11 +109,16 @@ export class FetchService {
                 statusCode: sc,
                 responseHeaders,
                 url,
-              } = await this.httpFetch(requestDto.url, {
-                ...opts,
-                headers,
-                allowLocalhost,
-              })
+              } = await this.httpFetch(
+                requestDto.url,
+                {
+                  ...opts,
+                  timeoutMs: remainingMs,
+                  headers,
+                  allowLocalhost,
+                },
+                deadlineMs
+              )
 
               finalUrl = url
               statusCode = sc
@@ -187,17 +204,22 @@ export class FetchService {
             Math.max(1, scraperConfig?.playwrightNavigationTimeoutSecs ?? 60) * 1000
           const gotoTimeoutMs = Math.min(timeoutSecs * 1000, navigationTimeoutMs)
 
+          const rotateOnAntiBot =
+            requestDto.fingerprint?.rotateOnAntiBot ??
+            scraperConfig?.fingerprintRotateOnAntiBot ??
+            true
+
           for (let attempt = 0; attempt < retryMaxAttempts; attempt++) {
             if (signal?.aborted) throw new Error('Request aborted')
 
-            const fp =
-              attempt > 0
-                ? this.fingerprintService.generateFingerprint({
-                    ...requestDto.fingerprint,
-                    locale: requestDto.locale ?? requestDto.fingerprint?.locale,
-                    timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
-                  })
-                : fpBase
+            const shouldRotate = attempt > 0 && wasAntibot && rotateOnAntiBot
+            const fp = shouldRotate
+              ? this.fingerprintService.generateFingerprint({
+                  ...requestDto.fingerprint,
+                  locale: requestDto.locale ?? requestDto.fingerprint?.locale,
+                  timezoneId: requestDto.timezoneId ?? requestDto.fingerprint?.timezoneId,
+                })
+              : fpBase
 
             try {
               attempts = attempt + 1
@@ -289,15 +311,6 @@ export class FetchService {
               const decision = this.getRetryDecision(err)
               wasAntibot = wasAntibot || decision.wasAntibot
 
-              const rotateOnAntiBot =
-                requestDto.fingerprint?.rotateOnAntiBot ??
-                scraperConfig?.fingerprintRotateOnAntiBot ??
-                true
-
-              if (decision.wasAntibot && rotateOnAntiBot && attempt < retryMaxAttempts - 1) {
-                // fingerprint will be regenerated on the next attempt
-              }
-
               if (!decision.retryable || attempt >= retryMaxAttempts - 1) {
                 throw err
               }
@@ -358,7 +371,8 @@ export class FetchService {
     opts: HttpFetchOptions & {
       headers: Record<string, string>
       allowLocalhost: boolean
-    }
+    },
+    deadlineMs?: number
   ): Promise<{
     url: string
     statusCode: number
@@ -376,7 +390,12 @@ export class FetchService {
       const onAbort = () => controller.abort()
       opts.signal?.addEventListener('abort', onAbort)
 
-      const timeout = setTimeout(() => controller.abort(), opts.timeoutSecs * 1000)
+      const remainingMs = deadlineMs ? Math.max(0, deadlineMs - Date.now()) : opts.timeoutMs
+      if (remainingMs <= 0) {
+        throw new Error('Timeout')
+      }
+
+      const timeout = setTimeout(() => controller.abort(), remainingMs)
 
       try {
         const res = await fetch(validated.toString(), {
@@ -401,6 +420,8 @@ export class FetchService {
         }
 
         const detectedContentType = res.headers.get('content-type') ?? undefined
+
+        this.validateContentType(detectedContentType)
 
         const responseHeaders: Record<string, string> = {}
         for (const [k, v] of (res.headers as any).entries()) {
@@ -472,12 +493,50 @@ export class FetchService {
     return new TextDecoder('utf-8').decode(merged)
   }
 
+  private validateContentType(contentType: string | undefined): void {
+    if (!contentType) return
+
+    const normalized = contentType.toLowerCase().split(';')[0].trim()
+
+    const allowedTypes = [
+      'text/',
+      'application/xml',
+      'application/rss+xml',
+      'application/atom+xml',
+      'application/json',
+      'application/ld+json',
+    ]
+
+    const isAllowed = allowedTypes.some((type) => normalized.startsWith(type))
+    if (!isAllowed) {
+      throw new Error(`Unsupported content type: ${normalized}`)
+    }
+  }
+
   private mapError(
     err: unknown,
     opts: { debug: boolean }
   ): { code: string; message: string; retryable: boolean; httpStatus: number } {
     const msg = err instanceof Error ? err.message : String(err)
     const lower = msg.toLowerCase()
+
+    if (lower.includes('invalid url') || lower.includes('unsupported url protocol')) {
+      return {
+        code: 'FETCH_INVALID_REQUEST',
+        message: 'Invalid URL or unsupported protocol',
+        retryable: false,
+        httpStatus: HttpStatus.BAD_REQUEST,
+      }
+    }
+
+    if (lower.includes('unsupported content type')) {
+      return {
+        code: 'FETCH_UNSUPPORTED_CONTENT_TYPE',
+        message: msg,
+        retryable: false,
+        httpStatus: HttpStatus.BAD_REQUEST,
+      }
+    }
 
     if (lower.includes('ssrf blocked')) {
       return {
@@ -524,6 +583,15 @@ export class FetchService {
       }
     }
 
+    if (lower.includes('request aborted')) {
+      return {
+        code: 'FETCH_ABORTED',
+        message: 'Request aborted',
+        retryable: false,
+        httpStatus: HttpStatus.BAD_REQUEST,
+      }
+    }
+
     const statusCode = (err as any)?.statusCode
     if (typeof statusCode === 'number') {
       return {
@@ -534,11 +602,20 @@ export class FetchService {
       }
     }
 
+    if (lower.includes('navigation') || lower.includes('net::') || lower.includes('page.goto')) {
+      return {
+        code: 'FETCH_BROWSER_ERROR',
+        message: msg,
+        retryable: true,
+        httpStatus: HttpStatus.BAD_GATEWAY,
+      }
+    }
+
     return {
-      code: 'FETCH_BROWSER_ERROR',
+      code: 'FETCH_ERROR',
       message: msg,
-      retryable: true,
-      httpStatus: HttpStatus.BAD_GATEWAY,
+      retryable: false,
+      httpStatus: HttpStatus.INTERNAL_SERVER_ERROR,
     }
   }
 

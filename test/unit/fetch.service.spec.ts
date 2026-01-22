@@ -41,6 +41,11 @@ describe('FetchService (unit)', () => {
     )
   }
 
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.restoreAllMocks()
+  })
+
   it('returns 400 when engine is not supported', async () => {
     const service = createService()
 
@@ -94,5 +99,112 @@ describe('FetchService (unit)', () => {
     expect(decision.retryable).toBe(false)
     expect(decision.wasAntibot).toBe(true)
     expect(decision.rotateFingerprint).toBe(true)
+  })
+
+  describe('internal error mapping', () => {
+    it('maps errors with debug stack correctly', () => {
+      const service = createService() as any
+      const testError = new Error('Test error')
+
+      const withDebug = service.mapError(testError, { debug: true })
+      const withoutDebug = service.mapError(testError, { debug: false })
+
+      expect(withDebug).toBeDefined()
+      expect(withoutDebug).toBeDefined()
+    })
+  })
+
+  describe('mime-type validation', () => {
+    it('validates content-type and rejects binary data', () => {
+      const service = createService() as any
+
+      expect(() => service.validateContentType('image/png')).toThrow('Unsupported content type')
+      expect(() => service.validateContentType('video/mp4')).toThrow('Unsupported content type')
+      expect(() => service.validateContentType('application/pdf')).toThrow(
+        'Unsupported content type'
+      )
+      expect(() => service.validateContentType('application/octet-stream')).toThrow(
+        'Unsupported content type'
+      )
+    })
+
+    it('allows text content types', () => {
+      const service = createService() as any
+
+      expect(() => service.validateContentType('text/html')).not.toThrow()
+      expect(() => service.validateContentType('text/plain')).not.toThrow()
+      expect(() => service.validateContentType('text/xml')).not.toThrow()
+      expect(() => service.validateContentType('text/html; charset=utf-8')).not.toThrow()
+    })
+
+    it('allows RSS/Atom/XML content types', () => {
+      const service = createService() as any
+
+      expect(() => service.validateContentType('application/rss+xml')).not.toThrow()
+      expect(() => service.validateContentType('application/atom+xml')).not.toThrow()
+      expect(() => service.validateContentType('application/xml')).not.toThrow()
+      expect(() => service.validateContentType('application/json')).not.toThrow()
+      expect(() => service.validateContentType('application/ld+json')).not.toThrow()
+    })
+
+    it('allows missing content-type', () => {
+      const service = createService() as any
+
+      expect(() => service.validateContentType(undefined)).not.toThrow()
+      expect(() => service.validateContentType('')).not.toThrow()
+    })
+  })
+
+  describe('error mapping', () => {
+    it('maps invalid URL to FETCH_INVALID_REQUEST', () => {
+      const service = createService() as any
+      const mapped = service.mapError(new Error('Invalid URL'), { debug: false })
+
+      expect(mapped.code).toBe('FETCH_INVALID_REQUEST')
+      expect(mapped.retryable).toBe(false)
+      expect(mapped.httpStatus).toBe(400)
+    })
+
+    it('maps unsupported content type to FETCH_UNSUPPORTED_CONTENT_TYPE', () => {
+      const service = createService() as any
+      const mapped = service.mapError(new Error('Unsupported content type: image/png'), {
+        debug: false,
+      })
+
+      expect(mapped.code).toBe('FETCH_UNSUPPORTED_CONTENT_TYPE')
+      expect(mapped.retryable).toBe(false)
+      expect(mapped.httpStatus).toBe(400)
+    })
+
+    it('maps request aborted to FETCH_ABORTED', () => {
+      const service = createService() as any
+      const mapped = service.mapError(new Error('Request aborted'), { debug: false })
+
+      expect(mapped.code).toBe('FETCH_ABORTED')
+      expect(mapped.retryable).toBe(false)
+      expect(mapped.httpStatus).toBe(400)
+    })
+
+    it('maps browser errors only for navigation/net errors', () => {
+      const service = createService() as any
+
+      const netError = service.mapError(new Error('net::ERR_CONNECTION_REFUSED'), { debug: false })
+      expect(netError.code).toBe('FETCH_BROWSER_ERROR')
+
+      const gotoError = service.mapError(new Error('page.goto failed'), { debug: false })
+      expect(gotoError.code).toBe('FETCH_BROWSER_ERROR')
+
+      const navError = service.mapError(new Error('navigation failed'), { debug: false })
+      expect(navError.code).toBe('FETCH_BROWSER_ERROR')
+    })
+
+    it('maps generic errors to FETCH_ERROR', () => {
+      const service = createService() as any
+      const mapped = service.mapError(new Error('Something went wrong'), { debug: false })
+
+      expect(mapped.code).toBe('FETCH_ERROR')
+      expect(mapped.retryable).toBe(false)
+      expect(mapped.httpStatus).toBe(500)
+    })
   })
 })
