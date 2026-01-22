@@ -43,49 +43,76 @@ export class ScraperController {
     this.logger.setContext(ScraperController.name)
   }
 
+  private async withAbortableRequest<T>(
+    args: {
+      req: FastifyRequest
+      url: string
+      opName: string
+    },
+    fn: (signal: AbortSignal) => Promise<T>
+  ): Promise<T> {
+    this.shutdownService.incrementActiveRequests()
+
+    const ac = new AbortController()
+    const onDisconnect = () => {
+      this.logger.warn(`Client disconnected for ${args.opName} ${args.url}`)
+      ac.abort()
+    }
+
+    args.req.raw.on('close', onDisconnect)
+
+    try {
+      return await fn(ac.signal)
+    } catch (error) {
+      if (ac.signal.aborted) {
+        this.logger.warn(`Request aborted for ${args.opName} ${args.url}`)
+      }
+      throw error
+    } finally {
+      args.req.raw.off('close', onDisconnect)
+      this.shutdownService.decrementActiveRequests()
+    }
+  }
+
   @Post('file')
   async file(
     @Body() request: FileRequestDto,
     @Req() req: FastifyRequest,
     @Res() reply: FastifyReply
   ) {
-    this.shutdownService.incrementActiveRequests()
-    const ac = new AbortController()
-    const onDisconnect = () => {
-      this.logger.warn(`Client disconnected for file ${request.url}`)
-      ac.abort()
-    }
-    req.raw.on('close', onDisconnect)
+    return await this.withAbortableRequest(
+      {
+        req,
+        url: request.url,
+        opName: 'file',
+      },
+      async (signal) => {
+        try {
+          this.logger.info(`Received file proxy request for URL: ${request.url}`)
+          const result = await this.fileService.proxyFile(request, signal)
 
-    try {
-      this.logger.info(`Received file proxy request for URL: ${request.url}`)
-      const result = await this.fileService.proxyFile(request, ac.signal)
+          reply.status(result.statusCode)
+          for (const [k, v] of Object.entries(result.headers)) {
+            if (typeof v === 'string' && v.length > 0) {
+              reply.header(k, v)
+            }
+          }
+          reply.header('X-Final-Url', result.finalUrl)
+          reply.header('X-Mode-Used', result.modeUsed)
+          return reply.send(result.stream)
+        } catch (error) {
+          if (!signal.aborted) {
+            this.logger.error(`Failed to proxy file ${request.url}:`, error)
+          }
 
-      reply.status(result.statusCode)
-      for (const [k, v] of Object.entries(result.headers)) {
-        if (typeof v === 'string' && v.length > 0) {
-          reply.header(k, v)
+          if (error instanceof HttpException) {
+            throw error
+          }
+
+          throw this.handleScraperError(error)
         }
       }
-      reply.header('X-Final-Url', result.finalUrl)
-      reply.header('X-Mode-Used', result.modeUsed)
-      return reply.send(result.stream)
-    } catch (error) {
-      if (ac.signal.aborted) {
-        this.logger.warn(`Request aborted for file ${request.url}`)
-      } else {
-        this.logger.error(`Failed to proxy file ${request.url}:`, error)
-      }
-
-      if (error instanceof HttpException) {
-        throw error
-      }
-
-      throw this.handleScraperError(error)
-    } finally {
-      req.raw.off('close', onDisconnect)
-      this.shutdownService.decrementActiveRequests()
-    }
+    )
   }
 
   /**
@@ -99,35 +126,31 @@ export class ScraperController {
     @Body() request: ScraperRequestDto,
     @Req() req: FastifyRequest
   ): Promise<ScraperResponseDto> {
-    this.shutdownService.incrementActiveRequests()
-    const ac = new AbortController()
-    const onDisconnect = () => {
-      this.logger.warn(`Client disconnected for ${request.url}`)
-      ac.abort()
-    }
-    req.raw.on('close', onDisconnect)
-
-    try {
-      this.logger.info(`Received scrape request for URL: ${request.url}`)
-      const result = await this.scraperService
-        .scrapePage(request, ac.signal)
-        .then((res: ScraperResponseDto) => {
-          this.memoryStoreService.addPage(request, res)
-          return res
-        })
-      this.logger.info(`Successfully scraped ${request.url}`)
-      return result
-    } catch (error) {
-      if (ac.signal.aborted) {
-        this.logger.warn(`Request aborted for ${request.url}`)
-      } else {
-        this.logger.error(`Failed to scrape ${request.url}:`, error)
+    return await this.withAbortableRequest(
+      {
+        req,
+        url: request.url,
+        opName: 'page',
+      },
+      async (signal) => {
+        try {
+          this.logger.info(`Received scrape request for URL: ${request.url}`)
+          const result = await this.scraperService
+            .scrapePage(request, signal)
+            .then((res: ScraperResponseDto) => {
+              this.memoryStoreService.addPage(request, res)
+              return res
+            })
+          this.logger.info(`Successfully scraped ${request.url}`)
+          return result
+        } catch (error) {
+          if (!signal.aborted) {
+            this.logger.error(`Failed to scrape ${request.url}:`, error)
+          }
+          throw this.handleScraperError(error)
+        }
       }
-      throw this.handleScraperError(error)
-    } finally {
-      req.raw.off('close', onDisconnect)
-      this.shutdownService.decrementActiveRequests()
-    }
+    )
   }
 
   @Post('fetch')
@@ -136,35 +159,31 @@ export class ScraperController {
     @Body() request: FetchRequestDto,
     @Req() req: FastifyRequest
   ): Promise<FetchResponseDto> {
-    this.shutdownService.incrementActiveRequests()
-    const ac = new AbortController()
-    const onDisconnect = () => {
-      this.logger.warn(`Client disconnected for fetch ${request.url}`)
-      ac.abort()
-    }
-    req.raw.on('close', onDisconnect)
+    return await this.withAbortableRequest(
+      {
+        req,
+        url: request.url,
+        opName: 'fetch',
+      },
+      async (signal) => {
+        try {
+          this.logger.info(`Received fetch request for URL: ${request.url}`)
+          const result = await this.fetchService.fetch(request, signal)
+          this.logger.info(`Successfully fetched ${request.url}`)
+          return result
+        } catch (error) {
+          if (!signal.aborted) {
+            this.logger.error(`Failed to fetch ${request.url}:`, error)
+          }
 
-    try {
-      this.logger.info(`Received fetch request for URL: ${request.url}`)
-      const result = await this.fetchService.fetch(request, ac.signal)
-      this.logger.info(`Successfully fetched ${request.url}`)
-      return result
-    } catch (error) {
-      if (ac.signal.aborted) {
-        this.logger.warn(`Request aborted for fetch ${request.url}`)
-      } else {
-        this.logger.error(`Failed to fetch ${request.url}:`, error)
+          if (error instanceof HttpException) {
+            throw error
+          }
+
+          throw this.handleScraperError(error)
+        }
       }
-
-      if (error instanceof HttpException) {
-        throw error
-      }
-
-      throw this.handleScraperError(error)
-    } finally {
-      req.raw.off('close', onDisconnect)
-      this.shutdownService.decrementActiveRequests()
-    }
+    )
   }
 
   /**
