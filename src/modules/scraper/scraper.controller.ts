@@ -15,7 +15,6 @@ import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service.js'
 import { FetchService } from './services/fetch.service.js'
 import { FileService } from './services/file.service.js'
-import { MemoryStoreService } from './services/memory-store.service.js'
 import { ScraperRequestDto } from './dto/scraper-request.dto.js'
 import { ScraperResponseDto } from './dto/scraper-response.dto.js'
 import { FetchRequestDto } from './dto/fetch-request.dto.js'
@@ -36,7 +35,6 @@ export class ScraperController {
     private readonly scraperService: ScraperService,
     private readonly fetchService: FetchService,
     private readonly fileService: FileService,
-    private readonly memoryStoreService: MemoryStoreService,
     private readonly shutdownService: ShutdownService,
     private readonly logger: PinoLogger
   ) {
@@ -135,12 +133,7 @@ export class ScraperController {
       async (signal) => {
         try {
           this.logger.info(`Received scrape request for URL: ${request.url}`)
-          const result = await this.scraperService
-            .scrapePage(request, signal)
-            .then((res: ScraperResponseDto) => {
-              this.memoryStoreService.addPage(request, res)
-              return res
-            })
+          const result = await this.scraperService.scrapePage(request, signal)
           this.logger.info(`Successfully scraped ${request.url}`)
           return result
         } catch (error) {

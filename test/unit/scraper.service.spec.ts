@@ -78,8 +78,6 @@ describe('ScraperService (unit)', () => {
 
     globalMaxConcurrency: 3,
     browserMaxConcurrency: 1,
-    dataLifetimeMins: 60,
-    cleanupIntervalMins: 10,
   } as ScraperConfig
 
   beforeAll(async () => {

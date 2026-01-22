@@ -136,22 +136,6 @@ export class ScraperConfig {
   @IsInt()
   @Min(1)
   public browserMaxConcurrency!: number
-
-  /**
-   * Time in minutes to retain page data in memory before cleanup (1-44640)
-   */
-  @IsInt()
-  @Min(1)
-  @Max(44640)
-  public dataLifetimeMins!: number
-
-  /**
-   * Minimum interval in minutes between cleanup runs (1-10080)
-   */
-  @IsInt()
-  @Min(1)
-  @Max(10080)
-  public cleanupIntervalMins!: number
 }
 
 /**
@@ -199,8 +183,6 @@ export default registerAs('scraper', (): ScraperConfig => {
     // Concurrency and cleanup settings
     globalMaxConcurrency: parseInt(process.env.MAX_CONCURRENCY ?? '3', 10),
     browserMaxConcurrency: parseInt(process.env.MAX_BROWSER_CONCURRENCY ?? '1', 10),
-    dataLifetimeMins: parseInt(process.env.DATA_LIFETIME_MINS ?? '60', 10),
-    cleanupIntervalMins: parseInt(process.env.CLEANUP_INTERVAL_MINS ?? '10', 10),
   })
 
   // Validate configuration and throw error if invalid

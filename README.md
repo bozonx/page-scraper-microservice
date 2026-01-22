@@ -12,7 +12,7 @@ A production-ready NestJS microservice designed to extract structured article da
   - Rotating browser fingerprints (User-Agent, viewport, locale, timezone) with customizable generator settings.
   - Selective resource blocking (analytics, trackers, images, videos, fonts).
   - Automatic fingerprint rotation on bot detection.
-- **Production Ready:** Built on Fastify with structured logging (Pino), strict validation (class-validator DTOs), global concurrency limits, and automatic data cleanup.
+- **Production Ready:** Built on Fastify with structured logging (Pino), strict validation (class-validator DTOs), and global concurrency limits.
 
 
 ---
@@ -181,13 +181,6 @@ When using the `fingerprint` parameter in API requests, you can specify the foll
 | `FETCH_RETRY_MAX_ATTEMPTS` | Maximum number of attempts for `/fetch` retries (both engines) | `3` |
 | `FETCH_MAX_REDIRECTS` | Maximum number of redirects for `/fetch` with `engine=http` | `7` |
 | `FETCH_MAX_RESPONSE_BYTES` | Maximum response size in bytes for `/fetch` with `engine=http` | `10485760` |
-
-### Data Cleanup Settings
-
-| Variable | Description | Default |
-| --- | --- | --- |
-| `DATA_LIFETIME_MINS` | Retention time for in-memory page data in minutes (1-44640) | `60` |
-| `CLEANUP_INTERVAL_MINS` | Minimum interval between cleanup runs in minutes (1-10080) | `10` |
 
 *See `.env.production.example` and `.env.development.example` for complete configuration examples.*
 
@@ -385,11 +378,6 @@ curl -X POST http://localhost:8080/api/v1/file \
 - **Browser Limiter:** Playwright-based tasks additionally use a dedicated limiter (`MAX_BROWSER_CONCURRENCY`) to control memory usage (browser contexts/pages are memory-heavy).
 - **Queue System:** When a limit is reached, new tasks wait in a queue until a slot becomes available.
 
-### Data Lifecycle
-- **In-Memory Storage:** Page data is stored in memory for quick access.
-- **Automatic Cleanup:** Data is automatically purged after `DATA_LIFETIME_MINS` (default 60 minutes).
-- **Cleanup Interval:** Cleanup runs every `CLEANUP_INTERVAL_MINS` (default 10 minutes).
-
 ### Anti-Bot Protection
 - **Browser Fingerprints:** 
   - Generates realistic browser profiles (User-Agent, screen size, locale, timezone) to mimic real devices.
@@ -470,7 +458,6 @@ curl -X POST http://localhost:8080/api/v1/page \
 
 ### Limitations
 - **In-Memory Storage:** Page data is stored in memory. Service restarts will clear all cached data.
-- **No Persistence:** Data is automatically deleted after `DATA_LIFETIME_MINS`.
 - **Concurrency Limit:** The global `MAX_CONCURRENCY` limit applies to all requests. High concurrency may require scaling.
 
 ### Best Practices

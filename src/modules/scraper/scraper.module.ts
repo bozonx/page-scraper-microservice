@@ -4,8 +4,6 @@ import { ScraperService } from './services/scraper.service.js'
 import { FingerprintService } from './services/fingerprint.service.js'
 import { TurndownConverterService } from './services/turndown.service.js'
 import { ArticleExtractorService } from './services/article-extractor.service.js'
-import { CleanupService } from './services/cleanup.service.js'
-import { MemoryStoreService } from './services/memory-store.service.js'
 import { ConcurrencyService } from './services/concurrency.service.js'
 import { BrowserService } from './services/browser.service.js'
 import { FetchService } from './services/fetch.service.js'
@@ -22,8 +20,6 @@ import { FileService } from './services/file.service.js'
     ScraperService,
     FingerprintService,
     TurndownConverterService,
-    CleanupService,
-    MemoryStoreService,
     ConcurrencyService,
     BrowserService,
     FetchService,
@@ -38,8 +34,6 @@ import { FileService } from './services/file.service.js'
     ScraperService,
     FingerprintService,
     TurndownConverterService,
-    CleanupService,
-    MemoryStoreService,
     ConcurrencyService,
     BrowserService,
     FetchService,

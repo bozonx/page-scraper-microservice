@@ -24,8 +24,6 @@ describe('FingerprintService (unit)', () => {
     fingerprintGenerate: true,
     fingerprintRotateOnAntiBot: true,
     globalMaxConcurrency: 3,
-    dataLifetimeMins: 60,
-    cleanupIntervalMins: 10,
   } as ScraperConfig
 
   beforeAll(async () => {
