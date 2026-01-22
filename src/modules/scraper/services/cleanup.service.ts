@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperConfig } from '../../../config/scraper.config.js'
 import { MemoryStoreService } from './memory-store.service.js'
-import { BatchService } from './batch.service.js'
 
 @Injectable()
 export class CleanupService implements OnModuleInit, OnModuleDestroy, OnApplicationShutdown {
@@ -15,7 +14,6 @@ export class CleanupService implements OnModuleInit, OnModuleDestroy, OnApplicat
   constructor(
     private readonly configService: ConfigService,
     private readonly memoryStore: MemoryStoreService,
-    private readonly batchService: BatchService,
     private readonly logger: PinoLogger
   ) {
     this.logger.setContext(CleanupService.name)
@@ -66,13 +64,8 @@ export class CleanupService implements OnModuleInit, OnModuleDestroy, OnApplicat
     this.runningPromise = (async () => {
       try {
         // Ensure we handle both sync and async implementations
-        const removedPages = await Promise.resolve(
-          this.memoryStore.cleanupOlderThan(ttlMs)
-        )
-        const removedJobs = await Promise.resolve(this.batchService.cleanupOlderThan(ttlMs))
-        this.logger.debug(
-          `Cleanup completed: removed ${removedPages} page records, ${removedJobs} batch jobs`
-        )
+        const removedPages = await Promise.resolve(this.memoryStore.cleanupOlderThan(ttlMs))
+        this.logger.debug(`Cleanup completed: removed ${removedPages} page records`)
       } catch (err) {
         this.logger.error('Cleanup failed', err)
       } finally {

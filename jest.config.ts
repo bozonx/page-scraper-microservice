@@ -60,6 +60,10 @@ const config: Config = {
       rootDir: '.',
       testMatch: ['<rootDir>/test/unit/**/*.spec.ts', '<rootDir>/test/unit/**/*.test.ts'],
       testPathIgnorePatterns: ['<rootDir>/test/e2e/', '<rootDir>/dist/'],
+      modulePathIgnorePatterns: [
+        '<rootDir>/dist/',
+        '<rootDir>/n8n-nodes-bozonx-page-scraper-microservice/dist/',
+      ],
       setupFilesAfterEnv: ['<rootDir>/test/setup/unit.setup.ts'],
       collectCoverageFrom: ['src/**/*.(t|j)s'],
       coverageDirectory: 'coverage',
@@ -80,6 +84,10 @@ const config: Config = {
       rootDir: '.',
       testMatch: ['<rootDir>/test/e2e/**/*.e2e-spec.ts'],
       setupFilesAfterEnv: ['<rootDir>/test/setup/e2e.setup.ts'],
+      modulePathIgnorePatterns: [
+        '<rootDir>/dist/',
+        '<rootDir>/n8n-nodes-bozonx-page-scraper-microservice/dist/',
+      ],
       collectCoverageFrom: ['src/**/*.(t|j)s'],
       coverageDirectory: 'coverage',
       coveragePathIgnorePatterns: ['/node_modules/', '/dist/', '/test/', '.module.ts$', 'main.ts$'],

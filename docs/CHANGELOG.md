@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+- **Batch processing functionality**: Removed all batch-related features
+  - Removed `POST /batch` endpoint for creating batch jobs
+  - Removed `GET /batch/:jobId` endpoint for checking batch status
+  - Removed webhook notification system for batch completion
+  - Removed `BatchService`, `WebhookService`, and related DTOs
+  - Removed batch-related configuration variables (`DEFAULT_BATCH_MIN_DELAY_MS`, `DEFAULT_BATCH_MAX_DELAY_MS`, `DEFAULT_WEBHOOK_*`)
+  - Removed batch operations from n8n node
+  - Removed batch UI from public demo interface
+  - Service now focuses on single-request operations only
+
 ### Added
 - **POST /fetch endpoint**: Playwright engine support (`engine=playwright`)
   - Full browser rendering for JavaScript-heavy sites

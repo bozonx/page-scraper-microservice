@@ -1,9 +1,7 @@
 import {
   Controller,
   Post,
-  Get,
   Body,
-  Param,
   HttpCode,
   HttpStatus,
   UseGuards,
@@ -13,37 +11,25 @@ import {
 import type { FastifyRequest } from 'fastify'
 import { PinoLogger } from 'nestjs-pino'
 import { ScraperService } from './services/scraper.service.js'
-import { BatchService } from './services/batch.service.js'
 import { FetchService } from './services/fetch.service.js'
 import { MemoryStoreService } from './services/memory-store.service.js'
 import { ScraperRequestDto } from './dto/scraper-request.dto.js'
-import { ScraperResponseDto, ScraperErrorResponseDto } from './dto/scraper-response.dto.js'
+import { ScraperResponseDto } from './dto/scraper-response.dto.js'
 import { FetchRequestDto } from './dto/fetch-request.dto.js'
 import type { FetchResponseDto } from './dto/fetch-response.dto.js'
-import { BatchRequestDto, BatchResponseDto, BatchJobStatusDto } from './dto/batch.dto.js'
-import {
-  ScraperException,
-  ScraperTimeoutException,
-  ScraperBrowserException,
-  ScraperValidationException,
-  ScraperContentExtractionException,
-  BatchJobNotFoundException,
-  BatchJobCreationException,
-  BatchJobStatusException,
-} from '../../common/exceptions/scraper.exception.js'
+import { ScraperException } from '../../common/exceptions/scraper.exception.js'
 import { ShutdownGuard } from '../../common/guards/shutdown.guard.js'
 import { ShutdownService } from '../../common/services/shutdown.service.js'
 
 /**
  * Scraper controller
- * Handles HTTP requests for web scraping operations and batch job management
+ * Handles HTTP requests for web scraping operations
  */
 @UseGuards(ShutdownGuard)
 @Controller()
 export class ScraperController {
   constructor(
     private readonly scraperService: ScraperService,
-    private readonly batchService: BatchService,
     private readonly fetchService: FetchService,
     private readonly memoryStoreService: MemoryStoreService,
     private readonly shutdownService: ShutdownService,
@@ -128,63 +114,6 @@ export class ScraperController {
     } finally {
       req.raw.off('close', onDisconnect)
       this.shutdownService.decrementActiveRequests()
-    }
-  }
-
-  /**
-   * Creates a new batch scraping job
-   * @param request Batch job parameters
-   * @returns Batch job creation response with job ID
-   */
-  @Post('batch')
-  async createBatchJob(@Body() request: BatchRequestDto): Promise<BatchResponseDto> {
-    this.shutdownService.incrementActiveRequests()
-    try {
-      this.logger.info(`Received batch request with ${request.items.length} items`)
-      const result = await this.batchService.createBatchJob(request)
-      this.logger.info(`Created batch job: ${result.jobId}`)
-      return result
-    } catch (error) {
-      this.logger.error('Failed to create batch job:', error)
-
-      // Check if it's already a ScraperException
-      if (error instanceof ScraperException) {
-        throw error
-      }
-
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      throw new BatchJobCreationException(errorMessage)
-    } finally {
-      this.shutdownService.decrementActiveRequests()
-    }
-  }
-
-  /**
-   * Retrieves the status of a batch job
-   * @param id Batch job ID
-   * @returns Current status of the batch job
-   */
-  @Get('batch/:id')
-  async getBatchJobStatus(@Param('id') jobId: string): Promise<BatchJobStatusDto> {
-    try {
-      this.logger.info(`Received status request for batch job: ${jobId}`)
-      const status = await this.batchService.getBatchJobStatus(jobId)
-
-      if (!status) {
-        throw new BatchJobNotFoundException(jobId)
-      }
-
-      return status
-    } catch (error) {
-      this.logger.error(`Failed to get batch job status for ${jobId}:`, error)
-
-      // Check if it's already a ScraperException
-      if (error instanceof ScraperException) {
-        throw error
-      }
-
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      throw new BatchJobStatusException(errorMessage)
     }
   }
 

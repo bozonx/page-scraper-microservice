@@ -16,8 +16,6 @@
         <div class="tabs">
             <button class="tab-button active" data-tab="page">Single Page</button>
             <button class="tab-button" data-tab="fetch">Fetch Content</button>
-            <button class="tab-button" data-tab="batch">Batch Processing</button>
-            <button class="tab-button" data-tab="status">Batch Status</button>
         </div>
 
         <div class="tab-content active" id="page-tab">
@@ -176,81 +174,6 @@
             </form>
         </div>
 
-        <div class="tab-content" id="batch-tab">
-            <h2>Batch Processing</h2>
-            <form id="batch-form">
-                <div class="form-group">
-                    <label for="batch-urls">URLs (one per line) *</label>
-                    <textarea id="batch-urls" rows="5" placeholder="https://example.com/article1&#10;https://example.com/article2&#10;https://example.com/article3" required></textarea>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="batch-mode">Default Mode</label>
-                        <select id="batch-mode">
-                            <option value="extractor">Extractor</option>
-                            <option value="playwright">Playwright</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="batch-timeout">Timeout (seconds)</label>
-                        <input type="number" id="batch-timeout" value="60" min="1">
-                    </div>
-                </div>
-
-                <details class="fingerprint-section">
-                    <summary>Schedule Settings</summary>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="batch-min-delay">Min Delay (ms)</label>
-                            <input type="number" id="batch-min-delay" value="1500" min="500">
-                        </div>
-                        <div class="form-group">
-                            <label for="batch-max-delay">Max Delay (ms)</label>
-                            <input type="number" id="batch-max-delay" value="4000" min="1000">
-                        </div>
-                        <div class="form-group checkbox-group">
-                            <label>
-                                <input type="checkbox" id="batch-jitter" checked>
-                                Enable Jitter
-                            </label>
-                        </div>
-                    </div>
-                </details>
-
-                <details class="fingerprint-section">
-                    <summary>Webhook Settings</summary>
-                    <div class="form-group">
-                        <label for="batch-webhook-url">Webhook URL</label>
-                        <input type="url" id="batch-webhook-url" placeholder="https://your-api.com/webhook">
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="batch-webhook-timeout">Timeout (seconds)</label>
-                            <input type="number" id="batch-webhook-timeout" value="30" min="1">
-                        </div>
-                        <div class="form-group">
-                            <label for="batch-webhook-attempts">Max Attempts</label>
-                            <input type="number" id="batch-webhook-attempts" value="3" min="1">
-                        </div>
-                    </div>
-                </details>
-
-                <button type="submit" class="btn btn-primary">Create Batch Job</button>
-            </form>
-        </div>
-
-        <div class="tab-content" id="status-tab">
-            <h2>Check Batch Status</h2>
-            <form id="status-form">
-                <div class="form-group">
-                    <label for="status-job-id">Job ID *</label>
-                    <input type="text" id="status-job-id" placeholder="0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Check Status</button>
-            </form>
-        </div>
 
         <div class="result-section">
             <div class="result-header">

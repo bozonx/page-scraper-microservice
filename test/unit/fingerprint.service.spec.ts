@@ -23,14 +23,9 @@ describe('FingerprintService (unit)', () => {
     playwrightBlockHeavyResources: true,
     fingerprintGenerate: true,
     fingerprintRotateOnAntiBot: true,
-    batchMinDelayMs: 1500,
-    batchMaxDelayMs: 4000,
     globalMaxConcurrency: 3,
     dataLifetimeMins: 60,
     cleanupIntervalMins: 10,
-    defaultWebhookTimeoutSecs: 30,
-    defaultWebhookBackoffMs: 1000,
-    defaultWebhookMaxAttempts: 3,
   } as ScraperConfig
 
   beforeAll(async () => {

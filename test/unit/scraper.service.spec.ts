@@ -76,17 +76,9 @@ describe('ScraperService (unit)', () => {
     fingerprintGenerate: true,
     fingerprintRotateOnAntiBot: true,
 
-    // Batch processing settings (not directly used here, but present for completeness)
-    batchMinDelayMs: 1500,
-    batchMaxDelayMs: 4000,
     globalMaxConcurrency: 3,
     dataLifetimeMins: 60,
     cleanupIntervalMins: 10,
-
-    // Webhook settings
-    defaultWebhookTimeoutSecs: 30,
-    defaultWebhookBackoffMs: 1000,
-    defaultWebhookMaxAttempts: 3,
   } as ScraperConfig
 
   beforeAll(async () => {

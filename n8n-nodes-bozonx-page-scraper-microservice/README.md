@@ -1,6 +1,6 @@
 # n8n-nodes-bozonx-page-scraper-microservice
 
-n8n community node for the [Page Scraper microservice](https://github.com/bozonx/page-scraper-microservice). Extract structured content from web pages, retrieve raw HTML, and process URLs in batches.
+n8n community node for the [Page Scraper microservice](https://github.com/bozonx/page-scraper-microservice). Extract structured content from web pages and retrieve raw HTML.
 
 ## Installation
 
@@ -45,22 +45,9 @@ Extract structured article content (title, author, date, body in Markdown).
 - **Mode**: `extractor` (fast) or `playwright` (JavaScript support)
 - **Fingerprint Options**: Anti-bot detection avoidance
 
-### Get HTML
+### Fetch Content
 
-Retrieve raw rendered HTML using Playwright browser automation.
-
-### Create Batch
-
-Process multiple URLs asynchronously with configurable delays and webhook notifications.
-
-**Key features:**
-- Schedule delays between requests (default: 1500-4000ms)
-- Webhook notification on completion
-- Per-item or common settings
-
-### Get Batch Status
-
-Check batch job progress and retrieve results using the job ID.
+Retrieve raw content from URLs (HTML/XML/RSS) using HTTP or Playwright engine.
 
 ## Resources
 

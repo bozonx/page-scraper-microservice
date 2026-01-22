@@ -4,7 +4,7 @@ import { plainToClass } from 'class-transformer'
 
 /**
  * Scraper configuration settings
- * Defines parameters for web scraping operations, browser behavior, and batch processing
+ * Defines parameters for web scraping operations and browser behavior
  */
 export class ScraperConfig {
   // Default scraper settings
@@ -107,23 +107,6 @@ export class ScraperConfig {
   @IsBoolean()
   public fingerprintRotateOnAntiBot!: boolean
 
-  // Batch processing settings
-  /**
-   * Minimum delay between requests in milliseconds to avoid rate limiting (500-3600000)
-   */
-  @IsInt()
-  @Min(500)
-  @Max(3600000)
-  public batchMinDelayMs!: number
-
-  /**
-   * Maximum delay between requests in milliseconds (1000-3600000)
-   */
-  @IsInt()
-  @Min(1000)
-  @Max(3600000)
-  public batchMaxDelayMs!: number
-
   /**
    * Maximum number of heavy scraping tasks running concurrently across the entire service (>=1)
    */
@@ -132,7 +115,7 @@ export class ScraperConfig {
   public globalMaxConcurrency!: number
 
   /**
-   * Time in minutes to retain batch job data in memory before cleanup (1-44640)
+   * Time in minutes to retain page data in memory before cleanup (1-44640)
    */
   @IsInt()
   @Min(1)
@@ -146,34 +129,6 @@ export class ScraperConfig {
   @Min(1)
   @Max(10080)
   public cleanupIntervalMins!: number
-
-  // Webhook settings
-  /**
-   * Default timeout in seconds for webhook HTTP requests (1-600)
-   * This is a default value that can be overridden per webhook request
-   */
-  @IsInt()
-  @Min(1)
-  @Max(600)
-  public defaultWebhookTimeoutSecs!: number
-
-  /**
-   * Default backoff delay in milliseconds between webhook retry attempts (100-600000)
-   * These are default values that can be overridden per webhook request
-   */
-  @IsInt()
-  @Min(100)
-  @Max(600000)
-  public defaultWebhookBackoffMs!: number
-
-  /**
-   * Default maximum number of retry attempts for failed webhook deliveries (1-100)
-   * These are default values that can be overridden per webhook request
-   */
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  public defaultWebhookMaxAttempts!: number
 }
 
 /**
@@ -211,17 +166,10 @@ export default registerAs('scraper', (): ScraperConfig => {
     fingerprintGenerate: process.env.DEFAULT_FINGERPRINT_GENERATE !== 'false',
     fingerprintRotateOnAntiBot: process.env.DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT !== 'false',
 
-    // Batch processing settings
-    batchMinDelayMs: parseInt(process.env.DEFAULT_BATCH_MIN_DELAY_MS ?? '1500', 10),
-    batchMaxDelayMs: parseInt(process.env.DEFAULT_BATCH_MAX_DELAY_MS ?? '4000', 10),
+    // Concurrency and cleanup settings
     globalMaxConcurrency: parseInt(process.env.MAX_CONCURRENCY ?? '3', 10),
     dataLifetimeMins: parseInt(process.env.DATA_LIFETIME_MINS ?? '60', 10),
     cleanupIntervalMins: parseInt(process.env.CLEANUP_INTERVAL_MINS ?? '10', 10),
-
-    // Webhook settings
-    defaultWebhookTimeoutSecs: parseInt(process.env.DEFAULT_WEBHOOK_TIMEOUT_SECS ?? '30', 10),
-    defaultWebhookBackoffMs: parseInt(process.env.DEFAULT_WEBHOOK_BACKOFF_MS ?? '1000', 10),
-    defaultWebhookMaxAttempts: parseInt(process.env.DEFAULT_WEBHOOK_MAX_ATTEMPTS ?? '3', 10),
   })
 
   // Validate configuration and throw error if invalid

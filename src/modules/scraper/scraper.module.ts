@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common'
 import { ScraperController } from './scraper.controller.js'
 import { ScraperService } from './services/scraper.service.js'
-import { BatchService } from './services/batch.service.js'
-import { WebhookService } from './services/webhook.service.js'
 import { FingerprintService } from './services/fingerprint.service.js'
 import { TurndownConverterService } from './services/turndown.service.js'
 import { ArticleExtractorService } from './services/article-extractor.service.js'
@@ -15,14 +13,12 @@ import { FetchService } from './services/fetch.service.js'
 /**
  * Scraper module
  * Provides web scraping functionality with support for both static (Extractor) and dynamic (Playwright) content
- * Includes batch processing, webhooks, and browser fingerprinting capabilities
+ * Includes browser fingerprinting capabilities
  */
 @Module({
   controllers: [ScraperController],
   providers: [
     ScraperService,
-    BatchService,
-    WebhookService,
     FingerprintService,
     TurndownConverterService,
     CleanupService,
@@ -38,8 +34,6 @@ import { FetchService } from './services/fetch.service.js'
   ],
   exports: [
     ScraperService,
-    BatchService,
-    WebhookService,
     FingerprintService,
     TurndownConverterService,
     CleanupService,

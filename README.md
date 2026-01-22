@@ -1,6 +1,6 @@
 # Page Scraper Microservice
 
-A production-ready NestJS microservice designed to extract structured article data from web pages. It supports both lightweight static HTML extraction and full browser rendering via Playwright, complete with anti-bot protection, batch processing, and webhook notifications.
+A production-ready NestJS microservice designed to extract structured article data from web pages. It supports both lightweight static HTML extraction and full browser rendering via Playwright, complete with anti-bot protection.
 
 ## Features
 
@@ -8,12 +8,10 @@ A production-ready NestJS microservice designed to extract structured article da
   - **Extractor:** Fast static HTML parsing using `@extractus/article-extractor`.
   - **Playwright:** Full Chrome rendering for JavaScript-heavy sites with configurable navigation timeouts.
 - **Rich Data Extraction:** Captures title, description, author, date, language, main image, favicon, content type, source, outgoing links, time-to-read estimates, and converts body to Markdown (or returns raw HTML).
-- **Batch Processing:** Orchestrate multiple URL scrapes asynchronously with configurable delays, random jitter, and per-item settings override.
 - **Advanced Anti-Bot Protection:** 
   - Rotating browser fingerprints (User-Agent, viewport, locale, timezone) with customizable generator settings.
   - Selective resource blocking (analytics, trackers, images, videos, fonts).
   - Automatic fingerprint rotation on bot detection.
-- **Reliable Webhooks:** Notification system with configurable timeouts, exponential backoff, and retry attempts upon batch completion.
 - **Production Ready:** Built on Fastify with structured logging (Pino), strict validation (class-validator DTOs), global concurrency limits, and automatic data cleanup.
 
 
@@ -35,7 +33,7 @@ A production-ready NestJS microservice designed to extract structured article da
 src/
 ├── config/           # Configuration modules (app, scraper)
 ├── modules/
-│   ├── scraper/      # Core scraping logic, DTOs, controller, batch + webhook services
+│   ├── scraper/      # Core scraping logic, DTOs, controller
 │   └── health/       # Health check endpoint
 ├── common/           # Shared utilities, guards, filters
 └── main.ts           # Application entry point
@@ -43,8 +41,6 @@ src/
 
 ### Key Components
 - **ScraperService:** Orchestrates extraction and Playwright modes
-- **BatchService:** Manages batch jobs and scheduling
-- **WebhookService:** Handles reliable webhook delivery with retries
 - **ConcurrencyService:** Global in-memory queue for task throttling
 - **FingerprintService:** Generates and manages browser fingerprints
 
@@ -107,7 +103,7 @@ A vanilla JavaScript web interface is available for testing the microservice fun
  - **Single Page Tab:** Test the `/page` endpoint with all configuration options
  - **Fetch Content Tab:** Test the `/fetch` endpoint for raw content retrieval
  
- The UI provides forms for all endpoint parameters including fingerprint settings, timeouts, and webhook configuration. Responses are displayed in a formatted JSON viewer.
+ The UI provides forms for all endpoint parameters including fingerprint settings and timeouts. Responses are displayed in a formatted JSON viewer.
 
 ---
 
@@ -186,22 +182,12 @@ When using the `fingerprint` parameter in API requests, you can specify the foll
 | `FETCH_MAX_REDIRECTS` | Maximum number of redirects for `/fetch` with `engine=http` | `7` |
 | `FETCH_MAX_RESPONSE_BYTES` | Maximum response size in bytes for `/fetch` with `engine=http` | `10485760` |
 
-### Batch Processing Settings
+### Data Cleanup Settings
 
 | Variable | Description | Default |
 | --- | --- | --- |
-| `DEFAULT_BATCH_MIN_DELAY_MS` | Minimum delay between requests in milliseconds (500-3600000) | `1500` |
-| `DEFAULT_BATCH_MAX_DELAY_MS` | Maximum delay between requests in milliseconds (1000-3600000) | `4000` |
-| `DATA_LIFETIME_MINS` | Retention time for in-memory batch results in minutes (1-44640) | `60` |
+| `DATA_LIFETIME_MINS` | Retention time for in-memory page data in minutes (1-44640) | `60` |
 | `CLEANUP_INTERVAL_MINS` | Minimum interval between cleanup runs in minutes (1-10080) | `10` |
-
-### Webhook Settings
-
-| Variable | Description | Default |
-| --- | --- | --- |
-| `DEFAULT_WEBHOOK_TIMEOUT_SECS` | Default timeout for webhook HTTP requests in seconds (1-600) | `30` |
-| `DEFAULT_WEBHOOK_BACKOFF_MS` | Default backoff delay between retry attempts in milliseconds (100-600000) | `1000` |
-| `DEFAULT_WEBHOOK_MAX_ATTEMPTS` | Default maximum retry attempts for failed webhooks (1-100) | `3` |
 
 *See `.env.production.example` and `.env.development.example` for complete configuration examples.*
 
@@ -343,158 +329,22 @@ POST /api/v1/fetch
 - `FETCH_TOO_MANY_REDIRECTS` (HTTP 508) when redirect limit is exceeded
 - `FETCH_RESPONSE_TOO_LARGE` (HTTP 413) when response exceeds size limits
 
-### 3. Create Batch Job (`POST /batch`)
-
-Queue multiple URLs for processing. Returns a Job ID immediately.
-
-**Request:**
-```jsonc
-POST /api/v1/batch
-{
-  "items": [
-    { "url": "https://site1.com/a" },
-    { "url": "https://site2.com/b", "mode": "playwright", "rawBody": true }
-  ],
-  "commonSettings": {            // Settings applied to all items
-    "mode": "extractor",         // Default mode for all items
-    "taskTimeoutSecs": 60,       // Default timeout (≥1)
-    "rawBody": false,            // Return raw HTML instead of Markdown
-    "fingerprint": {             // Default fingerprint for all items
-      "generate": true,
-      "userAgent": "auto",
-      "locale": "en-US",
-      "timezoneId": "UTC",
-      "rotateOnAntiBot": true,
-      "blockTrackers": true,     // Playwright only
-      "blockHeavyResources": false,// Playwright only
-      "operatingSystems": ["windows", "macos"],
-      "devices": ["desktop"]
-    }
-  },
-  "schedule": {                  // Batch processing timing
-    "minDelayMs": 1000,          // Min delay between requests (500-3600000)
-    "maxDelayMs": 3000,          // Max delay between requests (1000-3600000)
-    "jitter": true               // Add random jitter to delays
-  },
-  "webhook": {                   // Completion notification
-    "url": "https://your-api.com/webhook",
-    "headers": { "Authorization": "Bearer secret" },
-    "timeoutSecs": 30,           // Webhook request timeout (1-600)
-    "backoffMs": 1000,           // Retry backoff delay (100-600000)
-    "maxAttempts": 3             // Max retry attempts (1-100)
-  }
-}
-```
-
-**Response (202 Accepted):**
-```json
-{
-  "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a"
-}
-```
-
-### 4. Check Batch Status (`GET /batch/:jobId`)
-
-Poll the status of a batch job.
-
-**Response (200 OK):**
-```jsonc
-{
-  "jobId": "0f1c5d8e...",
-  "status": "partial",           // queued, running, succeeded, failed, partial
-  "createdAt": "2023-10-01T12:00:00.000Z",  // Job creation timestamp
-  "completedAt": "2023-10-01T12:05:00.000Z", // Job completion timestamp (if completed)
-  "total": 2,
-  "processed": 2,
-  "succeeded": 1,
-  "failed": 1,
-  "statusMeta": {                // Status metadata
-    "succeeded": 1,
-    "failed": 1,
-    "message": "Task 1 error: timeout" // First error message if any
-  },
-  "results": [
-    {
-      "url": "https://site1.com/a",
-      "status": "succeeded",
-      "data": { ... }            // Same structure as /page response
-    },
-    {
-      "url": "https://site2.com/b",
-      "status": "failed",
-      "error": {
-        "code": 408,
-        "message": "Request timeout",
-        "details": "Page load exceeded timeout"
-      }
-    }
-  ]
-}
-```
-
-### 5. Health Check (`GET /health`)
+### 3. Health Check (`GET /health`)
 
 **Response:** `{"status": "ok"}`
-
----
-
-## Webhooks
-
-When a batch job completes (or fails), the service sends a POST request to your configured webhook URL.
-
-**Payload Structure:**
-```jsonc
-{
-  "jobId": "0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a",
-  "status": "partial",           // succeeded, failed, or partial
-  "createdAt": "2023-10-01T12:00:00.000Z",
-  "completedAt": "2023-10-01T12:05:00.000Z",
-  "total": 2,
-  "processed": 2,
-  "succeeded": 1,
-  "failed": 1,
-  "statusMeta": {
-    "succeeded": 1,
-    "failed": 1,
-    "message": "Task 1 error: timeout"
-  },
-  "results": [
-    {
-      "url": "https://site1.com/a",
-      "status": "succeeded",
-      "data": { ... }            // Full scraping result
-    },
-    {
-      "url": "https://site2.com/b",
-      "status": "failed",
-      "error": {
-        "code": 408,
-        "message": "Request timeout",
-        "details": "Page load exceeded timeout"
-      }
-    }
-  ]
-}
-```
-
-**Behavior:**
-- **Retries:** Exponential backoff with configurable attempts (default 3).
-- **Timeout:** Configurable per webhook (default 30 seconds).
-- **Trigger:** Sent when job status becomes `succeeded`, `failed`, or `partial`.
 
 ---
 
 ## Operational Details
 
 ### Concurrency Management
-- **Global Limiter:** Uses an in-memory concurrency limiter (`MAX_CONCURRENCY`). All scraping requests (single page or batch) share this limit to prevent resource exhaustion.
+- **Global Limiter:** Uses an in-memory concurrency limiter (`MAX_CONCURRENCY`). All scraping requests share this limit to prevent resource exhaustion.
 - **Queue System:** When the limit is reached, new tasks wait in a queue until a slot becomes available.
 
 ### Data Lifecycle
-- **In-Memory Storage:** Batch job results are stored in memory for quick access.
-- **Automatic Cleanup:** Results are automatically purged after `DATA_LIFETIME_MINS` (default 60 minutes).
+- **In-Memory Storage:** Page data is stored in memory for quick access.
+- **Automatic Cleanup:** Data is automatically purged after `DATA_LIFETIME_MINS` (default 60 minutes).
 - **Cleanup Interval:** Cleanup runs every `CLEANUP_INTERVAL_MINS` (default 10 minutes).
-- **Stateless Service:** If the service restarts, all job history is lost. This is by design for simplicity.
 
 ### Anti-Bot Protection
 - **Browser Fingerprints:** 
@@ -506,11 +356,9 @@ When a batch job completes (or fails), the service sends a POST request to your 
   - **Heavy Resources:** Optionally blocks images, videos, and fonts to minimize bandwidth and improve performance.
 - **Adaptive Behavior:**
   - **Fingerprint Rotation:** When `rotateOnAntiBot` is enabled, automatically generates a new fingerprint if bot detection is suspected.
-  - **Random Delays:** Batch jobs use configurable random delays (`minDelayMs` to `maxDelayMs`) with optional jitter to avoid rate limiting.
 
 ### Error Handling
 - **Timeouts:** Each scraping task has a configurable timeout (`taskTimeoutSecs`). Tasks exceeding this limit are terminated.
-- **Graceful Failures:** Failed tasks in batch jobs don't stop the entire job. The job continues and reports individual failures.
 - **Detailed Errors:** Error responses include HTTP status codes, messages, and optional details for debugging.
 
 
@@ -542,35 +390,7 @@ curl -X POST http://localhost:8080/api/v1/page \
   }'
 ```
 
-### Example 3: Batch Scraping with Webhook
-```bash
-curl -X POST http://localhost:8080/api/v1/batch \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {"url": "https://site1.com/article1"},
-      {"url": "https://site2.com/article2"},
-      {"url": "https://site3.com/article3"}
-    ],
-    "commonSettings": {
-      "mode": "extractor",
-      "taskTimeoutSecs": 60
-    },
-    "schedule": {
-      "minDelayMs": 2000,
-      "maxDelayMs": 5000,
-      "jitter": true
-    },
-    "webhook": {
-      "url": "https://your-api.com/webhook",
-      "headers": {"Authorization": "Bearer YOUR_TOKEN"},
-      "timeoutSecs": 30,
-      "maxAttempts": 5
-    }
-  }'
-```
-
-### Example 4: Get Rendered HTML for Custom Processing
+### Example 3: Get Rendered HTML for Custom Processing
 ```bash
 curl -X POST http://localhost:8080/api/v1/fetch \
   -H "Content-Type: application/json" \
@@ -584,7 +404,7 @@ curl -X POST http://localhost:8080/api/v1/fetch \
   }'
 ```
 
-### Example 5: Mobile Device Simulation
+### Example 4: Mobile Device Simulation
 ```bash
 curl -X POST http://localhost:8080/api/v1/page \
   -H "Content-Type: application/json" \
@@ -605,19 +425,14 @@ curl -X POST http://localhost:8080/api/v1/page \
 ## Limitations and Best Practices
 
 ### Limitations
-- **Stateless Design:** All batch job data is stored in memory. Service restarts will lose all job history.
-- **No Persistence:** Results are automatically deleted after `DATA_LIFETIME_MINS`. Download results before they expire.
+- **In-Memory Storage:** Page data is stored in memory. Service restarts will clear all cached data.
+- **No Persistence:** Data is automatically deleted after `DATA_LIFETIME_MINS`.
 - **Concurrency Limit:** The global `MAX_CONCURRENCY` limit applies to all requests. High concurrency may require scaling.
-- **Memory Usage:** Large batch jobs with many results can consume significant memory. Monitor memory usage in production.
 
 ### Best Practices
 - **Use Extractor Mode First:** Start with `extractor` mode for faster performance. Switch to `playwright` only for JavaScript-heavy sites.
 - **Set Appropriate Timeouts:** Adjust `taskTimeoutSecs` based on target site complexity. Longer timeouts for slow sites.
-- **Configure Delays:** Use `minDelayMs` and `maxDelayMs` in batch jobs to avoid overwhelming target servers and triggering rate limits.
-- **Enable Jitter:** Set `schedule.jitter: true` in batch jobs to randomize delays and appear more human-like.
 - **Block Resources:** Enable `fingerprint.blockTrackers` and `fingerprint.blockHeavyResources` for faster scraping when images/videos aren't needed.
-- **Monitor Webhooks:** Implement proper webhook endpoint with idempotency handling. The same webhook may be delivered multiple times on retries.
-- **Poll Batch Status:** For critical jobs, poll `GET /batch/:jobId` periodically as a backup to webhooks.
 - **Adjust Concurrency:** Increase `MAX_CONCURRENCY` for higher throughput, but monitor CPU and memory usage.
 
 ---

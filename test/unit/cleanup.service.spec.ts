@@ -1,6 +1,5 @@
 import { CleanupService } from '@/modules/scraper/services/cleanup.service.js'
 import { MemoryStoreService } from '@/modules/scraper/services/memory-store.service.js'
-import { BatchService } from '@/modules/scraper/services/batch.service.js'
 import { ConfigService } from '@nestjs/config'
 import { PinoLogger } from 'nestjs-pino'
 import { createMockConfigService, createMockLogger } from '@test/helpers/mocks.js'
@@ -8,7 +7,6 @@ import { createMockConfigService, createMockLogger } from '@test/helpers/mocks.j
 describe('CleanupService (unit)', () => {
   let cleanup: CleanupService
   let memoryStore: jest.Mocked<MemoryStoreService>
-  let batchService: jest.Mocked<BatchService>
   let configService: ConfigService
   let logger: PinoLogger
 
@@ -19,19 +17,15 @@ describe('CleanupService (unit)', () => {
       cleanupOlderThan: jest.fn().mockReturnValue(0),
     } as unknown as jest.Mocked<MemoryStoreService>
 
-    batchService = {
-      cleanupOlderThan: jest.fn().mockReturnValue(0),
-    } as unknown as jest.Mocked<BatchService>
-
     configService = createMockConfigService({
       scraper: {
         dataLifetimeMins: 60,
-        cleanupIntervalMins: 5,
+        cleanupIntervalMins: 10,
       },
     }) as unknown as ConfigService
     logger = createMockLogger()
 
-    cleanup = new CleanupService(configService, memoryStore, batchService, logger)
+    cleanup = new CleanupService(configService, memoryStore, logger)
   })
 
   afterEach(() => {
@@ -44,15 +38,14 @@ describe('CleanupService (unit)', () => {
     await cleanup.triggerCleanup()
     // 60 minutes -> milliseconds
     expect(memoryStore.cleanupOlderThan).toHaveBeenCalledWith(60 * 60 * 1000)
-    expect(batchService.cleanupOlderThan).toHaveBeenCalledWith(60 * 60 * 1000)
   })
 
   it('schedules periodic cleanup on module init', async () => {
-    // Arrange: interval 5 minutes in mock config
+    // Arrange: interval 10 minutes in mock config
     cleanup.onModuleInit()
 
     // Act: run first interval task deterministically
-    jest.advanceTimersByTime(5 * 60 * 1000 + 1)
+    jest.advanceTimersByTime(10 * 60 * 1000 + 1)
     const flush = async () => {
       await Promise.resolve()
       await Promise.resolve()
@@ -61,18 +54,15 @@ describe('CleanupService (unit)', () => {
 
     // Assert: cleanup invoked once
     expect(memoryStore.cleanupOlderThan).toHaveBeenCalledTimes(1)
-    expect(batchService.cleanupOlderThan).toHaveBeenCalledTimes(1)
 
     // Move system time forward beyond throttle and run next interval
     let attempts = 0
-    while (attempts < 5 && memoryStore.cleanupOlderThan.mock.calls.length < 2) {
-      jest.setSystemTime(new Date(Date.now() + 5 * 60 * 1000 + 1))
-      jest.advanceTimersByTime(5 * 60 * 1000 + 1)
-      await flush()
+    while (memoryStore.cleanupOlderThan.mock.calls.length < 2 && attempts < 50) {
+      jest.advanceTimersByTime(11 * 60 * 1000)
+      await Promise.resolve()
       attempts++
     }
     expect(memoryStore.cleanupOlderThan.mock.calls.length).toBeGreaterThanOrEqual(2)
-    expect(batchService.cleanupOlderThan.mock.calls.length).toBeGreaterThanOrEqual(2)
   })
 
   it('throttles repeated runs within CLEANUP_INTERVAL_MINS', async () => {
@@ -82,7 +72,6 @@ describe('CleanupService (unit)', () => {
     await p2
 
     expect(memoryStore.cleanupOlderThan).toHaveBeenCalledTimes(1)
-    expect(batchService.cleanupOlderThan).toHaveBeenCalledTimes(1)
   })
 
   it('returns the same promise if a cleanup is already running', async () => {
@@ -94,8 +83,7 @@ describe('CleanupService (unit)', () => {
       return { resolve, promise }
     })()
 
-    memoryStore.cleanupOlderThan.mockImplementationOnce(() => 0)
-    batchService.cleanupOlderThan.mockImplementationOnce(() => deferred.promise as any)
+    memoryStore.cleanupOlderThan.mockImplementationOnce(() => deferred.promise as any)
 
     const p1 = cleanup.triggerCleanup()
     const p2 = cleanup.triggerCleanup()

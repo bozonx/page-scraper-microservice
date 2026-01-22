@@ -4,7 +4,6 @@ import type {
   INodeType,
   INodeTypeDescription,
 } from 'n8n-workflow'
-import * as yaml from 'js-yaml'
 
 export class PageScraper implements INodeType {
   description: INodeTypeDescription = {
@@ -14,7 +13,7 @@ export class PageScraper implements INodeType {
     group: ['transform'],
     version: 1,
     subtitle: '={{$parameter["operation"]}}',
-    description: 'Scrape web pages, extract content, or process batches',
+    description: 'Scrape web pages and extract content',
     defaults: {
       name: 'Page Scraper',
     },
@@ -44,18 +43,6 @@ export class PageScraper implements INodeType {
             value: 'fetch',
             description: 'Fetch raw content from a URL (HTML/XML/RSS)',
             action: 'Fetch raw content from a URL',
-          },
-          {
-            name: 'Create Batch',
-            value: 'batch',
-            description: 'Create an asynchronous batch scraping job',
-            action: 'Create a batch scraping job',
-          },
-          {
-            name: 'Get Batch Status',
-            value: 'batchStatus',
-            description: 'Get status and results of a batch job',
-            action: 'Get batch job status',
           },
         ],
         default: 'page',
@@ -226,41 +213,6 @@ export class PageScraper implements INodeType {
           },
         ],
       },
-
-      // ============ BATCH OPERATION ============
-      {
-        displayName: 'Job ID',
-        name: 'jobId',
-        type: 'string',
-        displayOptions: {
-          show: {
-            operation: ['batchStatus'],
-          },
-        },
-        default: '',
-        required: true,
-        description: 'Batch job ID to query',
-        placeholder: '0f1c5d8e-3d4b-4c0f-8f0c-5c2d2d7b9c6a',
-      },
-      {
-        displayName: 'Options (YAML/JSON)',
-        name: 'options',
-        type: 'string',
-        typeOptions: {
-          rows: 12,
-        },
-        displayOptions: {
-          show: {
-            operation: ['batch'],
-          },
-        },
-        default: '',
-        required: true,
-        description:
-          'Batch request configuration in YAML or JSON format. All fields will be sent to the server as-is',
-        placeholder:
-          'items:\n  - url: https://example.com/page1\n    mode: extractor\n  - url: https://example.com/page2\ncommonSettings:\n  rawBody: false\nschedule:\n  minDelayMs: 1500\n  maxDelayMs: 4000\n  jitter: true',
-      },
     ],
     usableAsTool: true,
   }
@@ -412,58 +364,6 @@ export class PageScraper implements INodeType {
               method: 'POST',
               url: `${apiUrl}/fetch`,
               body,
-              json: true,
-            }
-          )
-
-          returnData.push({
-            json: response as Record<string, any>,
-            pairedItem: { item: i },
-          })
-        } else if (operation === 'batch') {
-          const optionsParam = this.getNodeParameter('options', i) as any
-          let body: Record<string, any>
-
-          if (typeof optionsParam === 'string') {
-            try {
-              body = yaml.load(optionsParam) as Record<string, any>
-            } catch (yamlError) {
-              try {
-                body = JSON.parse(optionsParam)
-              } catch (jsonError) {
-                throw new Error(
-                  `Failed to parse options field. It must be valid YAML or JSON. YAML error: ${(yamlError as Error).message}, JSON error: ${(jsonError as Error).message}`
-                )
-              }
-            }
-          } else {
-            body = JSON.parse(JSON.stringify(optionsParam))
-          }
-
-          const response = await this.helpers.httpRequestWithAuthentication.call(
-            this,
-            'pageScraperApi',
-            {
-              method: 'POST',
-              url: `${apiUrl}/batch`,
-              body,
-              json: true,
-            }
-          )
-
-          returnData.push({
-            json: response as Record<string, any>,
-            pairedItem: { item: i },
-          })
-        } else if (operation === 'batchStatus') {
-          const jobId = this.getNodeParameter('jobId', i) as string
-
-          const response = await this.helpers.httpRequestWithAuthentication.call(
-            this,
-            'pageScraperApi',
-            {
-              method: 'GET',
-              url: `${apiUrl}/batch/${jobId}`,
               json: true,
             }
           )
