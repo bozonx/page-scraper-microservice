@@ -95,6 +95,24 @@ docker run --rm -p 8080:8080 \
 
 ---
 
+## Test UI
+
+A vanilla JavaScript web interface is available for testing the microservice functionality without writing code.
+
+**Access the UI:**
+- Start the service (development or production)
+- Open your browser to `http://localhost:8080/`
+
+**Features:**
+- **Single Page Tab:** Test the `/page` endpoint with all configuration options
+- **Fetch Content Tab:** Test the `/fetch` endpoint for raw content retrieval
+- **Batch Processing Tab:** Create batch jobs with multiple URLs
+- **Batch Status Tab:** Check the status of batch jobs by Job ID
+
+The UI provides forms for all endpoint parameters including fingerprint settings, timeouts, and webhook configuration. Responses are displayed in a formatted JSON viewer.
+
+---
+
 ## Configuration
 
 Configure the service using environment variables.
@@ -552,13 +570,14 @@ curl -X POST http://localhost:8080/api/v1/batch \
   }'
 ```
 
-### Example 4: Get Raw HTML for Custom Processing
+### Example 4: Get Rendered HTML for Custom Processing
 ```bash
-curl -X POST http://localhost:8080/api/v1/html \
+curl -X POST http://localhost:8080/api/v1/fetch \
   -H "Content-Type: application/json" \
   -d '{
     "url": "https://spa-app.com",
-    "taskTimeoutSecs": 60,
+    "engine": "playwright",
+    "timeoutSecs": 60,
     "fingerprint": {
       "blockTrackers": true
     }

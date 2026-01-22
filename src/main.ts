@@ -4,10 +4,16 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { ValidationPipe } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Logger } from 'nestjs-pino'
+import fastifyStatic from '@fastify/static'
+import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { AppModule } from './app.module.js'
 import type { AppConfig } from './config/app.config.js'
 import { ShutdownService } from './common/services/shutdown.service.js'
 import { APP_CLOSE_TIMEOUT_MS } from './common/app.constants.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = join(__filename, '..')
 
 /**
  * Bootstrap function that initializes and starts the NestJS application
@@ -41,6 +47,12 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true })
   )
+
+  // Register static file serving for test UI
+  await app.register(fastifyStatic, {
+    root: join(__dirname, '..', '..', 'public'),
+    prefix: '/',
+  })
 
   // Configure global API prefix from configuration
   const globalPrefix = [appConfig.basePath, 'api/v1'].filter(Boolean).join('/')
@@ -83,6 +95,7 @@ async function bootstrap() {
     `🚀 NestJS service is running on: http://${appConfig.host}:${appConfig.port}/${globalPrefix}`,
     'Bootstrap'
   )
+  logger.log(`🎨 Test UI available at: http://${appConfig.host}:${appConfig.port}/`, 'Bootstrap')
   logger.log(`📊 Environment: ${appConfig.nodeEnv}`, 'Bootstrap')
   logger.log(`📝 Log level: ${appConfig.logLevel}`, 'Bootstrap')
   logger.log(`⏱️  Graceful Shutdown Timeout: ${APP_CLOSE_TIMEOUT_MS}ms`, 'Bootstrap')
