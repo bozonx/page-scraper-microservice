@@ -30,6 +30,7 @@ RUN pnpm install --prod --frozen-lockfile --prefer-offline || pnpm install --pro
 RUN pnpm dlx playwright install --with-deps chromium
 
 COPY dist ./dist
+COPY public ./public
 
 EXPOSE 8080
 ENTRYPOINT ["tini", "--"]
