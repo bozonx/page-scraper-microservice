@@ -18,38 +18,42 @@ let originalFetch: any
 ;(globalThis as any).jest = jest
 
 // Lightweight mocks for heavy/IO-bound modules to ensure unit tests never hit real network/engines
-jest.mock('crawlee', () => {
-  class MockPlaywrightCrawler {
-    private handler: (ctx: any) => Promise<void> | void
-    constructor(options: any, _config?: any) {
-      // Добавляем второй параметр для config
-      this.handler = options?.requestHandler ?? (async () => undefined)
-    }
-    addRequests = jest.fn()
-    run = jest.fn(async () => {
-      const page = {
-        addInitScript: jest.fn(async () => undefined),
-        setViewportSize: jest.fn(async () => undefined),
-        route: jest.fn(async (_: any, cb: any) => cb({ abort: () => undefined })),
-        goto: jest.fn(async () => undefined),
-        content: jest.fn(async () => '<html><body><p>Mock Content</p></body></html>'),
+jest.mock(
+  'crawlee',
+  () => {
+    class MockPlaywrightCrawler {
+      private handler: (ctx: any) => Promise<void> | void
+      constructor(options: any, _config?: any) {
+        // Добавляем второй параметр для config
+        this.handler = options?.requestHandler ?? (async () => undefined)
       }
-      await this.handler({ page })
-    })
-  }
-
-  // Добавляем мок для Configuration
-  class MockConfiguration {
-    constructor(_options: any) {
-      // Ничего не делаем, это просто мок
+      addRequests = jest.fn()
+      run = jest.fn(async () => {
+        const page = {
+          addInitScript: jest.fn(async () => undefined),
+          setViewportSize: jest.fn(async () => undefined),
+          route: jest.fn(async (_: any, cb: any) => cb({ abort: () => undefined })),
+          goto: jest.fn(async () => undefined),
+          content: jest.fn(async () => '<html><body><p>Mock Content</p></body></html>'),
+        }
+        await this.handler({ page })
+      })
     }
-  }
 
-  return {
-    PlaywrightCrawler: MockPlaywrightCrawler,
-    Configuration: MockConfiguration, // Экспортируем Configuration
-  }
-})
+    // Добавляем мок для Configuration
+    class MockConfiguration {
+      constructor(_options: any) {
+        // Ничего не делаем, это просто мок
+      }
+    }
+
+    return {
+      PlaywrightCrawler: MockPlaywrightCrawler,
+      Configuration: MockConfiguration, // Экспортируем Configuration
+    }
+  },
+  { virtual: true }
+)
 
 jest.unstable_mockModule('@ghostery/adblocker-playwright', () => {
   return {

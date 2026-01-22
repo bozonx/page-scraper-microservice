@@ -63,7 +63,12 @@ describe('FingerprintService (unit)', () => {
 
       // Depending on implementation, it might return empty objects or nulls
       // In our implementation we return { fingerprint: {}, headers: {} }
-      expect(result.fingerprint).toEqual({})
+      expect(result.fingerprint).toEqual({
+        navigator: {
+          language: '',
+          userAgent: '',
+        },
+      })
       expect(result.headers).toEqual({})
     })
 
