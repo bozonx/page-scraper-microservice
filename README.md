@@ -308,9 +308,10 @@ POST /api/v1/fetch
     "statusCode": 404
   },
   "error": {
-    "code": "FETCH_TIMEOUT",
-    "message": "Request timeout",
-    "retryable": true
+    "code": "FETCH_HTTP_STATUS",
+    "message": "Upstream returned HTTP 404",
+    "retryable": false,
+    "stack": "..."                // Only included when debug=true
   }
 }
 ```
@@ -318,16 +319,18 @@ POST /api/v1/fetch
 **Notes:**
 - The service enforces SSRF protections and blocks private/metadata IP ranges.
 - `engine=http`: Fast HTTP fetch, follows redirects up to a fixed limit, responses are size-limited.
-  - Only accepts text content types (text/*, application/xml, application/rss+xml, application/atom+xml, application/json)
+  - Only accepts text content types (text/*, application/xml, application/rss+xml, application/atom+xml, application/json, application/ld+json)
   - Rejects binary content (images, videos, PDFs) with `FETCH_UNSUPPORTED_CONTENT_TYPE` error
 - `engine=playwright`: Full browser rendering with anti-bot protection, supports JavaScript-heavy sites.
 - `timeoutSecs` is a total budget for the entire operation including retries (and redirects for `engine=http`).
 - `rotateOnAntiBot=true` rotates fingerprint only when anti-bot protection is detected.
-- Use `debug=true` to include response headers and stack traces in error responses.
+- Use `debug=true` to include stack traces in error responses (and response headers in successful responses).
 
 **Common error codes:**
 - `FETCH_TOO_MANY_REDIRECTS` (HTTP 508) when redirect limit is exceeded
 - `FETCH_RESPONSE_TOO_LARGE` (HTTP 413) when response exceeds size limits
+
+**Note:** Upstream non-2xx HTTP responses are returned as `FETCH_HTTP_STATUS` with HTTP 502.
 
 ### 3. Health Check (`GET /health`)
 
