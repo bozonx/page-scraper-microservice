@@ -67,12 +67,27 @@
 
                     <div class="form-row">
                         <div class="form-group">
+                            <label for="page-fp-user-agent">User Agent</label>
+                            <input type="text" id="page-fp-user-agent" value="auto">
+                        </div>
+                        <div class="form-group">
                             <label for="page-fp-locale">Locale</label>
                             <input type="text" id="page-fp-locale" value="en-US">
                         </div>
                         <div class="form-group">
                             <label for="page-fp-timezone">Timezone</label>
                             <input type="text" id="page-fp-timezone" value="UTC">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="page-fp-operating-systems">Operating Systems (comma-separated)</label>
+                            <input type="text" id="page-fp-operating-systems" placeholder="windows,macos,linux">
+                        </div>
+                        <div class="form-group">
+                            <label for="page-fp-devices">Devices (comma-separated)</label>
+                            <input type="text" id="page-fp-devices" placeholder="desktop,mobile">
                         </div>
                     </div>
 
@@ -126,6 +141,17 @@
                     </div>
                 </div>
 
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fetch-locale">Locale (override)</label>
+                        <input type="text" id="fetch-locale" placeholder="en-US">
+                    </div>
+                    <div class="form-group">
+                        <label for="fetch-timezone">Timezone (override)</label>
+                        <input type="text" id="fetch-timezone" placeholder="UTC">
+                    </div>
+                </div>
+
                 <details class="fingerprint-section">
                     <summary>Fingerprint Settings (Playwright only)</summary>
                     <div class="form-row">
@@ -145,12 +171,27 @@
 
                     <div class="form-row">
                         <div class="form-group">
+                            <label for="fetch-fp-user-agent">User Agent</label>
+                            <input type="text" id="fetch-fp-user-agent" value="auto">
+                        </div>
+                        <div class="form-group">
                             <label for="fetch-fp-locale">Locale</label>
                             <input type="text" id="fetch-fp-locale" value="en-US">
                         </div>
                         <div class="form-group">
                             <label for="fetch-fp-timezone">Timezone</label>
                             <input type="text" id="fetch-fp-timezone" value="UTC">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="fetch-fp-operating-systems">Operating Systems (comma-separated)</label>
+                            <input type="text" id="fetch-fp-operating-systems" placeholder="windows,macos,linux">
+                        </div>
+                        <div class="form-group">
+                            <label for="fetch-fp-devices">Devices (comma-separated)</label>
+                            <input type="text" id="fetch-fp-devices" placeholder="desktop,mobile">
                         </div>
                     </div>
 

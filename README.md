@@ -100,8 +100,8 @@ A vanilla JavaScript web interface is available for testing the microservice fun
  - Open your browser to `http://localhost:8080/` (or `http://localhost:8080/{BASE_PATH}/` if `BASE_PATH` is set)
  
  **Features:**
- - **Single Page Tab:** Test the `/page` endpoint with all configuration options
- - **Fetch Content Tab:** Test the `/fetch` endpoint for raw content retrieval
+ - **Single Page Tab:** Test the `/page` endpoint including fingerprint options (`userAgent`, `operatingSystems`, `devices`)
+ - **Fetch Content Tab:** Test the `/fetch` endpoint including fingerprint options and optional `locale`/`timezoneId` overrides
  
  The UI provides forms for all endpoint parameters including fingerprint settings and timeouts. Responses are displayed in a formatted JSON viewer.
 
