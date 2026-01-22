@@ -86,7 +86,7 @@ export class ScraperController {
       },
       async (signal) => {
         try {
-          this.logger.info(`Received file proxy request for URL: ${request.url}`)
+          this.logger.debug(`Received file proxy request for URL: ${request.url}`)
           const result = await this.fileService.proxyFile(request, signal)
 
           reply.status(result.statusCode)
@@ -132,9 +132,9 @@ export class ScraperController {
       },
       async (signal) => {
         try {
-          this.logger.info(`Received scrape request for URL: ${request.url}`)
+          this.logger.debug(`Received scrape request for URL: ${request.url}`)
           const result = await this.scraperService.scrapePage(request, signal)
-          this.logger.info(`Successfully scraped ${request.url}`)
+          this.logger.debug(`Successfully scraped ${request.url}`)
           return result
         } catch (error) {
           if (!signal.aborted) {
@@ -160,9 +160,9 @@ export class ScraperController {
       },
       async (signal) => {
         try {
-          this.logger.info(`Received fetch request for URL: ${request.url}`)
+          this.logger.debug(`Received fetch request for URL: ${request.url}`)
           const result = await this.fetchService.fetch(request, signal)
-          this.logger.info(`Successfully fetched ${request.url}`)
+          this.logger.debug(`Successfully fetched ${request.url}`)
           return result
         } catch (error) {
           if (!signal.aborted) {

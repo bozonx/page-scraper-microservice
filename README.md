@@ -97,7 +97,7 @@ A vanilla JavaScript web interface is available for testing the microservice fun
 
  **Access the UI:**
  - Start the service (development or production)
- - Open your browser to `http://localhost:8080/` (or `http://localhost:8080/{BASE_PATH}/` if `BASE_PATH` is set)
+ - Open your browser to `http://localhost:8080/ui/` (or `http://localhost:8080/{BASE_PATH}/ui/` if `BASE_PATH` is set)
  
  **Features:**
  - **Single Page Tab:** Test the `/page` endpoint including fingerprint options (`userAgent`, `operatingSystems`, `devices`)
@@ -127,6 +127,9 @@ Configure the service using environment variables.
 | Variable | Description | Default |
 | --- | --- | --- |
 | `MAX_CONCURRENCY` | Maximum concurrent scraping tasks across the entire service | `3` |
+| `MAX_QUEUE` | Maximum queued heavy tasks waiting for execution (`0` disables queueing) | `100` |
+| `MAX_BROWSER_CONCURRENCY` | Maximum concurrent Playwright browser tasks across the entire service | `1` |
+| `MAX_BROWSER_QUEUE` | Maximum queued Playwright tasks waiting for execution (`0` disables queueing) | `50` |
 
 ### Scraper Settings
 
@@ -376,7 +379,7 @@ curl -X POST http://localhost:8080/api/v1/file \
 ### Concurrency Management
 - **Global Limiter:** Uses an in-memory concurrency limiter (`MAX_CONCURRENCY`). All requests share this limit to prevent resource exhaustion.
 - **Browser Limiter:** Playwright-based tasks additionally use a dedicated limiter (`MAX_BROWSER_CONCURRENCY`) to control memory usage (browser contexts/pages are memory-heavy).
-- **Queue System:** When a limit is reached, new tasks wait in a queue until a slot becomes available.
+- **Queue System:** When a limit is reached, new tasks wait in a bounded queue until a slot becomes available. If the queue is full, the service returns `429`.
 
 ### Anti-Bot Protection
 - **Browser Fingerprints:** 

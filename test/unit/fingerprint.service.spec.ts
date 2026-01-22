@@ -139,7 +139,7 @@ describe('FingerprintService (unit)', () => {
     it('should log info message after generating fingerprint', () => {
       service.generateFingerprint()
 
-      expect(logger.info).toHaveBeenCalled()
+      expect(logger.debug).toHaveBeenCalled()
     })
   })
 

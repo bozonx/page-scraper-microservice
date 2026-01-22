@@ -1,4 +1,13 @@
-const API_BASE = '/api/v1';
+const basePath = (() => {
+    const parts = window.location.pathname.split('/').filter(Boolean);
+    const uiIndex = parts.lastIndexOf('ui');
+    if (uiIndex <= 0) {
+        return '';
+    }
+    return `/${parts.slice(0, uiIndex).join('/')}`;
+})();
+
+const API_BASE = `${basePath}/api/v1`;
 
 const $result = document.getElementById('result');
 const $loading = document.getElementById('loading');

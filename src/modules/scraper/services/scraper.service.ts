@@ -59,7 +59,7 @@ export class ScraperService {
         : this.concurrencyService.run.bind(this.concurrencyService)
 
     return run(async () => {
-      this.logger.info(`Scraping page: ${request.url} using mode: ${mode}`)
+      this.logger.debug(`Scraping page: ${request.url} using mode: ${mode}`)
 
       try {
         let content: any

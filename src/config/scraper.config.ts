@@ -131,11 +131,27 @@ export class ScraperConfig {
   public globalMaxConcurrency!: number
 
   /**
+   * Maximum number of queued heavy tasks waiting for execution (>=0)
+   * 0 disables queueing (only immediate execution is allowed)
+   */
+  @IsInt()
+  @Min(0)
+  public globalMaxQueue!: number
+
+  /**
    * Maximum number of Playwright browser tasks running concurrently across the entire service (>=1)
    */
   @IsInt()
   @Min(1)
   public browserMaxConcurrency!: number
+
+  /**
+   * Maximum number of queued Playwright tasks waiting for execution (>=0)
+   * 0 disables queueing (only immediate execution is allowed)
+   */
+  @IsInt()
+  @Min(0)
+  public browserMaxQueue!: number
 }
 
 /**
@@ -183,6 +199,10 @@ export default registerAs('scraper', (): ScraperConfig => {
     // Concurrency and cleanup settings
     globalMaxConcurrency: parseInt(process.env.MAX_CONCURRENCY ?? '3', 10),
     browserMaxConcurrency: parseInt(process.env.MAX_BROWSER_CONCURRENCY ?? '1', 10),
+
+    // Queue limits
+    globalMaxQueue: parseInt(process.env.MAX_QUEUE ?? '100', 10),
+    browserMaxQueue: parseInt(process.env.MAX_BROWSER_QUEUE ?? '50', 10),
   })
 
   // Validate configuration and throw error if invalid

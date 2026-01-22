@@ -14,6 +14,18 @@ import { FingerprintConfigDto } from '../dto/scraper-request.dto.js'
 export class FingerprintService {
   private generator: FingerprintGenerator
 
+  private buildEmptyFingerprint(): BrowserFingerprintWithHeaders {
+    return {
+      fingerprint: {
+        navigator: {
+          userAgent: '',
+          language: '',
+        },
+      } as any,
+      headers: {},
+    }
+  }
+
   constructor(
     private readonly configService: ConfigService,
     private readonly logger: PinoLogger
@@ -36,30 +48,8 @@ export class FingerprintService {
     const fingerprintConfig = config || {}
     const generate = fingerprintConfig.generate ?? scraperConfig.fingerprintGenerate
 
-    // Return default/empty fingerprint if generation is disabled
-    // We still return a valid structure but maybe with minimal info if needed,
-    // but for now let's just generate one if enabled, or throw/return null?
-    // The previous implementation returned an empty object cast as BrowserFingerprint.
-    // Here we'll just generate a default one if 'generate' is true, otherwise we might need to handle it.
-    // But wait, if generate is false, the caller expects an empty object?
-    // The caller checks `if (fp.userAgent)` etc.
-
     if (!generate) {
-      // Return a minimal object that satisfies the type but effectively does nothing
-      // or just generate a default one but don't use it?
-      // The previous code returned {} as BrowserFingerprint.
-      // We can't easily return {} as BrowserFingerprintWithHeaders.
-      // Let's generate a default one, and the caller decides whether to use it based on the flag?
-      // No, the flag is checked here.
-      // If generate is false, we should probably return null or undefined, but the signature says BrowserFingerprintWithHeaders.
-      // Let's look at how it's used.
-      // In ScraperService: const fp = this.fingerprintService.generateFingerprint(request.fingerprint)
-      // if (fp.userAgent) ...
-      // So if we return a dummy object with no userAgent, it works.
-      return {
-        fingerprint: {} as any,
-        headers: {} as any,
-      }
+      return this.buildEmptyFingerprint()
     }
 
     const generatorOptions: any = {
@@ -107,7 +97,7 @@ export class FingerprintService {
         fingerprint.headers['Accept-Language'] = fingerprintConfig.locale
       }
 
-      this.logger.info(`Generated fingerprint: ${fingerprint.fingerprint.navigator.userAgent}`)
+      this.logger.debug(`Generated fingerprint: ${fingerprint.fingerprint.navigator.userAgent}`)
 
       // Handle timezone (no 'auto' support since library doesn't generate it)
       const timezone = fingerprintConfig.timezoneId || scraperConfig.defaultTimezoneId
@@ -119,7 +109,7 @@ export class FingerprintService {
     } catch (error) {
       this.logger.error('Failed to generate fingerprint', error)
       // Fallback to a safe default
-      return this.generator.getFingerprint()
+      return this.generator.getFingerprint() as any
     }
   }
 
