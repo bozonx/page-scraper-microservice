@@ -131,6 +131,13 @@ export class ScraperConfig {
   public globalMaxConcurrency!: number
 
   /**
+   * Maximum number of Playwright browser tasks running concurrently across the entire service (>=1)
+   */
+  @IsInt()
+  @Min(1)
+  public browserMaxConcurrency!: number
+
+  /**
    * Time in minutes to retain page data in memory before cleanup (1-44640)
    */
   @IsInt()
@@ -191,6 +198,7 @@ export default registerAs('scraper', (): ScraperConfig => {
 
     // Concurrency and cleanup settings
     globalMaxConcurrency: parseInt(process.env.MAX_CONCURRENCY ?? '3', 10),
+    browserMaxConcurrency: parseInt(process.env.MAX_BROWSER_CONCURRENCY ?? '1', 10),
     dataLifetimeMins: parseInt(process.env.DATA_LIFETIME_MINS ?? '60', 10),
     cleanupIntervalMins: parseInt(process.env.CLEANUP_INTERVAL_MINS ?? '10', 10),
   })

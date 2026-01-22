@@ -137,7 +137,7 @@ export class FileService {
     const mode = requestDto.mode ?? 'auto'
 
     if (mode === 'playwright') {
-      return await this.concurrencyService.run(
+      return await this.concurrencyService.runBrowser(
         async () => this.playwrightDownload(requestDto, signal),
         signal
       )
@@ -155,7 +155,10 @@ export class FileService {
       if (res.statusCode === 403 || res.statusCode === 429) {
         this.logger.warn(`Anti-bot suspected for ${requestDto.url}, falling back to Playwright`)
         try {
-          return await this.playwrightDownload(requestDto, signal)
+          return await this.concurrencyService.runBrowser(
+            async () => this.playwrightDownload(requestDto, signal),
+            signal
+          )
         } catch (err) {
           return res
         }

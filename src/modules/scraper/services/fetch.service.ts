@@ -186,7 +186,7 @@ export class FetchService {
     }
 
     if (requestDto.engine === 'playwright') {
-      return await this.concurrencyService.run(async () => {
+      return await this.concurrencyService.runBrowser(async () => {
         const timeoutSecs = requestDto.timeoutSecs ?? 60
         const debug = requestDto.debug === true
         const totalTimeoutMs = timeoutSecs * 1000

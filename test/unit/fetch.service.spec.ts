@@ -19,6 +19,7 @@ describe('FetchService (unit)', () => {
 
     const concurrencyService = {
       run: jest.fn(async (fn: () => Promise<any>) => await fn()),
+      runBrowser: jest.fn(async (fn: () => Promise<any>) => await fn()),
     } as any
 
     const browserService = {

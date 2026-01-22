@@ -61,6 +61,7 @@ describe('FileService (unit)', () => {
 
     const concurrencyService = {
       run: jest.fn(async (fn: () => Promise<any>) => await fn()),
+      runBrowser: jest.fn(async (fn: () => Promise<any>) => await fn()),
     } as any
 
     const browserService = {
@@ -144,6 +145,7 @@ describe('FileService (unit)', () => {
 
     const concurrencyService = {
       run: jest.fn(async (fn: () => Promise<any>) => await fn()),
+      runBrowser: jest.fn(async (fn: () => Promise<any>) => await fn()),
     } as any
 
     const browserService = {

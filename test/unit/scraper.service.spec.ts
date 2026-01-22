@@ -77,6 +77,7 @@ describe('ScraperService (unit)', () => {
     fingerprintRotateOnAntiBot: true,
 
     globalMaxConcurrency: 3,
+    browserMaxConcurrency: 1,
     dataLifetimeMins: 60,
     cleanupIntervalMins: 10,
   } as ScraperConfig
@@ -96,6 +97,7 @@ describe('ScraperService (unit)', () => {
           provide: ConcurrencyService,
           useValue: {
             run: <T>(fn: () => Promise<T>) => fn(),
+            runBrowser: <T>(fn: () => Promise<T>) => fn(),
           },
         },
         { provide: BrowserService, useValue: browserService },

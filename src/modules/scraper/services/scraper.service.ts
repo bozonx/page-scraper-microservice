@@ -50,10 +50,15 @@ export class ScraperService {
    * @returns Extracted page content
    */
   async scrapePage(request: ScraperRequestDto, signal?: AbortSignal): Promise<ScraperResponseDto> {
-    return this.concurrencyService.run(async () => {
-      const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
-      const mode = request.mode || scraperConfig.defaultMode
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper')!
+    const mode = request.mode || scraperConfig.defaultMode
 
+    const run =
+      mode === 'playwright'
+        ? this.concurrencyService.runBrowser.bind(this.concurrencyService)
+        : this.concurrencyService.run.bind(this.concurrencyService)
+
+    return run(async () => {
       this.logger.info(`Scraping page: ${request.url} using mode: ${mode}`)
 
       try {

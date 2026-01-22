@@ -6,7 +6,8 @@ import type { ScraperConfig } from '../../../config/scraper.config.js'
 
 @Injectable()
 export class ConcurrencyService implements OnApplicationShutdown {
-  private readonly limit: LimitFunction
+  private readonly globalLimit: LimitFunction
+  private readonly browserLimit: LimitFunction
 
   constructor(
     private readonly configService: ConfigService,
@@ -14,16 +15,21 @@ export class ConcurrencyService implements OnApplicationShutdown {
   ) {
     this.logger.setContext(ConcurrencyService.name)
     const scraperConfig = this.configService.get<ScraperConfig>('scraper')
-    const configuredMax = scraperConfig?.globalMaxConcurrency ?? 3
-    const max = Math.max(1, configuredMax)
-    this.limit = pLimit(max)
+
+    const configuredGlobalMax = scraperConfig?.globalMaxConcurrency ?? 3
+    const globalMax = Math.max(1, configuredGlobalMax)
+    this.globalLimit = pLimit(globalMax)
+
+    const configuredBrowserMax = scraperConfig?.browserMaxConcurrency ?? 1
+    const browserMax = Math.max(1, configuredBrowserMax)
+    this.browserLimit = pLimit(browserMax)
   }
 
   run<T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
     if (signal?.aborted) {
       return Promise.reject(new Error('Request aborted'))
     }
-    return this.limit(async () => {
+    return this.globalLimit(async () => {
       if (signal?.aborted) {
         throw new Error('Request aborted')
       }
@@ -31,8 +37,13 @@ export class ConcurrencyService implements OnApplicationShutdown {
     })
   }
 
+  runBrowser<T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    return this.run(() => this.browserLimit(fn), signal)
+  }
+
   async onApplicationShutdown(_signal?: string): Promise<void> {
     this.logger.info('Clearing pending tasks queue...')
-    this.limit.clearQueue()
+    this.globalLimit.clearQueue()
+    this.browserLimit.clearQueue()
   }
 }

@@ -381,8 +381,9 @@ curl -X POST http://localhost:8080/api/v1/file \
 ## Operational Details
 
 ### Concurrency Management
-- **Global Limiter:** Uses an in-memory concurrency limiter (`MAX_CONCURRENCY`). All scraping requests share this limit to prevent resource exhaustion.
-- **Queue System:** When the limit is reached, new tasks wait in a queue until a slot becomes available.
+- **Global Limiter:** Uses an in-memory concurrency limiter (`MAX_CONCURRENCY`). All requests share this limit to prevent resource exhaustion.
+- **Browser Limiter:** Playwright-based tasks additionally use a dedicated limiter (`MAX_BROWSER_CONCURRENCY`) to control memory usage (browser contexts/pages are memory-heavy).
+- **Queue System:** When a limit is reached, new tasks wait in a queue until a slot becomes available.
 
 ### Data Lifecycle
 - **In-Memory Storage:** Page data is stored in memory for quick access.
