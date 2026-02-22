@@ -28,24 +28,45 @@ export class AuthGuard implements CanActivate {
 
     const appConfig = this.configService.get<AppConfig>('app')!
     const allowedTokens = appConfig.authBearerTokens
+    const basicUser = appConfig.authBasicUser
+    const basicPass = appConfig.authBasicPass
 
-    // If no tokens are configured, authentication is disabled
-    if (!allowedTokens || allowedTokens.length === 0) {
+    const hasBearerConfig = allowedTokens && allowedTokens.length > 0
+    const hasBasicConfig = !!(basicUser && basicPass)
+
+    // If no authentication methods are configured, allow access
+    if (!hasBearerConfig && !hasBasicConfig) {
       return true
     }
 
     const request = context.switchToHttp().getRequest()
-    const token = this.extractTokenFromHeader(request)
+    const { authorization } = request.headers
 
-    if (!token) {
-      throw new UnauthorizedException('Missing bearer token')
+    if (!authorization) {
+      throw new UnauthorizedException('Missing authentication')
     }
 
-    if (!allowedTokens.includes(token)) {
+    // Try Bearer Auth
+    if (hasBearerConfig && authorization.startsWith('Bearer ')) {
+      const token = authorization.substring(7)
+      if (allowedTokens.includes(token)) {
+        return true
+      }
       throw new UnauthorizedException('Invalid bearer token')
     }
 
-    return true
+    // Try Basic Auth
+    if (hasBasicConfig && authorization.startsWith('Basic ')) {
+      const credentials = Buffer.from(authorization.substring(6), 'base64')
+        .toString()
+        .split(':')
+      if (credentials[0] === basicUser && credentials[1] === basicPass) {
+        return true
+      }
+      throw new UnauthorizedException('Invalid basic credentials')
+    }
+
+    throw new UnauthorizedException('Unsupported or invalid authentication method')
   }
 
   private extractTokenFromHeader(request: any): string | undefined {

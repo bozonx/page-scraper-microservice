@@ -62,10 +62,40 @@ async function bootstrap() {
 
   // Register static file serving for test UI
   // Served under /{BASE_PATH}/ui
-  await app.register(fastifyStatic, {
-    root: join(__dirname, '..', '..', 'public'),
-    prefix: `${buildPath(appConfig.basePath, 'ui')}/`,
-  })
+  if (appConfig.enableUi) {
+    const uiPath = buildPath(appConfig.basePath, 'ui')
+    const uiPrefix = `${uiPath}/`
+
+    // Enable Basic Auth for UI if configured
+    if (appConfig.authBasicUser && appConfig.authBasicPass) {
+      app.getHttpAdapter().getInstance().addHook('preHandler', (request, reply, done) => {
+        if (!request.url.startsWith(uiPrefix)) {
+          return done()
+        }
+
+        const authHeader = request.headers.authorization
+        if (!authHeader || !authHeader.startsWith('Basic ')) {
+          reply.header('WWW-Authenticate', 'Basic realm="Test UI"')
+          reply.code(401).send({ message: 'Basic authentication required for UI' })
+          return
+        }
+
+        const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
+        if (credentials[0] !== appConfig.authBasicUser || credentials[1] !== appConfig.authBasicPass) {
+          reply.header('WWW-Authenticate', 'Basic realm="Test UI"')
+          reply.code(401).send({ message: 'Invalid Basic authentication' })
+          return
+        }
+
+        done()
+      })
+    }
+
+    await app.register(fastifyStatic, {
+      root: join(__dirname, '..', '..', 'public'),
+      prefix: uiPrefix,
+    })
+  }
 
   // Enable graceful shutdown hooks: Disabled in favor of custom handling
   // app.enableShutdownHooks()
@@ -122,13 +152,15 @@ async function bootstrap() {
     `NestJS service is running on: http://${appConfig.host}:${appConfig.port}${buildPath(globalPrefix)}`,
     'Bootstrap'
   )
-  logger.log(
-    `Test UI available at: http://${appConfig.host}:${appConfig.port}${buildPath(
-      appConfig.basePath,
-      'ui'
-    )}/`,
-    'Bootstrap'
-  )
+  if (appConfig.enableUi) {
+    logger.log(
+      `Test UI available at: http://${appConfig.host}:${appConfig.port}${buildPath(
+        appConfig.basePath,
+        'ui'
+      )}/`,
+      'Bootstrap'
+    )
+  }
   logger.log(`📊 Environment: ${appConfig.nodeEnv}`, 'Bootstrap')
   logger.log(`📝 Log level: ${appConfig.logLevel}`, 'Bootstrap')
   logger.log(`⏱️  Graceful Shutdown Timeout: ${APP_CLOSE_TIMEOUT_MS}ms`, 'Bootstrap')

@@ -4,11 +4,19 @@ import { createTestApp } from '../helpers/test-app.factory.js'
 describe('Authentication (e2e)', () => {
   let app: NestFastifyApplication
 
-  const setupApp = async (tokens?: string) => {
-    if (tokens !== undefined) {
-      process.env.AUTH_BEARER_TOKENS = tokens
+  const setupApp = async (bearerTokens?: string, basicUser?: string, basicPass?: string) => {
+    if (bearerTokens !== undefined) {
+      process.env.AUTH_BEARER_TOKENS = bearerTokens
     } else {
       delete process.env.AUTH_BEARER_TOKENS
+    }
+
+    if (basicUser !== undefined) {
+      process.env.AUTH_BASIC_USER = basicUser
+      process.env.AUTH_BASIC_PASS = basicPass
+    } else {
+      delete process.env.AUTH_BASIC_USER
+      delete process.env.AUTH_BASIC_PASS
     }
     app = await createTestApp()
   }
@@ -18,6 +26,8 @@ describe('Authentication (e2e)', () => {
       await app.close()
     }
     delete process.env.AUTH_BEARER_TOKENS
+    delete process.env.AUTH_BASIC_USER
+    delete process.env.AUTH_BASIC_PASS
   })
 
   describe('When AUTH_BEARER_TOKENS is NOT set', () => {
@@ -56,7 +66,7 @@ describe('Authentication (e2e)', () => {
       })
       expect(response.statusCode).toBe(401)
       const body = JSON.parse(response.body)
-      expect(body.message).toBe('Missing bearer token')
+      expect(body.message).toBe('Missing authentication')
     })
 
     it('blocks access with invalid token (401)', async () => {
@@ -92,6 +102,69 @@ describe('Authentication (e2e)', () => {
         url: '/api/v1/fetch',
         headers: {
           authorization: 'Bearer test-token-2',
+        },
+        payload: { url: 'http://example.com' },
+      })
+      expect(response.statusCode).not.toBe(401)
+    })
+  })
+
+  describe('When AUTH_BASIC_USER/PASS is set', () => {
+    beforeEach(async () => {
+      await setupApp(undefined, 'admin', 'password')
+    })
+
+    it('allows access with valid basic credentials', async () => {
+      const auth = Buffer.from('admin:password').toString('base64')
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/fetch',
+        headers: {
+          authorization: `Basic ${auth}`,
+        },
+        payload: { url: 'http://example.com' },
+      })
+      expect(response.statusCode).not.toBe(401)
+    })
+
+    it('blocks access with invalid basic credentials', async () => {
+      const auth = Buffer.from('admin:wrong').toString('base64')
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/fetch',
+        headers: {
+          authorization: `Basic ${auth}`,
+        },
+        payload: { url: 'http://example.com' },
+      })
+      expect(response.statusCode).toBe(401)
+    })
+  })
+
+  describe('When both Bearer and Basic auth are set', () => {
+    beforeEach(async () => {
+      await setupApp('test-token', 'admin', 'password')
+    })
+
+    it('allows access with valid bearer token', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/fetch',
+        headers: {
+          authorization: 'Bearer test-token',
+        },
+        payload: { url: 'http://example.com' },
+      })
+      expect(response.statusCode).not.toBe(401)
+    })
+
+    it('allows access with valid basic credentials', async () => {
+      const auth = Buffer.from('admin:password').toString('base64')
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/fetch',
+        headers: {
+          authorization: `Basic ${auth}`,
         },
         payload: { url: 'http://example.com' },
       })

@@ -1,5 +1,5 @@
 import { registerAs } from '@nestjs/config';
-import { IsInt, IsString, IsIn, Min, Max, validateSync } from 'class-validator';
+import { IsInt, IsString, IsIn, Min, Max, validateSync, IsBoolean, IsOptional } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 
 /**
@@ -7,6 +7,26 @@ import { plainToClass } from 'class-transformer';
  * Defines the basic runtime parameters for the application
  */
 export class AppConfig {
+  /**
+   * Whether to enable the test UI
+   */
+  @IsBoolean()
+  public enableUi!: boolean;
+
+  /**
+   * Basic authentication username
+   */
+  @IsString()
+  @IsOptional()
+  public authBasicUser?: string;
+
+  /**
+   * Basic authentication password
+   */
+  @IsString()
+  @IsOptional()
+  public authBasicPass?: string;
+
   /**
    * Server port number (1-65535)
    */
@@ -60,6 +80,9 @@ export default registerAs('app', (): AppConfig => {
     basePath: (process.env.BASE_PATH ?? '').replace(/^\/+|\/+$/g, ''),
     nodeEnv: process.env.NODE_ENV ?? 'production',
     logLevel: process.env.LOG_LEVEL ?? 'warn',
+    enableUi: process.env.ENABLE_UI === 'true',
+    authBasicUser: process.env.AUTH_BASIC_USER,
+    authBasicPass: process.env.AUTH_BASIC_PASS,
     authBearerTokens: (process.env.AUTH_BEARER_TOKENS ?? '')
       .split(',')
       .map((t) => t.trim())
