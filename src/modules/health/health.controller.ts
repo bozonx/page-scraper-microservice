@@ -1,6 +1,7 @@
 import { Controller, Get, Res, HttpStatus } from '@nestjs/common'
 import type { FastifyReply } from 'fastify'
 import { ShutdownService } from '../../common/services/shutdown.service.js'
+import { Public } from '../../common/decorators/public.decorator.js'
 
 /**
  * Health check response interface
@@ -25,6 +26,7 @@ export class HealthController {
    * Basic health check endpoint returning a simple OK status
    * @returns Health response indicating service is operational
    */
+  @Public()
   @Get()
   public check(@Res() res: FastifyReply) {
     if (this.shutdownService.isShuttingDown()) {

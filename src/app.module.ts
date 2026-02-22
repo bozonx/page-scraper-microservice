@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule, ConfigService } from '@nestjs/config'
-import { APP_FILTER } from '@nestjs/core'
+import { APP_FILTER, APP_GUARD } from '@nestjs/core'
 import { LoggerModule } from 'nestjs-pino'
+import { AuthGuard } from './common/guards/auth.guard.js'
 import { HealthModule } from './modules/health/health.module.js'
 import { ScraperModule } from './modules/scraper/scraper.module.js'
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js'
@@ -115,6 +116,10 @@ import pkg from '../package.json' with { type: 'json' }
     {
       provide: APP_FILTER,
       useClass: AllExceptionsFilter,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
     },
   ],
 })

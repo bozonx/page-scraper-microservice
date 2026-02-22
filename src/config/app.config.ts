@@ -41,6 +41,12 @@ export class AppConfig {
    */
   @IsIn(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'])
   public logLevel!: string;
+
+  /**
+   * List of allowed Bearer tokens for authentication
+   */
+  @IsString({ each: true })
+  public authBearerTokens!: string[];
 }
 
 /**
@@ -54,6 +60,10 @@ export default registerAs('app', (): AppConfig => {
     basePath: (process.env.BASE_PATH ?? '').replace(/^\/+|\/+$/g, ''),
     nodeEnv: process.env.NODE_ENV ?? 'production',
     logLevel: process.env.LOG_LEVEL ?? 'warn',
+    authBearerTokens: (process.env.AUTH_BEARER_TOKENS ?? '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean),
   });
 
   // Validate configuration and throw error if invalid

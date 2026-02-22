@@ -122,6 +122,12 @@ Configure the service using environment variables.
 | `LOG_LEVEL` | Logging level (`trace`, `debug`, `info`, `warn`, `error`, `fatal`, `silent`) | `warn` |
 | `TZ` | Application timezone (affects logs and date handling) | `UTC` |
 
+### Security & Authentication
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `AUTH_BEARER_TOKENS` | Comma-separated list of allowed Bearer tokens. If empty, authentication is disabled. | `(empty)` |
+
 ### Concurrency & Performance
 
 | Variable | Description | Default |
@@ -195,7 +201,17 @@ When using the `fingerprint` parameter in API requests, you can specify the foll
  
  If `BASE_PATH` is set, all routes (including the API and the Test UI) are prefixed with it. Example: `BASE_PATH=app` => API base URL is `http://localhost:8080/app/api/v1`.
 
-### 1. Scrape a Page (`POST /page`)
+### 1. Authentication
+
+If `AUTH_BEARER_TOKENS` is configured, all API requests must include a valid token in the `Authorization` header:
+
+```http
+Authorization: Bearer your-secret-token
+```
+
+The health check endpoint (`/health`) is public and does not require authentication.
+
+### 2. Scrape a Page (`POST /page`)
 
 Extracts structured data (title, content, metadata) from a single URL.
 
