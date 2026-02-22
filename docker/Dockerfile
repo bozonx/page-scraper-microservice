@@ -1,4 +1,4 @@
-ARG NODE_MAJOR=22
+ARG NODE_MAJOR=24
 FROM node:${NODE_MAJOR}-bookworm-slim
 
 WORKDIR /app
