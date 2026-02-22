@@ -42,31 +42,39 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest()
     const { authorization } = request.headers
 
+    const createUnauthorized = (message: string) => {
+      if (hasBasicConfig) {
+        const response = context.switchToHttp().getResponse()
+        response.header('WWW-Authenticate', 'Basic realm="Test UI"')
+      }
+      return new UnauthorizedException(message)
+    }
+
     if (!authorization) {
-      throw new UnauthorizedException('Missing authentication')
+      throw createUnauthorized('Missing authentication')
     }
 
     // Try Bearer Auth
-    if (hasBearerConfig && authorization.startsWith('Bearer ')) {
-      const token = authorization.substring(7)
+    if (hasBearerConfig && authorization!.startsWith('Bearer ')) {
+      const token = authorization!.substring(7)
       if (allowedTokens.includes(token)) {
         return true
       }
-      throw new UnauthorizedException('Invalid bearer token')
+      throw createUnauthorized('Invalid bearer token')
     }
 
     // Try Basic Auth
-    if (hasBasicConfig && authorization.startsWith('Basic ')) {
-      const credentials = Buffer.from(authorization.substring(6), 'base64')
+    if (hasBasicConfig && authorization!.startsWith('Basic ')) {
+      const credentials = Buffer.from(authorization!.substring(6), 'base64')
         .toString()
         .split(':')
       if (credentials[0] === basicUser && credentials[1] === basicPass) {
         return true
       }
-      throw new UnauthorizedException('Invalid basic credentials')
+      throw createUnauthorized('Invalid basic credentials')
     }
 
-    throw new UnauthorizedException('Unsupported or invalid authentication method')
+    throw createUnauthorized('Unsupported or invalid authentication method')
   }
 
   private extractTokenFromHeader(request: any): string | undefined {
