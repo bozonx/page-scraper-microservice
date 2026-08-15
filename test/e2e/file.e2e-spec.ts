@@ -44,7 +44,7 @@ describe('File /file (e2e)', () => {
     expect(response.headers['content-type']).toContain('application/octet-stream')
     expect(response.rawPayload).toBeDefined()
     expect(Buffer.isBuffer(response.rawPayload)).toBe(true)
-    expect((response.rawPayload as Buffer).length).toBeGreaterThan(0)
+    expect(response.rawPayload.length).toBeGreaterThan(0)
   })
 })
 
@@ -89,6 +89,6 @@ describeIfPlaywright('File /file (e2e) mode=playwright', () => {
     expect(response.statusCode).toBe(200)
     expect(response.headers['x-mode-used']).toBe('playwright')
     expect(Buffer.isBuffer(response.rawPayload)).toBe(true)
-    expect((response.rawPayload as Buffer).length).toBeGreaterThan(0)
+    expect(response.rawPayload.length).toBeGreaterThan(0)
   }, 30000)
 })

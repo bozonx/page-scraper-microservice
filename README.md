@@ -58,7 +58,7 @@ src/
 
 2.  **Start development server:**
     ```bash
-    pnpm run start:dev
+    pnpm dev
     ```
     The API will be available at `http://localhost:8080/api/v1`.
 
@@ -70,7 +70,7 @@ src/
     ```
 2.  **Run:**
     ```bash
-    NODE_ENV=production pnpm run start:prod
+    NODE_ENV=production pnpm start
     ```
 
 ### Docker
@@ -191,7 +191,7 @@ When using the `fingerprint` parameter in API requests, you can specify the foll
 | `FETCH_MAX_REDIRECTS` | Maximum number of redirects for `/fetch` with `engine=http` | `7` |
 | `FETCH_MAX_RESPONSE_BYTES` | Maximum response size in bytes for `/fetch` with `engine=http` | `10485760` |
 
-*See `.env.production.example` and `.env.development.example` for complete configuration examples.*
+*See `.env.example` for the complete configuration reference.*
 
 ---
 

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "timezone": "UTC",
+  "schedule": ["before 6am on monday"],
+  "rangeStrategy": "bump",
+  "postUpdateOptions": ["pnpmDedupe"],
+  "vulnerabilityAlerts": { "enabled": true, "schedule": ["at any time"], "automerge": false },
+  "packageRules": [
+    { "matchDepTypes": ["devDependencies"], "matchUpdateTypes": ["patch", "minor"], "automerge": true },
+    { "matchUpdateTypes": ["major"], "automerge": false },
+    { "groupName": "nestjs", "matchPackageNames": ["@nestjs/**"] },
+    { "groupName": "fastify", "matchPackageNames": ["fastify", "@fastify/**"] },
+    { "groupName": "eslint", "matchPackageNames": ["eslint", "@eslint/**", "@typescript-eslint/**", "eslint-**"] },
+    { "groupName": "types", "matchPackageNames": ["@types/**"] }
+  ]
+}

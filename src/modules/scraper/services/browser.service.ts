@@ -115,10 +115,10 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
     this.activePages++
 
     // Setup abort handler
-    const onAbort = async () => {
+    const onAbort = () => {
       if (page) {
         this.logger.warn('Request aborted, closing page...')
-        await page.close().catch(() => {})
+        void page.close().catch(() => {})
       }
     }
 
@@ -144,7 +144,7 @@ export class BrowserService implements OnModuleInit, OnModuleDestroy {
       context.setDefaultTimeout(navigationTimeoutMs)
 
       // Inject fingerprint if provided
-      if (fingerprint && fingerprint.fingerprint) {
+      if (fingerprint?.fingerprint) {
         try {
           await this.fingerprintInjector.attachFingerprintToPlaywright(context, fingerprint)
         } catch (error) {

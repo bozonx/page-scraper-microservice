@@ -14,7 +14,7 @@ import { jest } from '@jest/globals'
 import nock from 'nock'
 let originalFetch: any
 
-  // Make jest available globally for ESM tests and helpers
+// Make jest available globally for ESM tests and helpers
 ;(globalThis as any).jest = jest
 
 // Lightweight mocks for heavy/IO-bound modules to ensure unit tests never hit real network/engines

@@ -36,9 +36,7 @@ export class ScraperService {
     if (!this.trackerBlockerPromise) {
       this.trackerBlockerPromise = (async () => {
         const mod = await import('@ghostery/adblocker-playwright')
-        return mod.PlaywrightBlocker.fromPrebuiltAdsAndTracking(
-          globalThis.fetch as unknown as typeof fetch
-        )
+        return mod.PlaywrightBlocker.fromPrebuiltAdsAndTracking(globalThis.fetch)
       })()
     }
     return this.trackerBlockerPromise
@@ -90,14 +88,14 @@ export class ScraperService {
           url: request.url,
           title: content?.title,
           description: content?.description,
-          date: (content as any)?.published ?? (content as any)?.publishedTime,
+          date: content?.published ?? content?.publishedTime,
           author: content?.author,
-          image: (content as any)?.image,
-          favicon: (content as any)?.favicon,
-          type: (content as any)?.type,
-          source: (content as any)?.source,
-          links: (content as any)?.links,
-          ttr: (content as any)?.ttr,
+          image: content?.image,
+          favicon: content?.favicon,
+          type: content?.type,
+          source: content?.source,
+          links: content?.links,
+          ttr: content?.ttr,
           body,
           meta: {
             lang: content?.lang,

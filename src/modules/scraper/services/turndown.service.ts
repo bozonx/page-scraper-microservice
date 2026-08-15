@@ -12,14 +12,14 @@ export class TurndownConverterService {
 
   constructor(private readonly logger: PinoLogger) {
     this.logger.setContext(TurndownConverterService.name)
-    
+
     // Initialize TurndownService with standardized configuration
     this.turndownService = new TurndownService({
-      headingStyle: 'atx',           // Use ATX-style headings (# ## ###)
-      bulletListMarker: '-',          // Use hyphens for bullet points
-      codeBlockStyle: 'fenced',       // Use fenced code blocks (``` ```)
-      emDelimiter: '*',              // Use asterisks for emphasis
-      strongDelimiter: '**',         // Use double asterisks for strong emphasis
+      headingStyle: 'atx', // Use ATX-style headings (# ## ###)
+      bulletListMarker: '-', // Use hyphens for bullet points
+      codeBlockStyle: 'fenced', // Use fenced code blocks (``` ```)
+      emDelimiter: '*', // Use asterisks for emphasis
+      strongDelimiter: '**', // Use double asterisks for strong emphasis
     })
   }
 

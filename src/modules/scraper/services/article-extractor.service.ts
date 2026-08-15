@@ -47,7 +47,11 @@ export class ArticleExtractorService implements IArticleExtractor {
    * @param options Optional extraction options
    * @returns Promise with extracted article data
    */
-  async extractFromHtml(html: string, url?: string | null, options?: IArticleExtractorOptions): Promise<any> {
+  async extractFromHtml(
+    html: string,
+    url?: string | null,
+    options?: IArticleExtractorOptions
+  ): Promise<any> {
     try {
       this.logger.debug('Extracting article from HTML content')
       const mod = await this.getModule()

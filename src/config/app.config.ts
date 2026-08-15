@@ -1,6 +1,15 @@
-import { registerAs } from '@nestjs/config';
-import { IsInt, IsString, IsIn, Min, Max, validateSync, IsBoolean, IsOptional } from 'class-validator';
-import { plainToClass } from 'class-transformer';
+import { registerAs } from '@nestjs/config'
+import {
+  IsInt,
+  IsString,
+  IsIn,
+  Min,
+  Max,
+  validateSync,
+  IsBoolean,
+  IsOptional,
+} from 'class-validator'
+import { plainToClass } from 'class-transformer'
 
 /**
  * Application configuration settings
@@ -11,21 +20,21 @@ export class AppConfig {
    * Whether to enable the test UI
    */
   @IsBoolean()
-  public enableUi!: boolean;
+  public enableUi!: boolean
 
   /**
    * Basic authentication username
    */
   @IsString()
   @IsOptional()
-  public authBasicUser?: string;
+  public authBasicUser?: string
 
   /**
    * Basic authentication password
    */
   @IsString()
   @IsOptional()
-  public authBasicPass?: string;
+  public authBasicPass?: string
 
   /**
    * Server port number (1-65535)
@@ -33,13 +42,13 @@ export class AppConfig {
   @IsInt()
   @Min(1)
   @Max(65535)
-  public port!: number;
+  public port!: number
 
   /**
    * Host address to bind the server to
    */
   @IsString()
-  public host!: string;
+  public host!: string
 
   /**
    * Base path for the application (optional)
@@ -47,26 +56,30 @@ export class AppConfig {
    * API routes will be at {basePath}/api/v1/...
    */
   @IsString()
-  public basePath!: string;
+  public basePath!: string
 
   /**
    * Node.js environment mode
    */
   @IsIn(['development', 'production', 'test'])
-  public nodeEnv!: string;
+  public nodeEnv!: string
 
   /**
    * Logging level for Pino logger
    * Allow only Pino log levels: trace, debug, info, warn, error, fatal, silent
    */
   @IsIn(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'])
-  public logLevel!: string;
+  public logLevel!: string
 
   /**
    * List of allowed Bearer tokens for authentication
    */
   @IsString({ each: true })
-  public authBearerTokens!: string[];
+  public authBearerTokens!: string[]
+
+  @IsInt()
+  @Min(0)
+  public shutdownDrainSeconds!: number
 }
 
 /**
@@ -87,17 +100,18 @@ export default registerAs('app', (): AppConfig => {
       .split(',')
       .map((t) => t.trim())
       .filter(Boolean),
-  });
+    shutdownDrainSeconds: parseInt(process.env.SHUTDOWN_DRAIN_SECONDS ?? '5', 10),
+  })
 
   // Validate configuration and throw error if invalid
   const errors = validateSync(config, {
     skipMissingProperties: false,
-  });
+  })
 
   if (errors.length > 0) {
-    const errorMessages = errors.map(err => Object.values(err.constraints ?? {}).join(', '));
-    throw new Error(`App config validation error: ${errorMessages.join('; ')}`);
+    const errorMessages = errors.map((err) => Object.values(err.constraints ?? {}).join(', '))
+    throw new Error(`App config validation error: ${errorMessages.join('; ')}`)
   }
 
-  return config;
-});
+  return config
+})

@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common'
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Reflector } from '@nestjs/core'
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator.js'
@@ -65,9 +60,7 @@ export class AuthGuard implements CanActivate {
 
     // Try Basic Auth
     if (hasBasicConfig && authorization!.startsWith('Basic ')) {
-      const credentials = Buffer.from(authorization!.substring(6), 'base64')
-        .toString()
-        .split(':')
+      const credentials = Buffer.from(authorization!.substring(6), 'base64').toString().split(':')
       if (credentials[0] === basicUser && credentials[1] === basicPass) {
         return true
       }

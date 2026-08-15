@@ -1,4 +1,4 @@
-import { jest } from '@jest/globals';
+import { jest } from '@jest/globals'
 /**
  * E2E tests global setup
  *
@@ -13,4 +13,4 @@ import { jest } from '@jest/globals';
 
 // Set global timeout for all e2e tests to 30 seconds
 // This prevents individual tests from needing to specify timeout manually
-jest.setTimeout(30000);
+jest.setTimeout(30000)

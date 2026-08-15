@@ -1,5 +1,5 @@
-import { Injectable, CanActivate, ServiceUnavailableException } from '@nestjs/common';
-import { ShutdownService } from '../services/shutdown.service.js';
+import { Injectable, CanActivate, ServiceUnavailableException } from '@nestjs/common'
+import { ShutdownService } from '../services/shutdown.service.js'
 
 /**
  * Guard that blocks incoming requests during graceful shutdown
@@ -7,12 +7,12 @@ import { ShutdownService } from '../services/shutdown.service.js';
  */
 @Injectable()
 export class ShutdownGuard implements CanActivate {
-    constructor(private readonly shutdownService: ShutdownService) { }
+  constructor(private readonly shutdownService: ShutdownService) {}
 
-    canActivate(): boolean {
-        if (this.shutdownService.isShuttingDown()) {
-            throw new ServiceUnavailableException('Service is shutting down');
-        }
-        return true;
+  canActivate(): boolean {
+    if (this.shutdownService.isShuttingDown()) {
+      throw new ServiceUnavailableException('Service is shutting down')
     }
+    return true
+  }
 }

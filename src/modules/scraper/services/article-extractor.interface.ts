@@ -22,5 +22,9 @@ export interface IArticleExtractor {
    * @param options Optional extraction options
    * @returns Promise with extracted article data
    */
-  extractFromHtml(html: string, url?: string | null, options?: IArticleExtractorOptions): Promise<any>
+  extractFromHtml(
+    html: string,
+    url?: string | null,
+    options?: IArticleExtractorOptions
+  ): Promise<any>
 }

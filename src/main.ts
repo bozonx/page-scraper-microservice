@@ -1,4 +1,5 @@
 import 'reflect-metadata'
+import { setTimeout as sleep } from 'node:timers/promises'
 import { NestFactory } from '@nestjs/core'
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify'
 import { ValidationPipe } from '@nestjs/common'
@@ -11,6 +12,8 @@ import { AppModule } from './app.module.js'
 import type { AppConfig } from './config/app.config.js'
 import { ShutdownService } from './common/services/shutdown.service.js'
 import { APP_CLOSE_TIMEOUT_MS } from './common/app.constants.js'
+import { buildApiPrefix } from './common/http/api-prefix.js'
+import { SERVICE_NAME, SERVICE_VERSION } from './config/service-info.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = join(__filename, '..')
@@ -57,7 +60,7 @@ async function bootstrap() {
   )
 
   // Configure global API prefix from configuration
-  const globalPrefix = [appConfig.basePath, 'api/v1'].filter(Boolean).join('/')
+  const globalPrefix = buildApiPrefix(appConfig.basePath)
   app.setGlobalPrefix(globalPrefix)
 
   // Register static file serving for test UI
@@ -68,27 +71,33 @@ async function bootstrap() {
 
     // Enable Basic Auth for UI if configured
     if (appConfig.authBasicUser && appConfig.authBasicPass) {
-      app.getHttpAdapter().getInstance().addHook('preHandler', (request, reply, done) => {
-        if (!request.url.startsWith(uiPrefix)) {
-          return done()
-        }
+      app
+        .getHttpAdapter()
+        .getInstance()
+        .addHook('preHandler', (request, reply, done) => {
+          if (!request.url.startsWith(uiPrefix)) {
+            return done()
+          }
 
-        const authHeader = request.headers.authorization
-        if (!authHeader || !authHeader.startsWith('Basic ')) {
-          reply.header('WWW-Authenticate', 'Basic realm="Test UI"')
-          reply.code(401).send({ message: 'Basic authentication required for UI' })
-          return
-        }
+          const authHeader = request.headers.authorization
+          if (!authHeader?.startsWith('Basic ')) {
+            reply.header('WWW-Authenticate', 'Basic realm="Test UI"')
+            reply.code(401).send({ message: 'Basic authentication required for UI' })
+            return
+          }
 
-        const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
-        if (credentials[0] !== appConfig.authBasicUser || credentials[1] !== appConfig.authBasicPass) {
-          reply.header('WWW-Authenticate', 'Basic realm="Test UI"')
-          reply.code(401).send({ message: 'Invalid Basic authentication' })
-          return
-        }
+          const credentials = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
+          if (
+            credentials[0] !== appConfig.authBasicUser ||
+            credentials[1] !== appConfig.authBasicPass
+          ) {
+            reply.header('WWW-Authenticate', 'Basic realm="Test UI"')
+            reply.code(401).send({ message: 'Invalid Basic authentication' })
+            return
+          }
 
-        done()
-      })
+          done()
+        })
     }
 
     await app.register(fastifyStatic, {
@@ -126,6 +135,9 @@ async function bootstrap() {
     }, APP_CLOSE_TIMEOUT_MS)
 
     try {
+      if (appConfig.shutdownDrainSeconds > 0) {
+        await sleep(appConfig.shutdownDrainSeconds * 1000)
+      }
       // Give in-flight requests a short window to finish before closing the app.
       // New requests are blocked by ShutdownGuard.
       await waitForActiveRequests(Math.min(10_000, APP_CLOSE_TIMEOUT_MS))
@@ -141,15 +153,15 @@ async function bootstrap() {
     }
   }
 
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'))
+  process.on('SIGTERM', () => void gracefulShutdown('SIGTERM'))
+  process.on('SIGINT', () => void gracefulShutdown('SIGINT'))
 
   // Start the server
   await app.listen(appConfig.port, appConfig.host)
 
   // Log startup information
   logger.log(
-    `NestJS service is running on: http://${appConfig.host}:${appConfig.port}${buildPath(globalPrefix)}`,
+    `${SERVICE_NAME} ${SERVICE_VERSION} listening on http://${appConfig.host}:${appConfig.port}${buildPath(globalPrefix)}`,
     'Bootstrap'
   )
   if (appConfig.enableUi) {

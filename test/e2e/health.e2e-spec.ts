@@ -25,7 +25,12 @@ describe('Health (e2e)', () => {
 
       expect(response.statusCode).toBe(200)
       const body = JSON.parse(response.body)
-      expect(body).toEqual({ status: 'ok' })
+      expect(body).toEqual({
+        status: 'ok',
+        service: 'page-scraper-microservice',
+        version: 'dev',
+        uptimeSec: expect.any(Number),
+      })
     })
   })
 })

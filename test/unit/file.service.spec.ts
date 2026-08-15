@@ -9,9 +9,8 @@ describe('FileService (unit)', () => {
   })
 
   it('sanitizeUpstreamRequestHeaders rejects dangerous headers and enforces limits', async () => {
-    const { sanitizeUpstreamRequestHeaders } = await import(
-      '@/modules/scraper/services/file.service.js'
-    )
+    const { sanitizeUpstreamRequestHeaders } =
+      await import('@/modules/scraper/services/file.service.js')
 
     expect(() => sanitizeUpstreamRequestHeaders({ Authorization: 'x' } as any)).toThrow(
       'Forbidden header'
@@ -28,9 +27,8 @@ describe('FileService (unit)', () => {
   })
 
   it('sanitizeUpstreamResponseHeaders keeps content-encoding and removes set-cookie', async () => {
-    const { sanitizeUpstreamResponseHeaders } = await import(
-      '@/modules/scraper/services/file.service.js'
-    )
+    const { sanitizeUpstreamResponseHeaders } =
+      await import('@/modules/scraper/services/file.service.js')
 
     const out = sanitizeUpstreamResponseHeaders({
       'content-type': 'application/octet-stream',
@@ -212,7 +210,7 @@ describe('FileService (unit)', () => {
         timeoutSecs: 10,
       } as any)
     } catch (e) {
-      const resp = (e as any).getResponse?.() as any
+      const resp = (e as any).getResponse?.()
       expect(resp.error.code).toBe('FILE_RESPONSE_TOO_LARGE')
     }
   })

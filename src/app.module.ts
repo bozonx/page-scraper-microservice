@@ -10,7 +10,7 @@ import appConfig from './config/app.config.js'
 import scraperConfig from './config/scraper.config.js'
 import type { AppConfig } from './config/app.config.js'
 import { CommonModule } from './common/common.module.js'
-import pkg from '../package.json' with { type: 'json' }
+import { SERVICE_NAME } from './config/service-info.js'
 
 /**
  * Root module of the application
@@ -22,7 +22,7 @@ import pkg from '../package.json' with { type: 'json' }
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, scraperConfig],
-      envFilePath: [`.env.${process.env.NODE_ENV || 'development'}`, '.env'],
+      envFilePath: ['.env'],
       cache: true,
     }),
 
@@ -38,21 +38,21 @@ import pkg from '../package.json' with { type: 'json' }
             level: appConfig.logLevel,
             timestamp: () => `,"@timestamp":"${new Date().toISOString()}"`,
             base: {
-              service: (pkg as any).name ?? 'app',
+              service: SERVICE_NAME,
               environment: appConfig.nodeEnv,
             },
             // Pretty printing for development environment
             transport: isDev
               ? {
-                target: 'pino-pretty',
-                options: {
-                  colorize: true,
-                  singleLine: false,
-                  translateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss.l'Z'",
-                  ignore: 'pid,hostname',
-                  messageFormat: '[{context}] {msg}',
-                },
-              }
+                  target: 'pino-pretty',
+                  options: {
+                    colorize: true,
+                    singleLine: false,
+                    translateTime: "UTC:yyyy-mm-dd'T'HH:MM:ss.l'Z'",
+                    ignore: 'pid,hostname',
+                    messageFormat: '[{context}] {msg}',
+                  },
+                }
               : undefined,
             // Custom serializers for request/response/error formatting
             serializers: {
@@ -123,4 +123,4 @@ import pkg from '../package.json' with { type: 'json' }
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

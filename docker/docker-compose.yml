@@ -1,30 +1,44 @@
 services:
   microservice:
-    image: ghcr.io/bozonx/page-scraper-microservice:latest
+    image: ghcr.io/bozonx/page-scraper-microservice:${TAG:-latest}
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
     container_name: page-scraper-microservice
     hostname: page-scraper-microservice
     restart: unless-stopped
+    init: true
     stop_grace_period: 30s
+    shm_size: 1gb
     ports:
-      - '8080:8080'
+      - '${LISTEN_PORT:-8080}:8080'
+    env_file:
+      - ../.env
     environment:
-      - TZ=UTC
-      - LOG_LEVEL=warn
-      - MAX_CONCURRENCY=3
-      - DEFAULT_MODE=extractor
-      - DEFAULT_TASK_TIMEOUT_SECS=60
-      - DEFAULT_FINGERPRINT_USER_AGENT=auto
-      - DEFAULT_FINGERPRINT_LOCALE=en-US
-      - DEFAULT_FINGERPRINT_TIMEZONE_ID=UTC
-      - DEFAULT_FINGERPRINT_GENERATE=true
-      - DEFAULT_FINGERPRINT_ROTATE_ON_ANTI_BOT=true
-      - PLAYWRIGHT_HEADLESS=true
-      - PLAYWRIGHT_NAVIGATION_TIMEOUT_SECS=30
-      - DEFAULT_PLAYWRIGHT_BLOCK_TRACKERS=true
-      - DEFAULT_PLAYWRIGHT_BLOCK_HEAVY_RESOURCES=true
+      TZ: ${TZ:-UTC}
+      LOG_LEVEL: ${LOG_LEVEL:-warn}
+    tmpfs:
+      - /tmp:size=512m,mode=1777
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    deploy:
+      resources:
+        limits:
+          memory: 2G
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://127.0.0.1:8080/api/v1/health || exit 1']
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "const b=(process.env.BASE_PATH||'').replace(/^\\/+|\\/+$/g,'');const p='/'+(b?b+'/':'')+'api/v1/health';require('http').get('http://127.0.0.1:8080'+p,r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))",
+        ]
       interval: 30s
-      timeout: 3s
+      timeout: 5s
       retries: 3
-      start_period: 5s
+      start_period: 15s

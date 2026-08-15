@@ -2,16 +2,17 @@ import { Controller, Get, Res, HttpStatus } from '@nestjs/common'
 import type { FastifyReply } from 'fastify'
 import { ShutdownService } from '../../common/services/shutdown.service.js'
 import { Public } from '../../common/decorators/public.decorator.js'
+import { SERVICE_NAME, SERVICE_VERSION } from '../../config/service-info.js'
 
 /**
  * Health check response interface
  * Defines the structure of health check responses
  */
 export interface HealthResponse {
-  status: 'ok' | 'error' | 'shutting_down'
-  timestamp?: string
-  uptime?: number
-  activeRequests?: number
+  status: 'ok' | 'shutting_down'
+  service: string
+  version: string
+  uptimeSec: number
 }
 
 /**
@@ -20,7 +21,9 @@ export interface HealthResponse {
  */
 @Controller('health')
 export class HealthController {
-  constructor(private readonly shutdownService: ShutdownService) { }
+  private readonly startedAt = Date.now()
+
+  constructor(private readonly shutdownService: ShutdownService) {}
 
   /**
    * Basic health check endpoint returning a simple OK status
@@ -29,13 +32,13 @@ export class HealthController {
   @Public()
   @Get()
   public check(@Res() res: FastifyReply) {
-    if (this.shutdownService.isShuttingDown()) {
-      return res.status(HttpStatus.SERVICE_UNAVAILABLE).send({
-        status: 'shutting_down',
-        activeRequests: this.shutdownService.getActiveRequests(),
-        timestamp: new Date().toISOString()
-      })
+    const shuttingDown = this.shutdownService.isShuttingDown()
+    const body: HealthResponse = {
+      status: shuttingDown ? 'shutting_down' : 'ok',
+      service: SERVICE_NAME,
+      version: SERVICE_VERSION,
+      uptimeSec: Math.floor((Date.now() - this.startedAt) / 1000),
     }
-    return res.status(HttpStatus.OK).send({ status: 'ok' })
+    return res.status(shuttingDown ? HttpStatus.SERVICE_UNAVAILABLE : HttpStatus.OK).send(body)
   }
 }

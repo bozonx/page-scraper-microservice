@@ -1,7 +1,8 @@
-import { Test, TestingModule } from '@nestjs/testing'
+import { Test, type TestingModule } from '@nestjs/testing'
 import { PinoLogger } from 'nestjs-pino'
 import { ArticleExtractorService } from '@/modules/scraper/services/article-extractor.service.js'
 import { createMockLogger } from '@test/helpers/mocks.js'
+import nock from 'nock'
 
 describe('ArticleExtractorService (unit)', () => {
   let service: ArticleExtractorService
@@ -34,6 +35,7 @@ describe('ArticleExtractorService (unit)', () => {
   describe('Error handling', () => {
     it('should log debug message when extracting from URL', async () => {
       const url = 'https://example.com/test'
+      nock('https://example.com').get('/test').reply(500, 'test failure')
 
       try {
         await service.extract(url)

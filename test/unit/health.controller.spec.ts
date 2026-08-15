@@ -1,11 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing'
+import { Test, type TestingModule } from '@nestjs/testing'
 import { HealthController } from '@/modules/health/health.controller.js'
 import { ShutdownService } from '@/common/services/shutdown.service.js'
 
 describe('HealthController (unit)', () => {
   let controller: HealthController
   let moduleRef: TestingModule
-  let shutdownService: ShutdownService
 
   const mockShutdownService = {
     isShuttingDown: jest.fn().mockReturnValue(false),
@@ -24,7 +23,6 @@ describe('HealthController (unit)', () => {
     }).compile()
 
     controller = moduleRef.get<HealthController>(HealthController)
-    shutdownService = moduleRef.get<ShutdownService>(ShutdownService)
   })
 
   afterAll(async () => {
@@ -46,13 +44,16 @@ describe('HealthController (unit)', () => {
     await controller.check(mockReply as any)
 
     expect(mockReply.status).toHaveBeenCalledWith(200)
-    expect(mockReply.send).toHaveBeenCalledWith({ status: 'ok' })
+    expect(mockReply.send).toHaveBeenCalledWith({
+      status: 'ok',
+      service: 'page-scraper-microservice',
+      version: 'dev',
+      uptimeSec: expect.any(Number),
+    })
   })
 
   it('GET /api/v1/health returns 503 when shutting down', async () => {
     mockShutdownService.isShuttingDown.mockReturnValue(true)
-    mockShutdownService.getActiveRequests.mockReturnValue(5)
-
     const mockReply = {
       status: jest.fn().mockReturnThis(),
       send: jest.fn().mockReturnThis(),
@@ -63,8 +64,9 @@ describe('HealthController (unit)', () => {
     expect(mockReply.status).toHaveBeenCalledWith(503)
     expect(mockReply.send).toHaveBeenCalledWith({
       status: 'shutting_down',
-      activeRequests: 5,
-      timestamp: expect.any(String)
+      service: 'page-scraper-microservice',
+      version: 'dev',
+      uptimeSec: expect.any(Number),
     })
   })
 })

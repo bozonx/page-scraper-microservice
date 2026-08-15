@@ -3,18 +3,18 @@
  */
 
 interface EnvSnapshot {
-  [key: string]: string | undefined;
+  [key: string]: string | undefined
 }
 
 /**
  * Saves current environment variable values
  */
 export function saveEnvVars(...keys: string[]): EnvSnapshot {
-  const snapshot: EnvSnapshot = {};
+  const snapshot: EnvSnapshot = {}
   for (const key of keys) {
-    snapshot[key] = process.env[key];
+    snapshot[key] = process.env[key]
   }
-  return snapshot;
+  return snapshot
 }
 
 /**
@@ -23,9 +23,9 @@ export function saveEnvVars(...keys: string[]): EnvSnapshot {
 export function restoreEnvVars(snapshot: EnvSnapshot): void {
   for (const [key, value] of Object.entries(snapshot)) {
     if (value === undefined) {
-      delete process.env[key];
+      delete process.env[key]
     } else {
-      process.env[key] = value;
+      process.env[key] = value
     }
   }
 }
@@ -34,13 +34,13 @@ export function restoreEnvVars(snapshot: EnvSnapshot): void {
  * Sets environment variables temporarily and returns a cleanup function
  */
 export function withEnvVars(vars: Record<string, string>): () => void {
-  const snapshot = saveEnvVars(...Object.keys(vars));
+  const snapshot = saveEnvVars(...Object.keys(vars))
 
   for (const [key, value] of Object.entries(vars)) {
-    process.env[key] = value;
+    process.env[key] = value
   }
 
-  return () => restoreEnvVars(snapshot);
+  return () => restoreEnvVars(snapshot)
 }
 
 /**
@@ -48,12 +48,12 @@ export function withEnvVars(vars: Record<string, string>): () => void {
  */
 export async function runWithEnvVars<T>(
   vars: Record<string, string>,
-  callback: () => Promise<T>,
+  callback: () => Promise<T>
 ): Promise<T> {
-  const cleanup = withEnvVars(vars);
+  const cleanup = withEnvVars(vars)
   try {
-    return await callback();
+    return await callback()
   } finally {
-    cleanup();
+    cleanup()
   }
 }

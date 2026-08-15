@@ -5,9 +5,9 @@ import {
   HttpException,
   HttpStatus,
   Inject,
-} from '@nestjs/common';
-import { PinoLogger } from 'nestjs-pino';
-import type { FastifyReply, FastifyRequest } from 'fastify';
+} from '@nestjs/common'
+import { PinoLogger } from 'nestjs-pino'
+import type { FastifyReply, FastifyRequest } from 'fastify'
 
 /**
  * Global exception filter that catches all exceptions
@@ -16,7 +16,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
   constructor(@Inject(PinoLogger) private readonly logger: PinoLogger) {
-    logger.setContext(AllExceptionsFilter.name);
+    logger.setContext(AllExceptionsFilter.name)
   }
 
   /**
@@ -25,57 +25,58 @@ export class AllExceptionsFilter implements ExceptionFilter {
    * @param host The arguments host containing request/response context
    */
   public catch(exception: unknown, host: ArgumentsHost): void {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<FastifyReply>();
-    const request = ctx.getRequest<FastifyRequest>();
+    const ctx = host.switchToHttp()
+    const response = ctx.getResponse<FastifyReply>()
+    const request = ctx.getRequest<FastifyRequest>()
 
     // If it's an HttpException, return its response as-is to keep API contract
     if (exception instanceof HttpException) {
-      const status = exception.getStatus();
-      const resp = exception.getResponse();
-      const message = this.extractMessage(exception);
+      const status = exception.getStatus()
+      const resp = exception.getResponse()
+      const message = this.extractMessage(exception)
 
       // Log server errors differently than client errors
       if (status >= 500) {
         this.logger.error(
           `${request.method} ${request.url} - ${status} - ${message}`,
-          exception instanceof Error ? exception.stack : undefined,
-        );
+          exception instanceof Error ? exception.stack : undefined
+        )
       } else {
-        this.logger.warn(`${request.method} ${request.url} - ${status} - ${message}`);
+        this.logger.warn(`${request.method} ${request.url} - ${status} - ${message}`)
       }
 
       // Normalize validation errors (BadRequest from ValidationPipe) to unified envelope
       if (status === HttpStatus.BAD_REQUEST) {
-        const details = this.extractValidationDetails(resp);
+        const details = this.extractValidationDetails(resp)
         void response.status(status).send({
           error: {
             code: status,
             message: 'Validation failed',
             details,
           },
-        });
-        return;
+        })
+        return
       }
 
-      void response.status(status).send(resp);
-      return;
+      void response.status(status).send(resp)
+      return
     }
 
     // Non-HttpException: build generic error wrapper
-    const status = typeof (exception as { statusCode?: unknown })?.statusCode === 'number'
-      ? ((exception as { statusCode: number }).statusCode as number)
-      : HttpStatus.INTERNAL_SERVER_ERROR;
-    const message = this.extractMessage(exception);
+    const status =
+      typeof (exception as { statusCode?: unknown })?.statusCode === 'number'
+        ? (exception as { statusCode: number }).statusCode
+        : HttpStatus.INTERNAL_SERVER_ERROR
+    const message = this.extractMessage(exception)
 
     // Log server errors differently than client errors
     if (status >= 500) {
       this.logger.error(
         `${request.method} ${request.url} - ${status} - ${message}`,
-        exception instanceof Error ? exception.stack : undefined,
-      );
+        exception instanceof Error ? exception.stack : undefined
+      )
     } else {
-      this.logger.warn(`${request.method} ${request.url} - ${status} - ${message}`);
+      this.logger.warn(`${request.method} ${request.url} - ${status} - ${message}`)
     }
 
     void response.status(status).send({
@@ -83,7 +84,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
         code: status,
         message,
       },
-    });
+    })
   }
 
   /**
@@ -93,27 +94,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
    */
   private extractMessage(exception: unknown): string {
     if (exception instanceof HttpException) {
-      const response = exception.getResponse();
+      const response = exception.getResponse()
       if (typeof response === 'string') {
-        return response;
+        return response
       }
       if (typeof response === 'object' && response !== null && 'message' in response) {
-        const msg = (response as { message: unknown }).message;
+        const msg = response.message
         if (Array.isArray(msg)) {
-          return msg.join(', ');
+          return msg.join(', ')
         }
         if (typeof msg === 'string') {
-          return msg;
+          return msg
         }
       }
-      return exception.message;
+      return exception.message
     }
 
     if (exception instanceof Error) {
-      return exception.message;
+      return exception.message
     }
 
-    return 'Internal server error';
+    return 'Internal server error'
   }
 
   /**
@@ -122,17 +123,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
    * @returns Array of validation error messages or undefined
    */
   private extractValidationDetails(resp: unknown): string[] | undefined {
-    if (typeof resp === 'string') return [resp];
+    if (typeof resp === 'string') return [resp]
     if (typeof resp === 'object' && resp !== null) {
-      const obj = resp as { message?: unknown; error?: unknown };
+      const obj = resp as { message?: unknown; error?: unknown }
       if (Array.isArray(obj.message)) {
-        return obj.message as string[];
+        return obj.message as string[]
       }
       if (typeof obj.message === 'string') {
-        return [obj.message as string];
+        return [obj.message]
       }
     }
-    return undefined;
+    return undefined
   }
-
 }

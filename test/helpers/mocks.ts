@@ -84,24 +84,23 @@ export const createMockTurndownConverterService = (
  * @param overrides - Object with method implementations to override defaults
  * @returns Mock IArticleExtractor with customizable methods
  */
-export const createMockArticleExtractor = (overrides: Partial<IArticleExtractor> = {}) =>
-  ({
-    extract: jest.fn((url: string, _options?: any) =>
-      Promise.resolve({
-        title: 'Mock Article Title',
-        content: '<p>Mock article content</p>',
-        description: 'Mock article description',
-        author: 'Mock Author',
-        url,
-      })
-    ),
-    extractFromHtml: jest.fn((html: string, _url?: string | null, _options?: any) =>
-      Promise.resolve({
-        title: 'Mock Article Title',
-        content: html || '<p>Mock article content</p>',
-        description: 'Mock article description',
-        author: 'Mock Author',
-      })
-    ),
-    ...overrides,
-  }) as unknown as IArticleExtractor
+export const createMockArticleExtractor = (overrides: Partial<IArticleExtractor> = {}) => ({
+  extract: jest.fn((url: string, _options?: any) =>
+    Promise.resolve({
+      title: 'Mock Article Title',
+      content: '<p>Mock article content</p>',
+      description: 'Mock article description',
+      author: 'Mock Author',
+      url,
+    })
+  ),
+  extractFromHtml: jest.fn((html: string, _url?: string | null, _options?: any) =>
+    Promise.resolve({
+      title: 'Mock Article Title',
+      content: html || '<p>Mock article content</p>',
+      description: 'Mock article description',
+      author: 'Mock Author',
+    })
+  ),
+  ...overrides,
+})

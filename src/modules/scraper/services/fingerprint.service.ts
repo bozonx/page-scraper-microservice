@@ -109,7 +109,7 @@ export class FingerprintService {
     } catch (error) {
       this.logger.error('Failed to generate fingerprint', error)
       // Fallback to a safe default
-      return this.generator.getFingerprint() as any
+      return this.generator.getFingerprint()
     }
   }
 
