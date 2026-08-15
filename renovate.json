@@ -3,15 +3,72 @@
   "extends": ["config:recommended"],
   "timezone": "UTC",
   "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
   "rangeStrategy": "bump",
   "postUpdateOptions": ["pnpmDedupe"],
-  "vulnerabilityAlerts": { "enabled": true, "schedule": ["at any time"], "automerge": false },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on the first day of the month"]
+  },
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"],
+    "schedule": ["at any time"],
+    "groupName": null,
+    "automerge": false
+  },
   "packageRules": [
-    { "matchDepTypes": ["devDependencies"], "matchUpdateTypes": ["patch", "minor"], "automerge": true },
-    { "matchUpdateTypes": ["major"], "automerge": false },
-    { "groupName": "nestjs", "matchPackageNames": ["@nestjs/**"] },
-    { "groupName": "fastify", "matchPackageNames": ["fastify", "@fastify/**"] },
-    { "groupName": "eslint", "matchPackageNames": ["eslint", "@eslint/**", "@typescript-eslint/**", "eslint-**"] },
-    { "groupName": "types", "matchPackageNames": ["@types/**"] }
+    {
+      "description": "Automerge non-major development updates after CI",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "minor"],
+      "automerge": true
+    },
+    {
+      "description": "Majors always require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "major"]
+    },
+    {
+      "groupName": "nestjs",
+      "matchPackageNames": ["@nestjs/**"]
+    },
+    {
+      "groupName": "fastify",
+      "matchPackageNames": ["fastify", "@fastify/**"]
+    },
+    {
+      "groupName": "hono",
+      "matchPackageNames": ["hono", "@hono/**"]
+    },
+    {
+      "groupName": "eslint",
+      "matchPackageNames": [
+        "eslint",
+        "@eslint/**",
+        "@typescript-eslint/**",
+        "eslint-**",
+        "typescript-eslint"
+      ]
+    },
+    {
+      "groupName": "jest",
+      "matchPackageNames": ["jest", "@jest/**", "ts-jest", "@types/jest"]
+    },
+    {
+      "groupName": "vitest",
+      "matchPackageNames": ["vitest", "@vitest/**"]
+    },
+    {
+      "groupName": "types",
+      "matchPackageNames": ["@types/**", "@cloudflare/workers-types"]
+    },
+    {
+      "description": "Keep the fleet package manager current",
+      "groupName": "pnpm",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["packageManager"]
+    }
   ]
 }

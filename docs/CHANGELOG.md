@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Split CI validation from tag-only multi-architecture image releases and aligned the fleet-wide
+  Renovate policy.
 - Standardized fleet scripts, environment handling, identity, draining health, non-root
   multi-stage Playwright image, Compose resource limits and Renovate configuration.
 
