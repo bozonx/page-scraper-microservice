@@ -1,0 +1,28 @@
+# pnpm settings. Since pnpm 11 these live here, not in package.json#pnpm.
+# Dependencies allowed to run install scripts — everything else is blocked by default.
+# Note: a tree-wide `fastify: 5.7.1` override used to live in package.json#pnpm.overrides.
+# It was removed on purpose — it pinned every copy of Fastify to a vulnerable version.
+allowBuilds:
+  unrs-resolver: true
+
+# Transitive vulnerabilities that no direct-dependency upgrade fixes.
+# Each entry names the advisory it closes; drop an entry once the parent ships a fixed range.
+overrides:
+  # Keep a single Fastify instance in the tree. @nestjs/platform-fastify pins an exact
+  # fastify version of its own, which otherwise gives two copies with incompatible types
+  # and breaks plugin registration.
+  fastify: ^5.12.0
+  # critical: JavaScript injection via AST type confusion (via ts-jest)
+  handlebars: ^4.7.9
+  # high: host confusion / path traversal in authority parsing (via fastify)
+  'fast-uri@^3': ^3.1.5
+  # high: ReDoS via nested extglobs and repeated wildcards
+  'minimatch@^10': ^10.2.6
+  # high: DoS via unbounded expansion
+  'brace-expansion@^5': ^5.0.9
+  # high: crafted ZIP triggers a 4GB allocation
+  adm-zip: ^0.6.0
+  # high: arbitrary file read and path traversal via source-map auto-loading
+  postcss: ^8.5.26
+  # high: generator can loop indefinitely on negative or non-integer size
+  'nanoid@^3': ^3.3.18
