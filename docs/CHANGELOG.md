@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Upgraded `class-validator` to 0.15.1, `undici` to 8.10.0, `uuid` to 14.0.1, and
+  `@extractus/article-extractor` to the compatible 8.1.0 release.
 - Split CI validation from tag-only multi-architecture image releases and aligned the fleet-wide
   Renovate policy.
 - Standardized fleet scripts, environment handling, identity, draining health, non-root
